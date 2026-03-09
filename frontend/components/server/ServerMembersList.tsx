@@ -1,0 +1,277 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { api } from "@/lib/http";
+import { ServerMember, useAppStore } from "@/lib/store";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Ban, MoreVertical, ShieldAlert, ShieldCheck, User } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { UserProfileDialog } from "@/components/user/UserProfileDialog";
+import { toast } from "sonner";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+
+interface ServerMembersListProps {
+  serverId: string;
+  currentUserId?: string;
+}
+
+export function ServerMembersList({ serverId, currentUserId }: ServerMembersListProps) {
+  const members = useAppStore((s) => s.serverMembers[serverId] || []);
+  const setServerMembers = useAppStore((s) => s.setServerMembers);
+
+  const [loading, setLoading] = useState(true);
+  const [selectedMember, setSelectedMember] = useState<ServerMember | null>(null);
+
+  const fetchMembers = async () => {
+    try {
+      setLoading(true);
+      const data = await api(`/api/servers/${serverId}/members`) as ServerMember[];
+      setServerMembers(serverId, data);
+    } catch (e) {
+      console.error("Failed to fetch members", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMembers();
+  }, [serverId]);
+
+  const currentUserMember = members.find(m => m.user_id === currentUserId);
+  const currentUserRole = currentUserMember?.role;
+
+  const isOwner = currentUserRole === "OWNER";
+  const isAdmin = currentUserRole === "ADMIN";
+  const canManage = isOwner || isAdmin;
+
+  const [confirmData, setConfirmData] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDestructive?: boolean;
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => { },
+    isDestructive: false,
+  });
+
+  const handleUpdateRole = async (userId: string, newRole: "ADMIN" | "MEMBER" | "OWNER") => {
+    const performUpdate = async () => {
+      try {
+        await api(`/api/servers/${serverId}/members/${userId}/role`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role: newRole }),
+        });
+        toast.success("Rôle mis à jour");
+        fetchMembers();
+      } catch (e) {
+        console.error("Failed to update role", e);
+        toast.error("Erreur lors de la modification du rôle");
+      }
+    };
+
+    if (newRole === "OWNER") {
+      setConfirmData({
+        isOpen: true,
+        title: "Transférer la propriété ?",
+        message: "ATTENTION : Cette action est irréversible ! Si vous nommez ce membre Propriétaire, il deviendra votre égal et vous ne pourrez plus le rétrograder. Êtes-vous sûr ?",
+        confirmText: "Transférer",
+        isDestructive: true,
+        onConfirm: performUpdate,
+      });
+      return;
+    }
+
+    performUpdate();
+  };
+
+  const handleKick = async (userId: string) => {
+    setConfirmData({
+      isOpen: true,
+      title: "Expulser ce membre ?",
+      message: "Voulez-vous vraiment expulser ce membre du serveur ?",
+      confirmText: "Expulser",
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          await api(`/api/servers/${serverId}/members/${userId}`, {
+            method: "DELETE",
+          });
+          toast.success("Membre expulsé");
+          fetchMembers();
+        } catch (e) {
+          console.error("Failed to kick user", e);
+          toast.error("Erreur lors de l'expulsion");
+        }
+      },
+    });
+  };
+
+  const handleBan = async (userId: string) => {
+    setConfirmData({
+      isOpen: true,
+      title: "Bannir cet utilisateur ?",
+      message: "Voulez-vous vraiment bannir cet utilisateur ? Il ne pourra plus revenir.",
+      confirmText: "Bannir",
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          await api(`/api/servers/${serverId}/ban`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, reason: "Banned by admin/owner" }),
+          });
+          toast.success("Utilisateur banni");
+          fetchMembers();
+        } catch (e) {
+          console.error("Failed to ban user", e);
+          toast.error("Erreur lors du bannissement");
+        }
+      },
+    });
+  };
+
+  if (loading && members.length === 0) {
+    return <div className="p-4 text-center text-muted-foreground">Chargement des membres...</div>;
+  }
+
+  return (
+    <>
+      <ScrollArea className="h-full pr-4">
+        <div className="space-y-2">
+          {members.map((member) => (
+            <div
+              key={member.user_id}
+              className="flex items-center justify-between p-2 rounded-md hover:bg-[#34373c] group cursor-pointer transition-colors"
+              onClick={() => setSelectedMember(member)}
+            >
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={member.avatar_url} />
+                  <AvatarFallback className="bg-[#5865F2] text-white text-xs">
+                    {member.username.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm text-[#dcddde] truncate">{member.username}</span>
+                    {member.role === "OWNER" && (
+                      <Badge variant="secondary" className="bg-[#f0b232]/10 text-[#f0b232] border-none h-4 px-1 text-[9px] font-bold">
+                        <ShieldCheck className="w-2.5 h-2.5 mr-0.5" /> PROP
+                      </Badge>
+                    )}
+                    {member.role === "ADMIN" && (
+                      <Badge variant="secondary" className="bg-[#5865f2]/10 text-[#5865f2] border-none h-4 px-1 text-[9px] font-bold">
+                        <ShieldAlert className="w-2.5 h-2.5 mr-0.5" /> ADMIN
+                      </Badge>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-[#8e9297] truncate">
+                    {member.joined_at && `Membre depuis ${new Date(member.joined_at).toLocaleDateString()}`}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground mr-1"
+                  onClick={() => setSelectedMember(member)}
+                >
+                  <User className="h-4 w-4" />
+                </Button>
+
+                {canManage && member.user_id !== currentUserId && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+
+                      {isOwner && member.role !== "OWNER" && (
+                        <>
+                          {member.role !== "ADMIN" && (
+                            <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, "ADMIN")}>
+                              <ShieldAlert className="mr-2 h-4 w-4" />
+                              <span>Nommer Admin</span>
+                            </DropdownMenuItem>
+                          )}
+                          {member.role === "ADMIN" && (
+                            <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, "MEMBER")}>
+                              <ShieldCheck className="mr-2 h-4 w-4" />
+                              <span>Rétrograder Membre</span>
+                            </DropdownMenuItem>
+                          )}
+
+                          <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, "OWNER")} className="text-orange-600 focus:text-orange-600">
+                            <ShieldCheck className="mr-2 h-4 w-4" />
+                            <span>Nommer Propriétaire</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                        </>
+                      )}
+
+                      {member.role !== "OWNER" && (isOwner || (isAdmin && member.role !== "ADMIN")) && (
+                        <>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleKick(member.user_id)}
+                          >
+                            <Ban className="mr-2 h-4 w-4" />
+                            <span>Expulser</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleBan(member.user_id)}
+                          >
+                            <Ban className="mr-2 h-4 w-4" />
+                            <span>Bannir</span>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+
+      <UserProfileDialog
+        open={!!selectedMember}
+        onOpenChange={(open) => !open && setSelectedMember(null)}
+        member={selectedMember}
+      />
+
+      <ConfirmModal
+        isOpen={confirmData.isOpen}
+        onClose={() => setConfirmData({ ...confirmData, isOpen: false })}
+        onConfirm={confirmData.onConfirm}
+        title={confirmData.title}
+        message={confirmData.message}
+        confirmText={confirmData.confirmText}
+        isDestructive={confirmData.isDestructive}
+      />
+    </>
+  );
+}

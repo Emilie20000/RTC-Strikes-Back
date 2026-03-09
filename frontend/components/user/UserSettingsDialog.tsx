@@ -1,0 +1,329 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAppStore, type User } from "@/lib/store";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { api } from "@/lib/http";
+import { User as UserIcon, Settings, LogOut, Camera, ShieldAlert } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+interface UserSettingsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+type Tab = "account" | "profile";
+
+export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogProps) {
+  const currentUser = useAppStore((s) => s.currentUser);
+  const setCurrentUser = useAppStore((s) => s.setCurrentUser);
+  const router = useRouter();
+
+  const [activeTab, setActiveTab] = useState<Tab>("account");
+  const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  
+  useEffect(() => {
+    if (currentUser) {
+      setUsername(currentUser.username || "");
+      setAvatarUrl(currentUser.avatar_url || "");
+    }
+  }, [currentUser, open]);
+
+  const handleSave = async () => {
+    if (!currentUser) return;
+    setLoading(true);
+    try {
+      const updatedUser = await api<User>("/api/users/me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          username: username !== currentUser.username ? username : undefined,
+          avatar_url: avatarUrl !== currentUser.avatar_url ? avatarUrl : undefined,
+        }),
+      });
+      
+      setCurrentUser({ ...currentUser, ...updatedUser });
+      localStorage.setItem("user", JSON.stringify({ ...currentUser, ...updatedUser }));
+      
+      onOpenChange(false);
+    } catch (e) {
+      console.error("Failed to update profile", e);
+      alert("Erreur lors de la mise à jour du profil.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Failed to logout");
+    }
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setCurrentUser(null);
+    router.push("/login");
+  };
+
+  const hasChanges = currentUser && (username !== currentUser.username || avatarUrl !== (currentUser.avatar_url || ""));
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent hideDefaultClose className="max-w-4xl max-h-[85vh] h-full md:h-[700px] flex p-0 gap-0 overflow-hidden bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
+        <div className="w-[240px] md:w-[280px] bg-[#2f3136] flex flex-col p-0 hidden md:flex">
+          <div className="p-6 pb-2 pt-10">
+            <h2 className="text-[11px] font-bold text-[#8e9297] uppercase tracking-wider mb-2 px-2.5">Paramètres utilisateur</h2>
+            <div className="space-y-0.5">
+              <Button
+                variant="ghost"
+                className={`w-full justify-start px-2.5 h-8 font-medium rounded-sm ${activeTab === "account" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
+                onClick={() => setActiveTab("account")}
+              >
+                Mon compte
+              </Button>
+              <Button
+                variant="ghost"
+                className={`w-full justify-start px-2.5 h-8 font-medium rounded-sm ${activeTab === "profile" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
+                onClick={() => setActiveTab("profile")}
+              >
+                Profil
+              </Button>
+            </div>
+          </div>
+          
+          <Separator className="mx-4 w-auto my-4 bg-[#4f545c]/20" />
+          
+          <div className="p-2 px-6 mt-auto mb-4">
+            <Button
+              variant="ghost"
+              className="w-full justify-start px-2.5 h-8 font-medium text-[#ed4245] hover:bg-[#ed4245]/10 hover:text-[#ed4245] rounded-sm"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Déconnexion
+            </Button>
+            <div className="mt-4 px-2.5 text-[10px] text-[#8e9297] font-medium uppercase">
+              T-JSF-600-LIL_10 v0.1.0
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 bg-[#36393f] flex flex-col min-w-0 overflow-y-auto relative p-6 md:p-10">
+          <div className="max-w-3xl w-full">
+            {activeTab === "account" && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                 <h1 className="text-xl font-bold text-white mb-6">Mon compte</h1>
+                 
+                 <div className="bg-[#2f3136] rounded-lg overflow-hidden border-none shadow-lg">
+                    <div className="h-24 bg-[#5865F2] relative">
+                    </div>
+                    <div className="px-4 pb-4 relative">
+                        <div className="flex justify-between items-end -mt-8 mb-4">
+                            <div className="relative">
+                                <Avatar className="w-20 h-20 border-[6px] border-[#2f3136] bg-[#2f3136] shadow-xl">
+                                    <AvatarImage src={currentUser?.avatar_url} />
+                                    <AvatarFallback className="text-xl font-bold bg-[#5865F2] text-white">
+                                      {currentUser?.username?.slice(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#3ba55c] rounded-full border-[4px] border-[#2f3136]" title="En ligne"></div>
+                            </div>
+                            <Button 
+                              className="bg-[#5865F2] hover:bg-[#4752c4] text-white h-8 text-sm px-4"
+                              onClick={() => setActiveTab("profile")}
+                            >
+                              Editer le profil
+                            </Button>
+                        </div>
+                        
+                        <div className="mb-4">
+                            <div className="text-xl font-bold text-white">{currentUser?.username}</div>
+                            <div className="text-sm text-[#b9bbbe]">{currentUser?.email || "Pas d'email"}</div>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-[#232428] p-4 m-4 rounded-lg space-y-4">
+                        <div className="flex justify-between items-center group">
+                            <div>
+                                <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-0.5">Nom d'affichage</div>
+                                <div className="text-sm font-medium text-white">{currentUser?.username}</div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="bg-[#4f545c] hover:bg-[#686d73] text-white h-8 w-16"
+                              onClick={() => setActiveTab("profile")}
+                            >
+                              Modifier
+                            </Button>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-0.5">Email</div>
+                                <div className="text-sm font-medium text-white">{currentUser?.email || "Non renseigné"}</div>
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+                 
+                 <Separator className="bg-[#4f545c]/20" />
+
+                 <div className="space-y-3">
+                    <h2 className="text-[#b9bbbe] font-bold text-xs uppercase tracking-wider">Sécurité et Connexion</h2>
+                    <Button variant="outline" className="border-[#4f545c] text-white hover:bg-[#4f545c]/20 h-8">Modifier le mot de passe</Button>
+                 </div>
+              </div>
+            )}
+
+            {activeTab === "profile" && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <h1 className="text-xl font-bold text-white mb-2">Profil du serveur</h1>
+                    <p className="text-[#b9bbbe] text-sm mb-6">Personnalisez votre apparence sur ce serveur.</p>
+                    
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        <div className="flex-1 space-y-6">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-[#b9bbbe] uppercase">Nom d'affichage</Label>
+                                <Input 
+                                    value={username} 
+                                    onChange={(e) => setUsername(e.target.value)} 
+                                    className="bg-[#202225] border-none text-white h-10 focus-visible:ring-1 focus-visible:ring-[#5865F2]"
+                                />
+                            </div>
+                            <Separator className="bg-[#4f545c]/20" />
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-bold text-[#b9bbbe] uppercase">Avatar</Label>
+                                <div className="flex gap-3">
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        id="avatar-upload-profile" 
+                                        className="hidden" 
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+
+                                            const formData = new FormData();
+                                            formData.append("file", file);
+
+                                            try {
+                                                const token = localStorage.getItem("token");
+                                                const res = await fetch("http://localhost:8080/api/uploads", {
+                                                    method: "POST",
+                                                    headers: {
+                                                        "Authorization": `Bearer ${token}`
+                                                    },
+                                                    body: formData
+                                                });
+                                                
+                                                if (!res.ok) throw new Error("Upload failed");
+                                                
+                                                const data = await res.json();
+                                                setAvatarUrl(`http://localhost:8080${data.url}`);
+                                            } catch (err) {
+                                                console.error(err);
+                                                alert("Erreur lors de l'upload");
+                                            }
+                                        }}
+                                    />
+                                    <Button 
+                                      className="bg-[#5865F2] hover:bg-[#4752c4] text-white flex-1" 
+                                      onClick={() => document.getElementById("avatar-upload-profile")?.click()}
+                                    >
+                                        <Camera className="w-4 h-4 mr-2" />
+                                        Changer l'avatar
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      className="text-white hover:bg-[#4f545c]/20"
+                                      onClick={() => setAvatarUrl("")}
+                                    >
+                                      Supprimer
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="w-full lg:w-[300px]">
+                            <Label className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-2 block">Aperçu du profil</Label>
+                            <div className="bg-[#18191c] rounded-lg overflow-hidden shadow-2xl border-none transform transition-all hover:scale-[1.01]">
+                                <div className="h-16 bg-[#5865F2]/40 relative"></div>
+                                <div className="p-4 pt-10 relative">
+                                    <div className="absolute -top-10 left-4">
+                                        <Avatar className="w-20 h-20 border-[6px] border-[#18191c] bg-[#18191c] shadow-lg">
+                                            <AvatarImage src={avatarUrl} />
+                                            <AvatarFallback className="bg-[#5865F2] text-white font-bold text-xl">
+                                              {(username || "U").slice(0, 2).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#3ba55c] rounded-full border-[4px] border-[#18191c]"></div>
+                                    </div>
+                                    <div className="bg-[#232428] rounded-md p-4 mt-2">
+                                        <div className="font-bold text-lg text-white leading-tight">{username || "Utilisateur"}</div>
+                                        <div className="text-[#b9bbbe] text-xs mt-1 border-t border-[#4f545c]/20 pt-2">
+                                          En train de personnaliser son profil...
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+          </div>
+            
+          {hasChanges && (
+            <div className="absolute bottom-4 left-4 right-4 bg-[#18191c] border-none shadow-2xl flex justify-between items-center animate-in slide-in-from-bottom-4 fade-in duration-300 p-3 rounded-lg z-50">
+                <div className="text-sm font-medium px-2 text-[#dcddde]">Attention — vous avez des modifications non enregistrées !</div>
+                <div className="flex gap-4 items-center">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-white hover:underline hover:bg-transparent"
+                      onClick={() => {
+                        setUsername(currentUser?.username || "");
+                        setAvatarUrl(currentUser?.avatar_url || "");
+                      }}
+                    >
+                      Réinitialiser
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      onClick={handleSave} 
+                      disabled={loading} 
+                      className="bg-[#3ba55c] hover:bg-[#2d7d46] text-white px-4 font-bold"
+                    >
+                      {loading ? "Enregistrement..." : "Enregistrer"}
+                    </Button>
+                </div>
+            </div>
+          )}
+
+          <div className="absolute right-6 top-6 flex flex-col items-center gap-1 group">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="w-9 h-9 border-2 rounded-full border-[#72767d] text-[#72767d] hover:bg-[#72767d]/20 hover:text-white group-hover:border-white transition-all" 
+              onClick={() => onOpenChange(false)}
+            >
+              <div className="text-sm font-bold">✕</div>
+            </Button>
+            <div className="text-[10px] text-[#72767d] font-bold group-hover:text-white transition-all uppercase tracking-tighter">Échap</div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
