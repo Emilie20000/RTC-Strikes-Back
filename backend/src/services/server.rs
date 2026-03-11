@@ -225,16 +225,42 @@ pub async fn join_server(
     .await?
     .ok_or(sqlx::Error::RowNotFound)?;
     
-    let is_banned = sqlx::query_scalar::<_, bool>(
-        "SELECT EXISTS(SELECT 1 FROM server_bans WHERE server_id = $1 AND user_id = $2)"
+    let ban_info = sqlx::query_as::<_, (Option<chrono::DateTime<chrono::Utc>>, Option<String>)>(
+        "SELECT expires_at, reason FROM server_bans WHERE server_id = $1 AND user_id = $2"
     )
     .bind(server.id)
     .bind(user_id)
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await?;
 
-    if is_banned {
-        return Err(sqlx::Error::RowNotFound); 
+    if let Some((expires_at, reason)) = ban_info {
+        if let Some(expires) = expires_at {
+            if expires > chrono::Utc::now() {
+                let remaining = expires - chrono::Utc::now();
+                let hours = remaining.num_hours();
+                let minutes = remaining.num_minutes() % 60;
+                let message = format!(
+                    "BANNED:Vous êtes banni de ce serveur pendant encore {}{} minutes.",
+                    if hours > 0 { format!("{} heures et ", hours) } else { "".to_string() },
+                    minutes
+                );
+                return Err(sqlx::Error::Protocol(message)); 
+            } else {
+                // Ban expired, remove it
+                sqlx::query("DELETE FROM server_bans WHERE server_id = $1 AND user_id = $2")
+                    .bind(server.id)
+                    .bind(user_id)
+                    .execute(pool)
+                    .await?;
+            }
+        } else {
+            // Permanent ban
+            let message = format!(
+                "BANNED:Vous êtes banni de ce serveur de façon permanente. Raison : {}",
+                reason.unwrap_or_else(|| "Aucune raison fournie".to_string())
+            );
+            return Err(sqlx::Error::Protocol(message));
+        }
     }
     
     let is_member = sqlx::query(
@@ -344,6 +370,7 @@ pub async fn ban_user(
     owner_id: Uuid,
     target_user_id: Uuid,
     reason: Option<String>,
+    duration_hours: Option<i32>,
 ) -> Result<(), sqlx::Error> {
     let mut tx = pool.begin().await?;
 
@@ -393,18 +420,46 @@ pub async fn ban_user(
     .execute(&mut *tx)
     .await?;
 
+    let expires_at = duration_hours.map(|h| chrono::Utc::now() + chrono::Duration::hours(h as i64));
+
     sqlx::query(
-        "INSERT INTO server_bans (server_id, user_id, reason) VALUES ($1, $2, $3) ON CONFLICT (server_id, user_id) DO NOTHING"
+        "INSERT INTO server_bans (server_id, user_id, reason, expires_at) VALUES ($1, $2, $3, $4) ON CONFLICT (server_id, user_id) DO UPDATE SET reason = $3, expires_at = $4, banned_at = NOW()"
     )
     .bind(&server_id)
     .bind(&target_user_id)
     .bind(reason)
+    .bind(expires_at)
     .execute(&mut *tx)
     .await?;
     
     tx.commit().await?;
     
     Ok(())
+}
+
+pub async fn get_server_bans(
+    pool: &PgPool,
+    server_id: Uuid,
+    user_id: Uuid,
+) -> Result<Vec<crate::models::server::ServerBan>, sqlx::Error> {
+    // Check if authorized (Admin or Owner)
+    let is_authorized = permission::is_admin_or_owner(pool, user_id, server_id).await?;
+    if !is_authorized {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    sqlx::query_as::<_, crate::models::server::ServerBan>(
+        r#"
+        SELECT b.server_id, b.user_id, u.username, u.avatar_url, b.reason, b.banned_at, b.expires_at
+        FROM server_bans b
+        JOIN users u ON b.user_id = u.id
+        WHERE b.server_id = $1
+        ORDER BY b.banned_at DESC
+        "#
+    )
+    .bind(server_id)
+    .fetch_all(pool)
+    .await
 }
 
 // Débannir un utilisateur (Owner ou Admin)

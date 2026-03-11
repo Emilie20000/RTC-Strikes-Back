@@ -7,6 +7,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Ban, MoreVertical, ShieldAlert, ShieldCheck, User } from "lucide-react";
 import {
   DropdownMenu,
@@ -15,9 +23,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { UserProfileDialog } from "@/components/user/UserProfileDialog";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+
+const EMPTY_ARRAY: any[] = [];
 
 interface ServerMembersListProps {
   serverId: string;
@@ -25,7 +37,7 @@ interface ServerMembersListProps {
 }
 
 export function ServerMembersList({ serverId, currentUserId }: ServerMembersListProps) {
-  const members = useAppStore((s) => s.serverMembers[serverId] || []);
+  const members = useAppStore((s) => s.serverMembers[serverId] || EMPTY_ARRAY);
   const setServerMembers = useAppStore((s) => s.setServerMembers);
 
   const [loading, setLoading] = useState(true);
@@ -122,28 +134,42 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
     });
   };
 
-  const handleBan = async (userId: string) => {
-    setConfirmData({
-      isOpen: true,
-      title: "Bannir cet utilisateur ?",
-      message: "Voulez-vous vraiment bannir cet utilisateur ? Il ne pourra plus revenir.",
-      confirmText: "Bannir",
-      isDestructive: true,
-      onConfirm: async () => {
-        try {
-          await api(`/api/servers/${serverId}/ban`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, reason: "Banned by admin/owner" }),
-          });
-          toast.success("Utilisateur banni");
-          fetchMembers();
-        } catch (e) {
-          console.error("Failed to ban user", e);
-          toast.error("Erreur lors du bannissement");
-        }
-      },
-    });
+  const [isBanDialogOpen, setIsBanDialogOpen] = useState(false);
+  const [banData, setBanData] = useState<{ userId: string, username: string }>({ userId: "", username: "" });
+  const [banReason, setBanReason] = useState("");
+  const [banDuration, setBanDuration] = useState<string>("permanent");
+
+  const handleBan = (userId: string, username: string) => {
+    setBanData({ userId, username });
+    setBanReason("");
+    setBanDuration("permanent");
+    setIsBanDialogOpen(true);
+  };
+
+  const confirmBan = async () => {
+    try {
+      const payload: any = {
+        user_id: banData.userId,
+        reason: banReason || `Banni par un administrateur`,
+      };
+
+      if (banDuration !== "permanent") {
+        payload.duration_hours = parseInt(banDuration);
+      }
+
+      await api(`/api/servers/${serverId}/ban`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      toast.success(`${banData.username} a été banni`);
+      setIsBanDialogOpen(false);
+      fetchMembers();
+    } catch (e) {
+      console.error("Failed to ban user", e);
+      toast.error("Erreur lors du bannissement");
+    }
   };
 
   if (loading && members.length === 0) {
@@ -164,12 +190,12 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={member.avatar_url} />
                   <AvatarFallback className="bg-[#5865F2] text-white text-xs">
-                    {member.username.slice(0, 2).toUpperCase()}
+                    {member.username?.slice(0, 2).toUpperCase() || "??"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm text-[#dcddde] truncate">{member.username}</span>
+                    <span className="font-medium text-sm text-[#dcddde] truncate">{member.username || "Utilisateur"}</span>
                     {member.role === "OWNER" && (
                       <Badge variant="secondary" className="bg-[#f0b232]/10 text-[#f0b232] border-none h-4 px-1 text-[9px] font-bold">
                         <ShieldCheck className="w-2.5 h-2.5 mr-0.5" /> PROP
@@ -182,7 +208,7 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
                     )}
                   </div>
                   <span className="text-[10px] text-[#8e9297] truncate">
-                    {member.joined_at && `Membre depuis ${new Date(member.joined_at).toLocaleDateString()}`}
+                    {member.joined_at ? `Membre depuis ${new Date(member.joined_at).toLocaleDateString()}` : "Date d'arrivée inconnue"}
                   </span>
                 </div>
               </div>
@@ -240,7 +266,7 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
-                            onClick={() => handleBan(member.user_id)}
+                            onClick={() => handleBan(member.user_id, member.username || "Utilisateur")}
                           >
                             <Ban className="mr-2 h-4 w-4" />
                             <span>Bannir</span>
@@ -262,6 +288,52 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
         onOpenChange={(open) => !open && setSelectedMember(null)}
         member={selectedMember}
       />
+
+      <Dialog open={isBanDialogOpen} onOpenChange={setIsBanDialogOpen}>
+        <DialogContent className="bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white text-lg font-bold">Bannir {banData.username}</DialogTitle>
+            <DialogDescription className="text-[#b9bbbe] text-xs">
+              L'utilisateur sera expulsé et ne pourra pas revenir selon la durée choisie.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="ban-reason" className="text-[#b9bbbe] text-[10px] font-bold uppercase">Raison du bannissement</Label>
+              <Input
+                id="ban-reason"
+                placeholder="Ex: Comportement inapproprié"
+                className="bg-[#1e1f22] border-none text-white h-10 focus-visible:ring-1 focus-visible:ring-[#5865F2]"
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="ban-duration" className="text-[#b9bbbe] text-[10px] font-bold uppercase">Durée du bannissement</Label>
+              <select 
+                id="ban-duration"
+                className="flex h-10 w-full rounded-md bg-[#1e1f22] px-3 py-2 text-sm text-white ring-offset-[#36393f] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5865F2] disabled:cursor-not-allowed disabled:opacity-50 appearance-none cursor-pointer"
+                value={banDuration}
+                onChange={(e) => setBanDuration(e.target.value)}
+              >
+                <option value="permanent" className="bg-[#1e1f22]">Permanent</option>
+                <option value="1" className="bg-[#1e1f22]">1 Heure</option>
+                <option value="24" className="bg-[#1e1f22]">24 Heures</option>
+                <option value="168" className="bg-[#1e1f22]">7 Jours (168h)</option>
+                <option value="720" className="bg-[#1e1f22]">30 Jours (720h)</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter className="bg-[#2f3136] -m-6 mt-0 p-4 flex items-center">
+            <Button variant="ghost" onClick={() => setIsBanDialogOpen(false)} className="text-white hover:underline hover:bg-transparent mr-auto text-sm">
+              Annuler
+            </Button>
+            <Button onClick={confirmBan} className="bg-[#ed4245] hover:bg-[#c03537] text-white font-bold h-10 px-6">
+              Bannir l'utilisateur
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmModal
         isOpen={confirmData.isOpen}

@@ -19,7 +19,22 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(text || `HTTP ${res.status}`);
+    const error = new Error(text || `HTTP ${res.status}`) as any;
+    try {
+      const json = JSON.parse(text);
+      if (json.error) {
+        error.error = json.error;
+        
+        if (json.error === "User not found" && typeof window !== "undefined") {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
+        }
+      }
+      error.data = json;
+    } catch (e) {
+    }
+    throw error;
   }
 
   if (res.status === 204) {

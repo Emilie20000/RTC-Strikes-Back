@@ -16,6 +16,16 @@ export type ServerMember = {
   status: "Online" | "Away" | "Busy" | "Offline";
 };
 
+export type ServerBan = {
+  server_id: string;
+  user_id: string;
+  username: string;
+  avatar_url?: string;
+  reason?: string;
+  banned_at: string;
+  expires_at?: string;
+};
+
 export type Server = {
   id: string;
   name: string;
