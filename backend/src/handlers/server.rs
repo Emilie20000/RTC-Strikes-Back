@@ -33,6 +33,12 @@ pub struct UpdateMemberRolePayload {
 pub struct BanUserPayload {
     pub user_id: Uuid,
     pub reason: Option<String>,
+    pub duration_hours: Option<i32>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UnbanUserPayload {
+    pub user_id: Uuid,
 }
 
 // Créer un serveur
@@ -155,18 +161,30 @@ pub async fn join_server(
 ) -> Result<Json<Server>, (StatusCode, Json<serde_json::Value>)> {
     let server = server_service::join_server(&state.pool, auth_user.user_id, payload.invite_code)
         .await
-        .map_err(|e| match e {
-            sqlx::Error::RowNotFound => {
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            if error_msg.contains("BANNED:") {
+                let parts: Vec<&str> = error_msg.split("BANNED:").collect();
+                let message = if parts.len() > 1 { parts[1] } else { "Vous êtes banni de ce serveur." };
                 (
-                    StatusCode::NOT_FOUND,
-                    Json(json!({"error": "Invalid invite code"})),
+                    StatusCode::FORBIDDEN,
+                    Json(json!({"error": message})),
                 )
-            },
-            _ => {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({"error": format!("Failed to join server: {}", e)})),
-                )
+            } else {
+                match e {
+                    sqlx::Error::RowNotFound => {
+                        (
+                            StatusCode::NOT_FOUND,
+                            Json(json!({"error": "Invalid invite code"})),
+                        )
+                    },
+                    _ => {
+                        (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            Json(json!({"error": format!("Failed to join server: {}", e)})),
+                        )
+                    }
+                }
             }
         })?;
     
@@ -289,7 +307,7 @@ pub async fn ban_user(
     Path(server_id): Path<Uuid>,
     Json(payload): Json<BanUserPayload>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
-    server_service::ban_user(&state.pool, server_id, auth_user.user_id, payload.user_id, payload.reason)
+    server_service::ban_user(&state.pool, server_id, auth_user.user_id, payload.user_id, payload.reason, payload.duration_hours)
         .await
         .map_err(|e| match e {
             sqlx::Error::RowNotFound => {
@@ -339,13 +357,31 @@ pub async fn ban_user(
     Ok(StatusCode::NO_CONTENT)
 }
 
+pub async fn get_server_bans(
+    State(state): State<Arc<AppState>>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path(server_id): Path<Uuid>,
+) -> Result<Json<Vec<crate::models::server::ServerBan>>, (StatusCode, Json<serde_json::Value>)> {
+    let bans = server_service::get_server_bans(&state.pool, server_id, auth_user.user_id)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Failed to fetch bans: {}", e)})),
+            )
+        })?;
+    
+    Ok(Json(bans))
+}
+
 // Débannir un utilisateur
 pub async fn unban_user(
     State(state): State<Arc<AppState>>,
     Extension(auth_user): Extension<AuthUser>,
-    Path((server_id, user_id)): Path<(Uuid, Uuid)>,
+    Path(server_id): Path<Uuid>,
+    Json(payload): Json<UnbanUserPayload>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
-    server_service::unban_user(&state.pool, server_id, auth_user.user_id, user_id)
+    server_service::unban_user(&state.pool, server_id, auth_user.user_id, payload.user_id)
         .await
         .map_err(|e| match e {
             sqlx::Error::RowNotFound => {

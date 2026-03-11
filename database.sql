@@ -82,5 +82,6 @@ CREATE TABLE server_bans (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     reason TEXT,
     banned_at TIMESTAMPTZ DEFAULT NOW(),
+    expires_at TIMESTAMPTZ,
     PRIMARY KEY (server_id, user_id)
 );

@@ -26,6 +26,7 @@ pub fn server_routes(state: Arc<AppState>) -> Router<Arc<AppState>> {
         .route("/{id}/members/{user_id}", delete(remove_member))
         .route("/{id}/members/{user_id}/role", axum::routing::patch(update_member_role))
         .route("/{id}/ban", post(ban_user))
+        .route("/{id}/bans", get(crate::handlers::server::get_server_bans))
         .route("/{id}/unban", post(crate::handlers::server::unban_user))
         .route_layer(middleware::from_fn_with_state(state, auth_middleware))
 }

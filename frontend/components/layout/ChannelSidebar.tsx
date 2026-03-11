@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ServerMembersList } from "@/components/server/ServerMembersList";
+import { ServerBansList } from "@/components/server/ServerBansList";
 import { socket } from "@/lib/socket";
 import { StatusIndicator } from "@/components/ui/StatusIndicator";
 import { UserSettingsDialog } from "@/components/user/UserSettingsDialog";
@@ -57,35 +58,33 @@ function mockMessages(channelId: string): ChatMessage[] {
 }
 
 export default function ChannelSidebar() {
+  const currentUser = useAppStore((s) => s.currentUser);
   const servers = useAppStore((s) => s.servers);
   const activeServerId = useAppStore((s) => s.activeServerId);
-  const setActiveServerId = useAppStore((s) => s.setActiveServerId);
-  const activeServer = servers.find((s) => s.id === activeServerId);
-
-  const channels = useAppStore((s) => s.channels);
-  const setChannels = useAppStore((s) => s.setChannels);
-  const addChannel = useAppStore((s) => s.addChannel);
-  const removeChannel = useAppStore((s) => s.removeChannel);
-
   const activeChannelId = useAppStore((s) => s.activeChannelId);
-  const setActiveChannelId = useAppStore((s) => s.setActiveChannelId);
-
   const activeVoiceChannelId = useAppStore((s) => s.activeVoiceChannelId);
-  const setActiveVoiceChannelId = useAppStore((s) => s.setActiveVoiceChannelId);
-
+  const channels = useAppStore((s) => s.channels);
   const voiceStates = useAppStore((s) => s.voiceStates);
-  const setVoiceStates = useAppStore((s) => s.setVoiceStates);
-  const updateVoiceState = useAppStore((s) => s.updateVoiceState);
-  const removeVoiceState = useAppStore((s) => s.removeVoiceState);
   const speakingUsers = useAppStore((s) => s.speakingUsers);
-
-  const currentUser = useAppStore((s) => s.currentUser);
-  const setServers = useAppStore((s) => s.setServers);
-  const removeServer = useAppStore((s) => s.removeServer);
-
   const messagesByChannel = useAppStore((s) => s.messagesByChannel);
-  const setMessagesForChannel = useAppStore((s) => s.setMessagesForChannel);
   const serverMembers = useAppStore((s) => s.serverMembers);
+
+  const {
+    setServers,
+    removeServer,
+    setChannels,
+    addChannel,
+    removeChannel,
+    setActiveServerId,
+    setActiveChannelId,
+    setActiveVoiceChannelId,
+    setVoiceStates,
+    updateVoiceState,
+    removeVoiceState,
+    setMessagesForChannel,
+  } = useAppStore();
+
+  const activeServer = servers.find((s) => s.id === activeServerId);
 
   const [userStatus, setUserStatus] = useState<"Online" | "Away" | "Busy" | "Offline">("Online");
 
@@ -94,10 +93,10 @@ export default function ChannelSidebar() {
   const [channelType, setChannelType] = useState<"TEXT" | "VOICE">("TEXT");
   const [loading, setLoading] = useState(false);
 
+  const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<"general" | "members" | "danger">("general");
-  const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"general" | "members" | "bans" | "danger">("general");
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -215,19 +214,22 @@ export default function ChannelSidebar() {
       if (data.serverId === activeServerId) {
         console.log("Channel deleted:", data.channelId);
         removeChannel(data.channelId);
-        if (data.channelId === activeChannelId) {
-          const remainingChannels = channels.filter((c) => c.id !== data.channelId);
+        
+        const state = useAppStore.getState();
+        if (data.channelId === state.activeChannelId) {
+          const remainingChannels = state.channels.filter((c) => c.id !== data.channelId);
           setActiveChannelId(remainingChannels.length > 0 ? remainingChannels[0].id : null);
         }
       }
     }
 
     function onServerMemberRemoved(data: { serverId: string; userId: string }) {
-      if (!currentUser) return;
-      if (data.serverId === activeServerId && data.userId === currentUser.id) {
+      const state = useAppStore.getState();
+      if (!state.currentUser) return;
+      if (data.serverId === activeServerId && data.userId === state.currentUser.id) {
         console.log("Removed from server:", data.serverId);
         removeServer(data.serverId);
-        const remainingServers = servers.filter((s) => s.id !== data.serverId);
+        const remainingServers = state.servers.filter((s) => s.id !== data.serverId);
         setActiveServerId(remainingServers.length > 0 ? remainingServers[0].id : null);
         setChannels([]);
         setActiveChannelId(null);
@@ -255,7 +257,7 @@ export default function ChannelSidebar() {
 
     function playSound(type: 'join' | 'leave') {
       try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
         if (!AudioContext) return;
 
         const ctx = new AudioContext();
@@ -279,7 +281,7 @@ export default function ChannelSidebar() {
         osc.start();
         osc.stop(ctx.currentTime + 0.2);
       } catch (e) {
-        console.error("Failed to play sound", e);
+        // console.error("Failed to play sound", e);
       }
     }
 
@@ -287,8 +289,6 @@ export default function ChannelSidebar() {
       const currentStates = useAppStore.getState().voiceStates;
       const prevState = currentStates[state.userId];
 
-      // Play sound only if user joined (was not in channel or changed channel)
-      // and it's not just a mute update (channelId didn't change and user existed)
       if (!prevState || prevState.channelId !== state.channelId) {
         playSound('join');
       }
@@ -317,7 +317,7 @@ export default function ChannelSidebar() {
       socket.emit("leave", serverRoom);
       socket.emit("leave", userRoom);
     };
-  }, [activeServerId, currentUser, addChannel, removeChannel, removeServer, channels, activeChannelId, servers, setActiveServerId, setChannels, setActiveChannelId, setVoiceStates, updateVoiceState, removeVoiceState]);
+  }, [activeServerId, currentUser?.id]);
 
   useEffect(() => {
     if (!activeChannelId) return;
@@ -801,6 +801,8 @@ export default function ChannelSidebar() {
 
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogContent hideDefaultClose className="max-w-4xl h-[700px] flex p-0 gap-0 overflow-hidden bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
+          <DialogTitle className="sr-only">Paramètres du serveur {activeServer?.name}</DialogTitle>
+          <DialogDescription className="sr-only">Gérez les paramètres, les membres et les bannissements de votre serveur.</DialogDescription>
           <div className="w-60 bg-[#2f3136] flex flex-col pt-10 px-2 gap-0.5">
             <div className="text-[11px] font-bold text-[#8e9297] uppercase tracking-wider mb-2 px-2.5">
               {activeServer ? activeServer.name : "Serveur"}
@@ -819,6 +821,15 @@ export default function ChannelSidebar() {
             >
               Membres
             </Button>
+            {canManageServer && (
+              <Button
+                variant="ghost"
+                className={`justify-start w-full h-8 px-2.5 font-medium rounded-sm ${settingsTab === "bans" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
+                onClick={() => setSettingsTab("bans")}
+              >
+                Bannissements
+              </Button>
+            )}
             <Separator className="my-4 bg-[#4f545c]/20 mx-2 w-auto" />
             {activeServer && currentUser && activeServer.owner_id === currentUser.id && (
               <Button
@@ -866,6 +877,17 @@ export default function ChannelSidebar() {
                     serverId={activeServer.id}
                     currentUserId={currentUser?.id}
                   />
+                </div>
+              </div>
+            )}
+
+            {settingsTab === "bans" && activeServer && (
+              <div className="space-y-6 h-full flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-6">Utilisateurs bannis</h3>
+                </div>
+                <div className="flex-1 min-h-0 bg-[#2f3136] rounded-lg p-4 shadow-inner">
+                  <ServerBansList serverId={activeServer.id} />
                 </div>
               </div>
             )}
