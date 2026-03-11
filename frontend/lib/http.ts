@@ -19,7 +19,17 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(text || `HTTP ${res.status}`);
+    const error = new Error(text || `HTTP ${res.status}`) as any;
+    try {
+      const json = JSON.parse(text);
+      if (json.error) {
+        error.error = json.error;
+      }
+      error.data = json;
+    } catch (e) {
+      // Not JSON, just use text
+    }
+    throw error;
   }
 
   if (res.status === 204) {

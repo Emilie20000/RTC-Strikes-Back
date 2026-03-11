@@ -85,9 +85,10 @@ export default function ServerSidebar() {
       setIsJoinOpen(false);
       setInviteCode("");
       toast.success("Serveur rejoint !");
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to join server", e);
-      toast.error("Impossible de rejoindre le serveur. Vérifiez le code.");
+      const errorMsg = e.error || "Impossible de rejoindre le serveur. Vérifiez le code.";
+      toast.error(errorMsg);
     } finally {
       setJoinLoading(false);
     }
