@@ -39,6 +39,8 @@ export type Server = {
 export type Channel = {
   id: string;
   serverId?: string;
+  recipientId?: string;
+  avatarUrl?: string;
   name?: string;
   description?: string;
   kind?: "TEXT" | "DM" | "VOICE";
@@ -101,6 +103,7 @@ type AppState = {
   setServerMembers: (serverId: string, members: ServerMember[]) => void;
   updateMemberStatus: (serverId: string, userId: string, status: ServerMember["status"]) => void;
   updateMember: (serverId: string, user: User) => void;
+  updateGlobalUser: (user: User) => void;
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -184,7 +187,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         serverMembers: { ...state.serverMembers, [serverId]: updatedMembers },
       };
     }),
-  updateMember: (serverId, user) =>
+  updateMember: (serverId: string, user: User) =>
     set((state) => {
       const members = state.serverMembers[serverId];
       if (!members) return state;
@@ -195,6 +198,35 @@ export const useAppStore = create<AppState>((set, get) => ({
       );
       return {
         serverMembers: { ...state.serverMembers, [serverId]: updatedMembers },
+      };
+    }),
+  updateGlobalUser: (user) =>
+    set((state) => {
+      // 1. Update serverMembers
+      const newServerMembers = { ...state.serverMembers };
+      Object.keys(newServerMembers).forEach((serverId) => {
+        newServerMembers[serverId] = newServerMembers[serverId].map((m) =>
+          m.user_id === user.id
+            ? { ...m, username: user.username, avatar_url: user.avatar_url }
+            : m
+        );
+      });
+
+      // 2. Update DM channels name and recipient info
+      const newChannels = state.channels.map((c) => {
+        if (c.kind === "DM" && c.recipientId === user.id) {
+          return { ...c, name: user.username, avatarUrl: user.avatar_url };
+        }
+        return c;
+      });
+
+      // 3. Update current user if it's them
+      const newCurrentUser = state.currentUser?.id === user.id ? { ...state.currentUser, ...user } : state.currentUser;
+
+      return {
+        serverMembers: newServerMembers,
+        channels: newChannels,
+        currentUser: newCurrentUser,
       };
     }),
 }));

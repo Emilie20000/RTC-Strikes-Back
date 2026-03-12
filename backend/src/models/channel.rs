@@ -11,6 +11,12 @@ pub struct Channel {
     pub kind: ChannelType,
     #[serde(rename = "serverId")]
     pub server_id: Option<Uuid>,
+    #[serde(rename = "recipientId")]
+    #[sqlx(default)]
+    pub recipient_id: Option<Uuid>,
+    #[serde(rename = "avatarUrl")]
+    #[sqlx(default)]
+    pub avatar_url: Option<String>,
     #[sqlx(rename = "created_at")]
     #[serde(rename = "createdAt")]
     pub created_at: DateTime<Utc>,

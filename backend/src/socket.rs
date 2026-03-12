@@ -13,6 +13,8 @@ use sqlx::{PgPool, Row};
 pub struct TypingPayload {
     pub channel_id: String,
     pub author: String,
+    pub user_id: String,
+    pub avatar_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -20,6 +22,7 @@ pub struct TypingPayload {
 pub struct StopTypingPayload {
     pub channel_id: String,
     pub author: String,
+    pub user_id: String,
 }
 
 #[derive(Debug, Deserialize)]

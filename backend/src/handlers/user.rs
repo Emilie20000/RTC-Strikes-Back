@@ -167,5 +167,29 @@ pub async fn update_user_profile(
         }
     }
 
+    // Broadcast update to DM contacts
+    let dm_recipient_ids: Vec<(uuid::Uuid,)> = sqlx::query_as(
+        r#"
+        SELECT DISTINCT cs2.user_id
+        FROM channel_subscribers cs1
+        JOIN channels c ON cs1.channel_id = c.id
+        JOIN channel_subscribers cs2 ON c.id = cs2.channel_id
+        WHERE c.kind = 'DM' AND cs1.user_id = $1 AND cs2.user_id != $1
+        "#
+    )
+    .bind(&auth_user.user_id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
+    for (recipient_id,) in dm_recipient_ids {
+        let room = format!("user:{}", recipient_id);
+        let payload = json!({
+            "user": crate::models::user::PublicUser::from(updated_user.clone()),
+            "serverId": null
+        });
+        let _ = state.io.to(room).emit("user_updated", &payload).await;
+    }
+
     Ok(Json(updated_user.into()))
 }

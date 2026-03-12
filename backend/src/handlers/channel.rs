@@ -178,7 +178,7 @@ pub async fn create_dm(
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<CreateDmPayload>,
 ) -> Result<Json<Channel>, (StatusCode, Json<serde_json::Value>)> {
-    let channel = channel_service::create_dm_channel(&state.pool, auth_user.user_id, payload.target_user_id)
+    let mut channel = channel_service::create_dm_channel(&state.pool, auth_user.user_id, payload.target_user_id)
         .await
         .map_err(|e| {
             (
@@ -186,6 +186,19 @@ pub async fn create_dm(
                 Json(json!({"error": format!("Failed to create DM: {}", e)})),
             )
         })?;
+    
+    let recipient_data = sqlx::query("SELECT username, avatar_url FROM users WHERE id = $1")
+        .bind(&payload.target_user_id)
+        .fetch_optional(&state.pool)
+        .await
+        .unwrap_or(None);
+
+    if let Some(row) = recipient_data {
+        use sqlx::Row;
+        channel.name = row.try_get("username").ok();
+        channel.avatar_url = row.try_get("avatar_url").ok();
+    }
+    channel.recipient_id = Some(payload.target_user_id);
     
     Ok(Json(channel))
 }
@@ -206,7 +219,7 @@ pub async fn get_my_dms(
     for channel in &mut channels {
         let recipient_row = sqlx::query(
             r#"
-            SELECT u.username 
+            SELECT u.id, u.username, u.avatar_url 
             FROM users u
             JOIN channel_subscribers cs ON u.id = cs.user_id
             WHERE cs.channel_id = $1 AND u.id != $2
@@ -224,8 +237,15 @@ pub async fn get_my_dms(
             if let Ok(username) = row.try_get::<String, _>("username") {
                 channel.name = Some(username);
             }
+            if let Ok(user_id) = row.try_get::<Uuid, _>("id") {
+                channel.recipient_id = Some(user_id);
+            }
+            if let Ok(avatar_url) = row.try_get::<Option<String>, _>("avatar_url") {
+                channel.avatar_url = avatar_url;
+            }
         } else {
             channel.name = Some("Moi-même".to_string());
+            channel.recipient_id = Some(auth_user.user_id);
         }
     }
     Ok(Json(channels))

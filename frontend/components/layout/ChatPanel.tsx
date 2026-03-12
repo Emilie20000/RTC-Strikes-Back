@@ -176,7 +176,7 @@ export default function ChatPanel() {
   const [backendMsg, setBackendMsg] = useState<string>("(pas encore ping)");
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("Guest");
-  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const [typingUsers, setTypingUsers] = useState<Map<string, { username: string; avatarUrl?: string }>>(new Map());
   const [isConnected, setIsConnected] = useState(false);
 
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -230,20 +230,20 @@ export default function ChatPanel() {
       addMessage(newMsg);
     }
 
-    function onTyping(data: { channelId: string; author: string }) {
+    function onTyping(data: { channelId: string; author: string; userId: string; avatarUrl?: string }) {
       if (data.channelId !== activeChannelIdRef.current) return;
       setTypingUsers((prev) => {
-        const next = new Set(prev);
-        next.add(data.author);
+        const next = new Map(prev);
+        next.set(data.userId, { username: data.author, avatarUrl: data.avatarUrl });
         return next;
       });
     }
 
-    function onStopTyping(data: { channelId: string; author: string }) {
+    function onStopTyping(data: { channelId: string; author: string; userId: string }) {
       if (data.channelId !== activeChannelIdRef.current) return;
       setTypingUsers((prev) => {
-        const next = new Set(prev);
-        next.delete(data.author);
+        const next = new Map(prev);
+        next.delete(data.userId);
         return next;
       });
     }
@@ -288,7 +288,7 @@ export default function ChatPanel() {
   useEffect(() => {
     if (!activeChannelId) return;
 
-    setTypingUsers(new Set());
+    setTypingUsers(new Map());
 
     socket.emit("join", activeChannelId);
 
@@ -351,14 +351,23 @@ export default function ChatPanel() {
 
     if (!activeChannelId) return;
 
-    socket.emit("typing", { channelId: activeChannelId, author: username });
+    socket.emit("typing", { 
+      channelId: activeChannelId, 
+      author: currentUser?.username || username,
+      userId: currentUser?.id,
+      avatarUrl: currentUser?.avatar_url
+    });
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
     typingTimeoutRef.current = setTimeout(() => {
-      socket.emit("stop_typing", { channelId: activeChannelId, author: username });
+      socket.emit("stop_typing", { 
+        channelId: activeChannelId, 
+        author: currentUser?.username || username,
+        userId: currentUser?.id
+      });
     }, 1500);
   };
 
@@ -368,8 +377,11 @@ export default function ChatPanel() {
     if (!content) return;
 
     if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-      socket.emit("stop_typing", { channelId: activeChannelId, author: username });
+      socket.emit("stop_typing", { 
+        channelId: activeChannelId, 
+        author: currentUser?.username || username,
+        userId: currentUser?.id
+      });
     }
 
     socket.emit("send_message", {
@@ -470,7 +482,14 @@ export default function ChatPanel() {
 
                           {!isSequence ? (
                             <Avatar className="w-10 h-10 mt-0.5 mr-4 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
-                              <AvatarImage src={memberMap[m.author]?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.author}`} />
+                              <AvatarImage src={
+                                (m.author === currentUser?.username 
+                                  ? currentUser.avatar_url 
+                                  : (activeChannel?.kind === "DM" 
+                                      ? activeChannel.avatarUrl 
+                                      : memberMap[m.author]?.avatar_url)) 
+                                || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.author}`
+                              } />
                               <AvatarFallback className="bg-[#5865F2] text-white font-medium">{m.author.slice(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                           ) : (
@@ -546,7 +565,7 @@ export default function ChatPanel() {
                 )}
 
                 <div className="px-4 mt-2">
-                  <TypingIndicator usernames={Array.from(typingUsers)} />
+                  <TypingIndicator users={Array.from(typingUsers.values())} />
                 </div>
               </>
             ) : (

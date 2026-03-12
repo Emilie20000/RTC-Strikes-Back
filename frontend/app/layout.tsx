@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { SocketManager } from "@/providers/SocketManager";
 
 export default function RootLayout({
   children,
@@ -9,6 +10,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body>
+        <SocketManager />
         {children}
         <Toaster position="bottom-right" theme="dark" />
       </body>
