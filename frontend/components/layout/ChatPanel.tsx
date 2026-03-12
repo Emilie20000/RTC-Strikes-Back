@@ -382,9 +382,9 @@ export default function ChatPanel() {
   };
 
   return (
-    <div className="flex flex-row h-full bg-[#36393f] w-full text-[#dcddde]">
-      <div className="flex flex-col flex-1 min-w-0">
-        <header className="flex items-center justify-between px-4 py-3 border-b border-[#202225] bg-[#36393f] shadow-sm sticky top-0 z-10">
+    <div className="flex flex-row h-full bg-[#36393f] w-full text-[#dcddde] overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
+        <header className="flex items-center justify-between px-4 py-3 border-b border-[#202225] bg-[#36393f] shadow-sm sticky top-0 z-10 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Hash className="w-6 h-6 text-[#72767d]" />
@@ -558,7 +558,7 @@ export default function ChatPanel() {
           </div>
         </ScrollArea>
 
-        <div className="px-4 pb-6 pt-0 bg-[#36393f]">
+        <div className="px-4 pb-6 pt-0 bg-[#36393f] flex-shrink-0">
           <div className="relative bg-[#40444b] rounded-lg px-4 py-2.5">
             {activeChannelId && (
               <div className="absolute left-4 top-3 text-[#b9bbbe] pointer-events-none">
