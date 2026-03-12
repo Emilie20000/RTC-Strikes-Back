@@ -53,12 +53,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_GIPHY_API_KEY=${NEXT_PUBLIC_GIPHY_API_KEY}
     container_name: frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+      - NEXT_PUBLIC_GIPHY_API_KEY=zfChInVE6Geu2RUVD6SfBSxxtl9oFEe3
     depends_on:
       - backend
     networks:
