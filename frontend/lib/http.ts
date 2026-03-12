@@ -24,10 +24,15 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
       const json = JSON.parse(text);
       if (json.error) {
         error.error = json.error;
+        
+        if (json.error === "User not found" && typeof window !== "undefined") {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
+        }
       }
       error.data = json;
     } catch (e) {
-      // Not JSON, just use text
     }
     throw error;
   }
