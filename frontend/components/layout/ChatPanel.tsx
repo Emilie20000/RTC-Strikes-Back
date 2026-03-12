@@ -9,12 +9,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Send, Hash, Activity, Trash2, MoreHorizontal, Pencil, Copy, X, Check, Users } from "lucide-react";
+import GifPicker from "@/components/ui/GifPicker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Image as ImageIcon,
+  Send,
+  Hash,
+  Activity,
+  Trash2,
+  MoreHorizontal,
+  Pencil,
+  Copy,
+  X,
+  Check,
+  Users,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,7 +125,6 @@ export default function ChatPanel() {
     : [];
 
   const handleDeleteMessage = async (msgId: string) => {
-    // if (!confirm("Supprimer ce message ?")) return; // Removed confirm for better UX with dropdown
     try {
       await api(`/api/messages/${msgId}`, { method: "DELETE" });
       const newMsgs = msgs.filter((m) => m.id !== msgId);
@@ -491,8 +501,20 @@ export default function ChatPanel() {
                                 </div>
                               ) : (
                                 <>
-                                  {m.content}
-                                  {/* Edited indicator if needed */}
+                                  {m.content.startsWith("https://media.tenor.com") || 
+                                   m.content.startsWith("https://tenor.com") ||
+                                   m.content.includes("giphy.com") ? (
+                                    <div className="mt-2 max-w-[400px] rounded-lg overflow-hidden border border-[#2f3136]">
+                                      <img
+                                        src={m.content}
+                                        alt="GIF"
+                                        className="w-full h-auto object-contain"
+                                        loading="lazy"
+                                      />
+                                    </div>
+                                  ) : (
+                                    m.content
+                                  )}
                                 </>
                               )}
                             </div>
@@ -508,7 +530,7 @@ export default function ChatPanel() {
                     </div>
                     <div className="text-center">
                       <h3 className="text-2xl font-bold text-white mb-2">Bienvenue dans #{activeChannel?.name || "ce salon"} !</h3>
-                      <p className="text-[#b9bbbe]">C'est le début de la conversation légendaire de ce salon.</p>
+                      <p className="text-[#b9bbbe]">C&apos;est le début de la conversation légendaire de ce salon.</p>
                     </div>
                   </div>
                 )}
@@ -562,7 +584,18 @@ export default function ChatPanel() {
               autoComplete="off"
             />
             <div className="absolute right-3 top-2 flex items-center gap-2">
-              {/* Icons for GIF, Sticker, Emoji could go here */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-[#b9bbbe] hover:text-[#dcddde] hover:bg-transparent">
+                    <ImageIcon className="w-5 h-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="end" className="p-0 border-none bg-transparent shadow-none w-auto">
+                  <GifPicker onSelect={(url: string) => {
+                    setText((prev) => prev ? `${prev} ${url}` : url);
+                  }} />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           {activeChannelId && (
