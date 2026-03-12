@@ -387,11 +387,21 @@ export default function ChatPanel() {
         <header className="flex items-center justify-between px-4 py-3 border-b border-[#202225] bg-[#36393f] shadow-sm sticky top-0 z-10 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Hash className="w-6 h-6 text-[#72767d]" />
+              {activeChannel?.kind === "DM" ? (
+                <Send className="w-6 h-6 text-[#72767d] rotate-[-45deg]" />
+              ) : (
+                <Hash className="w-6 h-6 text-[#72767d]" />
+              )}
               <h2 className="font-bold text-white text-base tracking-tight">
-                {activeChannel ? activeChannel.name : "Sélectionner un canal"}
+                {activeChannel 
+                  ? (activeChannel.name || (activeChannel.kind === "DM" ? "Conversation Privée" : "Canal sans nom")) 
+                  : "Sélectionner un canal"}
               </h2>
-              {activeChannel && <span className="text-xs text-[#72767d] hidden sm:inline-block truncate max-w-[200px]">{activeChannel.kind === "VOICE" ? "Salon Vocal" : "Salon Textuel"}</span>}
+              {activeChannel && (
+                <span className="text-xs text-[#72767d] hidden sm:inline-block truncate max-w-[200px]">
+                  {activeChannel.kind === "VOICE" ? "Salon Vocal" : activeChannel.kind === "DM" ? "Message Privé" : "Salon Textuel"}
+                </span>
+              )}
             </div>
             {activeChannel && (
               <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? "bg-[#3ba55c]" : "bg-[#ED4245]"}`} title={isConnected ? "Connecté" : "Déconnecté"} />
@@ -610,7 +620,7 @@ export default function ChatPanel() {
         </div>
       </div>
 
-      {activeChannel && showMembersSidebar && (
+      {activeChannel && activeChannel.serverId && showMembersSidebar && (
         <MembersSidebar
           serverId={activeChannel.serverId}
           onClose={() => setShowMembersSidebar(false)}

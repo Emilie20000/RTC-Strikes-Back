@@ -167,3 +167,66 @@ pub async fn delete_channel(
     
     Ok(StatusCode::NO_CONTENT)
 }
+
+#[derive(serde::Deserialize)]
+pub struct CreateDmPayload {
+    pub target_user_id: Uuid,
+}
+
+pub async fn create_dm(
+    State(state): State<Arc<AppState>>,
+    Extension(auth_user): Extension<AuthUser>,
+    Json(payload): Json<CreateDmPayload>,
+) -> Result<Json<Channel>, (StatusCode, Json<serde_json::Value>)> {
+    let channel = channel_service::create_dm_channel(&state.pool, auth_user.user_id, payload.target_user_id)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Failed to create DM: {}", e)})),
+            )
+        })?;
+    
+    Ok(Json(channel))
+}
+
+pub async fn get_my_dms(
+    State(state): State<Arc<AppState>>,
+    Extension(auth_user): Extension<AuthUser>,
+) -> Result<Json<Vec<Channel>>, (StatusCode, Json<serde_json::Value>)> {
+    let mut channels = channel_service::get_user_dm_channels(&state.pool, auth_user.user_id)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Database error: {}", e)})),
+            )
+        })?;
+    
+    for channel in &mut channels {
+        let recipient_row = sqlx::query(
+            r#"
+            SELECT u.username 
+            FROM users u
+            JOIN channel_subscribers cs ON u.id = cs.user_id
+            WHERE cs.channel_id = $1 AND u.id != $2
+            LIMIT 1
+            "#
+        )
+        .bind(channel.id)
+        .bind(auth_user.user_id)
+        .fetch_optional(&state.pool)
+        .await
+        .unwrap_or(None);
+
+        if let Some(row) = recipient_row {
+            use sqlx::Row;
+            if let Ok(username) = row.try_get::<String, _>("username") {
+                channel.name = Some(username);
+            }
+        } else {
+            channel.name = Some("Moi-même".to_string());
+        }
+    }
+    Ok(Json(channels))
+}

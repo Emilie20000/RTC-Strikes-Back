@@ -38,8 +38,8 @@ export type Server = {
 
 export type Channel = {
   id: string;
-  serverId: string;
-  name: string;
+  serverId?: string;
+  name?: string;
   description?: string;
   kind?: "TEXT" | "DM" | "VOICE";
 };

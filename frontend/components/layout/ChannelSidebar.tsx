@@ -172,18 +172,26 @@ export default function ChannelSidebar() {
   const canManageServer = isAdmin || isOwner;
 
   useEffect(() => {
-    if (!activeServerId) return;
-
-    api<Channel[]>(`/api/channels/server/${activeServerId}`)
-      .then((data) => {
-        setChannels(data);
-        if (data.length > 0 && !activeChannelId) {
-          setActiveChannelId(data[0].id);
-        } else if (data.length === 0) {
-          setActiveChannelId(null);
-        }
-      })
-      .catch((e) => console.error("Failed to fetch channels", e));
+    if (activeServerId) {
+      api<Channel[]>(`/api/channels/server/${activeServerId}`)
+        .then((data) => {
+          setChannels(data);
+          if (data.length > 0 && !activeChannelId) {
+            setActiveChannelId(data[0].id);
+          } else if (data.length === 0) {
+            setActiveChannelId(null);
+          }
+        })
+        .catch((e) => console.error("Failed to fetch channels", e));
+    } else {
+      // Fetch DMs
+      api<Channel[]>("/api/channels/dms")
+        .then((data) => {
+          setChannels(data);
+          // Don't auto-select a DM channel to let the user choose
+        })
+        .catch((e) => console.error("Failed to fetch DMs", e));
+    }
   }, [activeServerId, setChannels, setActiveChannelId, activeChannelId]);
 
   useEffect(() => {
@@ -468,8 +476,114 @@ export default function ChannelSidebar() {
 
   if (!activeServerId) {
     return (
-      <div className="flex flex-col h-full bg-[#2f3136] w-full items-center justify-center text-[#72767d] p-4 text-center">
-        <p className="text-sm uppercase font-bold">Sélectionnez un serveur</p>
+      <div className="flex flex-col h-full bg-[#2f3136] w-full flex-shrink-0">
+        <div className="h-12 border-b border-[#202225] flex items-center px-4 font-semibold shadow-sm bg-[#2f3136] text-white">
+          <div className="flex items-center justify-between w-full">
+            <span className="truncate font-bold">Messages Privés</span>
+          </div>
+        </div>
+
+        <ScrollArea className="flex-1 px-2 py-3 scrollbar-none">
+          <div className="space-y-4">
+            <div className="space-y-[2px]">
+              {channels.map((c) => (
+                <div key={c.id} className="group relative flex items-center w-full">
+                  <button
+                    className={`
+                      w-full flex items-center px-2 py-[6px] mx-0 rounded-md transition-all duration-200 group-hover:bg-[#34373c]
+                      ${c.id === activeChannelId ? "bg-[#393c43] text-white shadow-sm" : "text-[#8e9297] hover:text-[#dcddde]"}
+                      hover:scale-[1.01] active:translate-y-[1px]
+                    `}
+                    onClick={() => setActiveChannelId(c.id)}
+                  >
+                    <Avatar className="w-8 h-8 mr-3">
+                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name || c.id}`} />
+                      <AvatarFallback>{c.name?.slice(0, 2).toUpperCase() || "DM"}</AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium truncate">{c.name || "Conversation Privée"}</span>
+                  </button>
+                </div>
+              ))}
+              {channels.length === 0 && (
+                <p className="px-4 py-10 text-center text-sm text-[#72767d] italic">Aucun message privé. Démarrez une discussion depuis le profil d&apos;un membre !</p>
+              )}
+            </div>
+          </div>
+        </ScrollArea>
+
+        {/* User bar at the bottom */}
+        <div className="p-2 bg-[#292b2f] flex items-center gap-2 min-h-[52px]">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="group relative flex items-center hover:bg-[#393c43] p-1 rounded-md cursor-pointer transition-colors mr-auto min-w-0">
+                <div className="relative mr-2 flex-shrink-0">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={currentUser?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-[#5865F2] text-white text-xs">{currentUser?.username?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[3px] border-[#292b2f] 
+                      ${userStatus === "Online" ? "bg-[#3ba55c]" : userStatus === "Busy" ? "bg-[#ED4245]" : userStatus === "Away" ? "bg-[#faa61a]" : "bg-[#747f8d]"}`}
+                  />
+                </div>
+                <div className="text-sm truncate">
+                  <div className="font-semibold text-white text-xs leading-tight truncate">{currentUser?.username}</div>
+                  <div className="text-[10px] text-[#b9bbbe] leading-tight truncate">#{currentUser?.id?.slice(0, 4)}</div>
+                </div>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-64 bg-[#18191c] border-none text-[#b9bbbe] p-1.5 shadow-xl mb-2 ml-2" side="top" align="start">
+              <div className="px-2 py-2 mb-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="relative">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={currentUser?.avatar_url || undefined} />
+                      <AvatarFallback className="bg-[#5865F2] text-white text-sm">{currentUser?.username?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-[#18191c] 
+                      ${userStatus === "Online" ? "bg-[#3ba55c]" : userStatus === "Busy" ? "bg-[#ED4245]" : userStatus === "Away" ? "bg-[#faa61a]" : "bg-[#747f8d]"}`}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-white font-bold text-sm truncate">{currentUser?.username}</div>
+                    <div className="text-[#b9bbbe] text-xs truncate">#{currentUser?.id}</div>
+                  </div>
+                </div>
+              </div>
+              <DropdownMenuSeparator className="bg-[#2f3136]" />
+              <DropdownMenuLabel className="text-[10px] font-bold uppercase text-[#8e9297] px-2 py-1.5">Statut</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleStatusChange("Online")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#3ba55c]" /> En ligne
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleStatusChange("Away")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#faa61a]" /> Absent
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleStatusChange("Busy")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#ED4245]" /> Occupé
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleStatusChange("Offline")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#747f8d]" /> Invisible
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-[#2f3136]" />
+              <DropdownMenuItem onClick={() => setIsUserSettingsOpen(true)} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm">
+                Modifier le profil
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="flex items-center">
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#393c43] text-[#b9bbbe] hover:text-[#dcddde] transition-colors relative"
+              onClick={toggleMute}
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <UserSettingsDialog 
+          open={isUserSettingsOpen} 
+          onOpenChange={setIsUserSettingsOpen} 
+        />
       </div>
     );
   }
