@@ -176,7 +176,7 @@ export default function ChatPanel() {
   const [backendMsg, setBackendMsg] = useState<string>("(pas encore ping)");
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("Guest");
-  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const [typingUsers, setTypingUsers] = useState<Map<string, { username: string; avatarUrl?: string }>>(new Map());
   const [isConnected, setIsConnected] = useState(false);
 
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -230,20 +230,20 @@ export default function ChatPanel() {
       addMessage(newMsg);
     }
 
-    function onTyping(data: { channelId: string; author: string }) {
+    function onTyping(data: { channelId: string; author: string; userId: string; avatarUrl?: string }) {
       if (data.channelId !== activeChannelIdRef.current) return;
       setTypingUsers((prev) => {
-        const next = new Set(prev);
-        next.add(data.author);
+        const next = new Map(prev);
+        next.set(data.userId, { username: data.author, avatarUrl: data.avatarUrl });
         return next;
       });
     }
 
-    function onStopTyping(data: { channelId: string; author: string }) {
+    function onStopTyping(data: { channelId: string; author: string; userId: string }) {
       if (data.channelId !== activeChannelIdRef.current) return;
       setTypingUsers((prev) => {
-        const next = new Set(prev);
-        next.delete(data.author);
+        const next = new Map(prev);
+        next.delete(data.userId);
         return next;
       });
     }
@@ -288,7 +288,7 @@ export default function ChatPanel() {
   useEffect(() => {
     if (!activeChannelId) return;
 
-    setTypingUsers(new Set());
+    setTypingUsers(new Map());
 
     socket.emit("join", activeChannelId);
 
@@ -351,14 +351,23 @@ export default function ChatPanel() {
 
     if (!activeChannelId) return;
 
-    socket.emit("typing", { channelId: activeChannelId, author: username });
+    socket.emit("typing", { 
+      channelId: activeChannelId, 
+      author: currentUser?.username || username,
+      userId: currentUser?.id,
+      avatarUrl: currentUser?.avatar_url
+    });
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
     typingTimeoutRef.current = setTimeout(() => {
-      socket.emit("stop_typing", { channelId: activeChannelId, author: username });
+      socket.emit("stop_typing", { 
+        channelId: activeChannelId, 
+        author: currentUser?.username || username,
+        userId: currentUser?.id
+      });
     }, 1500);
   };
 
@@ -368,8 +377,11 @@ export default function ChatPanel() {
     if (!content) return;
 
     if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-      socket.emit("stop_typing", { channelId: activeChannelId, author: username });
+      socket.emit("stop_typing", { 
+        channelId: activeChannelId, 
+        author: currentUser?.username || username,
+        userId: currentUser?.id
+      });
     }
 
     socket.emit("send_message", {
@@ -387,11 +399,21 @@ export default function ChatPanel() {
         <header className="flex items-center justify-between px-4 py-3 border-b border-[#202225] bg-[#36393f] shadow-sm sticky top-0 z-10 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Hash className="w-6 h-6 text-[#72767d]" />
+              {activeChannel?.kind === "DM" ? (
+                <Send className="w-6 h-6 text-[#72767d] rotate-[-45deg]" />
+              ) : (
+                <Hash className="w-6 h-6 text-[#72767d]" />
+              )}
               <h2 className="font-bold text-white text-base tracking-tight">
-                {activeChannel ? activeChannel.name : "Sélectionner un canal"}
+                {activeChannel 
+                  ? (activeChannel.name || (activeChannel.kind === "DM" ? "Conversation Privée" : "Canal sans nom")) 
+                  : "Sélectionner un canal"}
               </h2>
-              {activeChannel && <span className="text-xs text-[#72767d] hidden sm:inline-block truncate max-w-[200px]">{activeChannel.kind === "VOICE" ? "Salon Vocal" : "Salon Textuel"}</span>}
+              {activeChannel && (
+                <span className="text-xs text-[#72767d] hidden sm:inline-block truncate max-w-[200px]">
+                  {activeChannel.kind === "VOICE" ? "Salon Vocal" : activeChannel.kind === "DM" ? "Message Privé" : "Salon Textuel"}
+                </span>
+              )}
             </div>
             {activeChannel && (
               <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? "bg-[#3ba55c]" : "bg-[#ED4245]"}`} title={isConnected ? "Connecté" : "Déconnecté"} />
@@ -460,7 +482,14 @@ export default function ChatPanel() {
 
                           {!isSequence ? (
                             <Avatar className="w-10 h-10 mt-0.5 mr-4 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
-                              <AvatarImage src={memberMap[m.author]?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.author}`} />
+                              <AvatarImage src={
+                                (m.author === currentUser?.username 
+                                  ? currentUser.avatar_url 
+                                  : (activeChannel?.kind === "DM" 
+                                      ? activeChannel.avatarUrl 
+                                      : memberMap[m.author]?.avatar_url)) 
+                                || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.author}`
+                              } />
                               <AvatarFallback className="bg-[#5865F2] text-white font-medium">{m.author.slice(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                           ) : (
@@ -536,7 +565,7 @@ export default function ChatPanel() {
                 )}
 
                 <div className="px-4 mt-2">
-                  <TypingIndicator usernames={Array.from(typingUsers)} />
+                  <TypingIndicator users={Array.from(typingUsers.values())} />
                 </div>
               </>
             ) : (
@@ -610,7 +639,7 @@ export default function ChatPanel() {
         </div>
       </div>
 
-      {activeChannel && showMembersSidebar && (
+      {activeChannel && activeChannel.serverId && showMembersSidebar && (
         <MembersSidebar
           serverId={activeChannel.serverId}
           onClose={() => setShowMembersSidebar(false)}

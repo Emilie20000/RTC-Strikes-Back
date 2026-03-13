@@ -61,7 +61,7 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
                     <Separator className="bg-[#4f545c]/20" />
 
                     <div className="space-y-3">
-                         <div className="text-[10px] font-bold text-white uppercase tracking-wider">Membre de RaiKey depuis</div>
+                         <div className="text-[10px] font-bold text-white uppercase tracking-wider">Membre depuis</div>
                          <div className="flex items-center gap-2 text-sm text-[#dcddde]">
                             <Calendar className="w-4 h-4 text-[#b9bbbe]" />
                             <span>
@@ -72,6 +72,33 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
                                 })}
                             </span>
                         </div>
+                    </div>
+
+                    <Separator className="bg-[#4f545c]/20" />
+
+                    <div className="pt-2">
+                        <button 
+                            onClick={async () => {
+                                try {
+                                    const { useAppStore } = await import("@/lib/store");
+                                    const { api } = await import("@/lib/http");
+                                    const channel = await api<any>("/api/channels/dms", {
+                                        method: "POST",
+                                        body: JSON.stringify({ target_user_id: member.user_id })
+                                    });
+                                    
+                                    const store = useAppStore.getState();
+                                    store.setActiveServerId(null);
+                                    store.setActiveChannelId(channel.id);
+                                    onOpenChange(false);
+                                } catch (e) {
+                                    console.error("Failed to start DM", e);
+                                }
+                            }}
+                            className="w-full bg-[#5865f2] hover:bg-[#4752c4] text-white text-sm font-bold py-2 rounded transition-colors"
+                        >
+                            Envoyer un message
+                        </button>
                     </div>
                 </div>
             </div>

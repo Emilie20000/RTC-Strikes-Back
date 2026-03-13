@@ -5,7 +5,7 @@ use axum::{
 use std::sync::Arc;
 
 use crate::{
-    handlers::channel::{create_channel, get_server_channels, delete_channel},
+    handlers::channel::{create_channel, get_server_channels, delete_channel, create_dm, get_my_dms},
     middleware::auth::auth_middleware,
     AppState,
 };
@@ -13,6 +13,7 @@ use crate::{
 pub fn channel_routes(state: Arc<AppState>) -> Router<Arc<AppState>> {
     Router::new()
         .route("/", post(create_channel))
+        .route("/dms", post(create_dm).get(get_my_dms))
         .route("/server/{server_id}", get(get_server_channels))
         .route("/{id}", delete(delete_channel))
         .route_layer(middleware::from_fn_with_state(state, auth_middleware))

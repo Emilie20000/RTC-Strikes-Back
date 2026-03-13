@@ -38,16 +38,12 @@ export default function ServerSidebar() {
   const [joinLoading, setJoinLoading] = useState(false);
 
   useEffect(() => {
-    // Fetch real servers
     api<Server[]>("/api/servers")
       .then((data) => {
         setServers(data);
-        if (data.length > 0 && !activeServerId) {
-          setActiveServerId(data[0].id);
-        }
       })
       .catch((e) => console.error("Failed to fetch servers", e));
-  }, [setServers, activeServerId, setActiveServerId]);
+  }, [setServers]);
 
   const handleCreateServer = async () => {
     if (!newServerName.trim()) return;
