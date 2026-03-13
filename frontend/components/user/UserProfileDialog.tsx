@@ -61,7 +61,7 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
                     <Separator className="bg-[#4f545c]/20" />
 
                     <div className="space-y-3">
-                         <div className="text-[10px] font-bold text-white uppercase tracking-wider">Membre de RaiKey depuis</div>
+                         <div className="text-[10px] font-bold text-white uppercase tracking-wider">Membre depuis</div>
                          <div className="flex items-center gap-2 text-sm text-[#dcddde]">
                             <Calendar className="w-4 h-4 text-[#b9bbbe]" />
                             <span>
