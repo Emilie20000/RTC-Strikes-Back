@@ -70,27 +70,6 @@ services:
     networks:
       - app-network
 
-  frontend-app:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: runner-export
-      args:
-        - NEXT_PUBLIC_GIPHY_API_KEY=${NEXT_PUBLIC_GIPHY_API_KEY}
-        - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
-        - IS_TAURI=true
-    container_name: frontend-app
-    restart: unless-stopped
-    ports:
-      - "3001:3000"
-    environment:
-      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
-      - NEXT_PUBLIC_GIPHY_API_KEY=${NEXT_PUBLIC_GIPHY_API_KEY}
-    depends_on:
-      - backend
-    networks:
-      - app-network
-
 networks:
   app-network:
     driver: bridge
