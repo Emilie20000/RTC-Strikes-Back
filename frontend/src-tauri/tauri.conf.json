@@ -5,9 +5,9 @@
   "identifier": "eu.epitech.rtc",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist"
+    "devUrl": "http://localhost:3000",
+    "beforeBuildCommand": "IS_TAURI=true npm run build",
+    "frontendDist": "../out"
   },
   "app": {
     "windows": [

@@ -7,36 +7,40 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
 ARG NEXT_PUBLIC_GIPHY_API_KEY
 ARG NEXT_PUBLIC_API_BASE_URL
+ARG IS_TAURI=false
+
 ENV NEXT_PUBLIC_GIPHY_API_KEY=$NEXT_PUBLIC_GIPHY_API_KEY
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV IS_TAURI=$IS_TAURI
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build
 
-FROM node:20-alpine AS runner
+# Stage for Standalone (Web)
+FROM node:20-alpine AS runner-standalone
 WORKDIR /app
-
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
-
 COPY --from=builder /app/public ./public
-
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
+RUN mkdir .next && chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
 USER nextjs
-
 EXPOSE 3000
-
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-
 CMD ["node", "server.js"]
+
+FROM node:20-alpine AS runner-export
+WORKDIR /app
+RUN npm install -g serve
+COPY --from=builder /app/out ./out
+EXPOSE 3000
+CMD ["serve", "-s", "out", "-l", "3000"]
+
+FROM runner-standalone AS final
