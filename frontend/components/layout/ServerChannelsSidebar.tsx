@@ -404,7 +404,9 @@ export function ServerChannelsSidebar() {
                   <DialogContent className="bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
                     <DialogHeader>
                       <DialogTitle className="text-white text-lg font-bold">Créer un salon</DialogTitle>
-                      <DialogDescription className="text-[#b9bbbe] text-xs">Dans la catégorie Salons textuels</DialogDescription>
+                      <DialogDescription className="text-[#b9bbbe] text-xs">
+                        Dans la catégorie {channelType === "TEXT" ? "Salons textuels" : "Salons vocaux"}
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
@@ -412,8 +414,13 @@ export function ServerChannelsSidebar() {
                         <div className="flex gap-2">
                           <div onClick={() => setChannelType("TEXT")} className={`flex-1 flex items-center p-3 rounded-md cursor-pointer border-none transition-colors ${channelType === "TEXT" ? "bg-[#4f545c]/60 text-white" : "bg-[#2f3136] text-[#b9bbbe] hover:bg-[#34373c]"}`}>
                             <Hash className="w-6 h-6 mr-3 text-[#b9bbbe]" />
-                            <div><div className="font-bold text-sm">Textuel</div><div className="text-[10px] opacity-70">Envoi de messages...</div></div>
+                            <div><div className="font-bold text-sm">Textuel</div><div className="text-[10px] opacity-70">Envoi de messages, d'images...</div></div>
                             <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${channelType === "TEXT" ? "border-[#5865F2]" : "border-[#72767d]"}`}>{channelType === "TEXT" && <div className="w-2 h-2 rounded-full bg-[#5865F2]" />}</div>
+                          </div>
+                          <div onClick={() => setChannelType("VOICE")} className={`flex-1 flex items-center p-3 rounded-md cursor-pointer border-none transition-colors ${channelType === "VOICE" ? "bg-[#4f545c]/60 text-white" : "bg-[#2f3136] text-[#b9bbbe] hover:bg-[#34373c]"}`}>
+                            <Volume2 className="w-6 h-6 mr-3 text-[#b9bbbe]" />
+                            <div><div className="font-bold text-sm">Vocal</div><div className="text-[10px] opacity-70">Discutez en vocal...</div></div>
+                            <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${channelType === "VOICE" ? "border-[#5865F2]" : "border-[#72767d]"}`}>{channelType === "VOICE" && <div className="w-2 h-2 rounded-full bg-[#5865F2]" />}</div>
                           </div>
                         </div>
                       </div>
@@ -454,6 +461,17 @@ export function ServerChannelsSidebar() {
           <div>
             <div className="flex items-center justify-between mb-1 px-1 group/header">
               <span className="text-xs font-bold uppercase text-[#8e9297]">Salons vocaux</span>
+              {canManageServer && (
+                <button 
+                  className="text-[#8e9297] hover:text-[#dcddde] transition-colors"
+                  onClick={() => {
+                    setChannelType("VOICE");
+                    setIsCreateOpen(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              )}
             </div>
             <div className="space-y-[2px]">
               {voiceChannels.map((c) => {
