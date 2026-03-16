@@ -10,7 +10,7 @@ use axum::{
     Router,
     Json,
 };
-use axum::http::{HeaderValue, Method};
+use axum::http::{HeaderValue, Method, StatusCode};
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use serde::Serialize;
 use std::net::SocketAddr;
@@ -93,6 +93,8 @@ async fn main() {
     let redis_client = redis::Client::open(redis_url).expect("Invalid Redis URL");
     
     println!("Configuring CORS for explicit origins...");
+    let render_url = env::var("RENDER_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
+    println!("Allowed Render URL: {}", render_url);
 
     let voice_users = Arc::new(DashMap::<String, VoiceState>::new());
 
@@ -132,26 +134,21 @@ async fn main() {
         .with_state(state.clone())
         .layer(
             CorsLayer::new()
-                .allow_origin([
-                    HeaderValue::from_static("http://localhost:3000"),
-                    HeaderValue::from_static("http://127.0.0.1:3000"),
-                    HeaderValue::from_static("http://localhost:3001"),
-                    HeaderValue::from_static("http://127.0.0.1:3001"),
-                    HeaderValue::from_static("http://localhost:5173"),
-                    HeaderValue::from_static("http://127.0.0.1:5173"),
-                ])
+                .allow_origin(tower_http::cors::Any)
                 .allow_methods([Method::GET, Method::POST, Method::PUT, Method::PATCH, Method::DELETE, Method::OPTIONS])
-                .allow_headers([
-                    axum::http::header::CONTENT_TYPE,
-                    axum::http::header::AUTHORIZATION,
-                    axum::http::header::ACCEPT,
-                ])
-                .allow_credentials(true),
+                .allow_headers(tower_http::cors::Any)
+                .allow_credentials(false),
         )
+        .fallback(handle_404)
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .with_state(state);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
+    let port = env::var("PORT")
+        .ok()
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(8080);
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     println!("🚀 Server listening on {}", addr);
     println!("📚 Available routes:");
     println!("   GET  /");
@@ -192,4 +189,14 @@ async fn db_check(axum::extract::State(state): axum::extract::State<Arc<AppState
             message: format!("❌ Error connecting to PostgreSQL: {}", e),
         }),
     }
+}
+
+async fn handle_404(request: axum::extract::Request) -> (StatusCode, Json<serde_json::Value>) {
+    let method = request.method().clone();
+    let path = request.uri().path().to_string();
+    println!("⚠️  404 error: {} {}", method, path);
+    (
+        StatusCode::NOT_FOUND,
+        Json(serde_json::json!({ "error": format!("Route not found: {} {}", method, path) })),
+    )
 }
