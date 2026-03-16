@@ -1,0 +1,32 @@
+{
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "description": "Sign in to your account",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "********",
+      "submit": "Sign in",
+      "submitLoading": "Signing in...",
+      "errorInvalid": "Incorrect email or password.",
+      "noAccount": "No account yet?",
+      "signupLink": "Sign up"
+    },
+    "signup": {
+      "title": "Sign up",
+      "description": "Create your account to join RTC Rust",
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "handle",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "********",
+      "submit": "Sign up",
+      "submitLoading": "Signing up...",
+      "errorGeneric": "Something went wrong while signing up.",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Sign in"
+    }
+  }
+}
