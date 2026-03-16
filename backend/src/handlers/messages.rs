@@ -25,6 +25,8 @@ pub struct UpdateMessageSchema {
     pub content: String,
 }
 
+use redis::AsyncCommands;
+
 // Update a message
 pub async fn update_message(
     State(state): State<Arc<AppState>>,
@@ -91,6 +93,16 @@ pub async fn update_message(
         )
     })?;
 
+    // Invalidate cache
+    let mut conn = state.redis_client.get_multiplexed_tokio_connection().await.map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Redis connection error"})),
+        )
+    })?;
+    let cache_key = format!("messages:{}", updated_message.channel_id);
+    let _: () = conn.del(cache_key).await.unwrap_or_default();
+
     crate::socket::broadcast_message_updated(&state.io, updated_message.clone()).await;
 
     Ok(Json(updated_message))
@@ -101,10 +113,22 @@ pub async fn get_messages(
     Extension(_auth_user): Extension<AuthUser>,
     Path(channel_id): Path<String>,
 ) -> Result<Json<Vec<ChatMessage>>, (StatusCode, Json<serde_json::Value>)> {
+    let cache_key = format!("messages:{}", channel_id);
+    
+    // Try to get from Redis
+    if let Ok(mut conn) = state.redis_client.get_multiplexed_tokio_connection().await {
+        if let Ok(cached_messages) = conn.get::<_, String>(&cache_key).await {
+            if let Ok(messages) = serde_json::from_str::<Vec<ChatMessage>>(&cached_messages) {
+                return Ok(Json(messages));
+            }
+        }
+    }
+
+    // Fallback to database
     let messages = sqlx::query_as::<_, ChatMessage>(
         "SELECT id, channel_id, author, content, created_at FROM messages WHERE channel_id = $1 ORDER BY created_at ASC"
     )
-    .bind(channel_id)
+    .bind(&channel_id)
     .fetch_all(&state.pool)
     .await
     .map_err(|e| {
@@ -113,6 +137,13 @@ pub async fn get_messages(
             Json(json!({"error": format!("Database error: {}", e)})),
         )
     })?;
+
+    // Cache results for 1 hour
+    if let Ok(mut conn) = state.redis_client.get_multiplexed_tokio_connection().await {
+        if let Ok(serialized) = serde_json::to_string(&messages) {
+            let _: () = conn.set_ex(cache_key, serialized, 3600).await.unwrap_or_default();
+        }
+    }
 
     Ok(Json(messages))
 }
@@ -183,6 +214,8 @@ pub async fn delete_message(
         ));
     }
 
+    let channel_id = message.channel_id.clone();
+
     // 5. Delete message
     sqlx::query("DELETE FROM messages WHERE id = $1")
         .bind(message_id)
@@ -194,6 +227,12 @@ pub async fn delete_message(
                 Json(json!({"error": format!("Failed to delete message: {}", e)})),
             )
         })?;
+
+    // Invalidate cache
+    if let Ok(mut conn) = state.redis_client.get_multiplexed_tokio_connection().await {
+        let cache_key = format!("messages:{}", channel_id);
+        let _: () = conn.del(cache_key).await.unwrap_or_default();
+    }
 
     crate::socket::broadcast_message_deleted(&state.io, message.channel_id.clone(), message_id as i64).await;
 
