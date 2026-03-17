@@ -20,9 +20,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/http";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 export default function ServerSidebar() {
+  const t = useTranslations("app.serverSidebar");
   const servers = useAppStore((s) => s.servers);
   const setServers = useAppStore((s) => s.setServers);
   const addServer = useAppStore((s) => s.addServer);
@@ -38,16 +40,12 @@ export default function ServerSidebar() {
   const [joinLoading, setJoinLoading] = useState(false);
 
   useEffect(() => {
-    // Fetch real servers
     api<Server[]>("/api/servers")
       .then((data) => {
         setServers(data);
-        if (data.length > 0 && !activeServerId) {
-          setActiveServerId(data[0].id);
-        }
       })
       .catch((e) => console.error("Failed to fetch servers", e));
-  }, [setServers, activeServerId, setActiveServerId]);
+  }, [setServers]);
 
   const handleCreateServer = async () => {
     if (!newServerName.trim()) return;
@@ -62,9 +60,11 @@ export default function ServerSidebar() {
       setIsCreateOpen(false);
       setNewServerName("");
       toast.success("Serveur créé avec succès !");
+      toast.success(t("toastCreated"));
     } catch (e) {
       console.error("Failed to create server", e);
       toast.error("Erreur lors de la création du serveur");
+      toast.error(t("toastCreateError"));
     } finally {
       setLoading(false);
     }
@@ -85,9 +85,10 @@ export default function ServerSidebar() {
       setIsJoinOpen(false);
       setInviteCode("");
       toast.success("Serveur rejoint !");
+      toast.success(t("toastJoined"));
     } catch (e: any) {
       console.error("Failed to join server", e);
-      const errorMsg = e.error || "Impossible de rejoindre le serveur. Vérifiez le code.";
+      const errorMsg = e.error || t("toastJoinErrorDefault");
       toast.error(errorMsg);
     } finally {
       setJoinLoading(false);
@@ -119,7 +120,7 @@ export default function ServerSidebar() {
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="bg-black text-white border-0 font-semibold px-3 py-2 rounded-md shadow-xl" sideOffset={15}>
-              <p>Accueil</p>
+              <p>{t("home")}</p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -177,6 +178,8 @@ export default function ServerSidebar() {
                 <TooltipTrigger asChild>
                   <DialogTrigger asChild>
                     <button
+                      aria-label={t("createServer")}
+                      title={t("createServer")}
                       className="group flex items-center justify-center w-12 h-12 rounded-[24px] hover:rounded-[16px] transition-all duration-200 bg-[#36393f] hover:bg-[#3ba55c] text-[#3ba55c] hover:text-white overflow-hidden mt-1"
                     >
                       <Plus className="w-6 h-6 transition-transform duration-200 group-hover:rotate-90" />
@@ -184,23 +187,23 @@ export default function ServerSidebar() {
                   </DialogTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="bg-black text-white border-0 font-semibold px-3 py-2 rounded-md shadow-xl" sideOffset={15}>
-                  <p>Créer un serveur</p>
+                  <p>{t("createServer")}</p>
                 </TooltipContent>
               </Tooltip>
 
               <DialogContent className="bg-[#36393f] text-[#dcddde] border-none">
                 <DialogHeader>
-                  <DialogTitle className="text-white text-center font-bold text-2xl">Personnalise ton serveur</DialogTitle>
+                  <DialogTitle className="text-white text-center font-bold text-2xl">{t("createDialog.title")}</DialogTitle>
                   <DialogDescription className="text-[#b9bbbe] text-center">
-                    Donne une personnalité à ton nouveau serveur avec un nom et une icône. Tu pourras toujours changer ça plus tard.
+                    {t("createDialog.description")}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="name" className="text-[#b9bbbe] text-xs font-bold uppercase">Nom du serveur</Label>
+                    <Label htmlFor="name" className="text-[#b9bbbe] text-xs font-bold uppercase">{t("createDialog.serverNameLabel")}</Label>
                     <Input
                       id="name"
-                      placeholder="Ex: Le serveur de ouf"
+                      placeholder={t("createDialog.serverNamePlaceholder")}
                       value={newServerName}
                       onChange={(e) => setNewServerName(e.target.value)}
                       className="bg-[#202225] border-none text-white focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -209,10 +212,10 @@ export default function ServerSidebar() {
                 </div>
                 <DialogFooter className="bg-[#2f3136] -m-6 mt-0 p-4 flex justify-between">
                   <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-[#dcddde] hover:underline">
-                    Retour
+                    {t("createDialog.back")}
                   </Button>
                   <Button onClick={handleCreateServer} disabled={loading || !newServerName.trim()} className="bg-[#5865F2] hover:bg-[#4752c4] text-white">
-                    {loading ? "Création..." : "Créer"}
+                    {loading ? t("createDialog.creating") : t("createDialog.create")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -224,6 +227,8 @@ export default function ServerSidebar() {
                 <TooltipTrigger asChild>
                   <DialogTrigger asChild>
                     <button
+                      aria-label={t("joinServer")}
+                      title={t("joinServer")}
                       className="group flex items-center justify-center w-12 h-12 rounded-[24px] hover:rounded-[16px] transition-all duration-200 bg-[#36393f] hover:bg-[#3ba55c] text-[#3ba55c] hover:text-white overflow-hidden"
                     >
                       <Compass className="w-6 h-6 transition-transform duration-200 group-hover:rotate-45" />
@@ -231,23 +236,23 @@ export default function ServerSidebar() {
                   </DialogTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="bg-black text-white border-0 font-semibold px-3 py-2 rounded-md shadow-xl" sideOffset={15}>
-                  <p>Rejoindre un serveur</p>
+                  <p>{t("joinServer")}</p>
                 </TooltipContent>
               </Tooltip>
 
               <DialogContent className="bg-[#36393f] text-[#dcddde] border-none">
                 <DialogHeader>
-                  <DialogTitle className="text-white text-center font-bold text-2xl">Rejoindre un serveur</DialogTitle>
+                  <DialogTitle className="text-white text-center font-bold text-2xl">{t("joinDialog.title")}</DialogTitle>
                   <DialogDescription className="text-[#b9bbbe] text-center">
-                    Saisis ci-dessous l'invitation pour rejoindre un serveur existant.
+                    {t("joinDialog.description")}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="invite" className="text-[#b9bbbe] text-xs font-bold uppercase">Code d'invitation</Label>
+                    <Label htmlFor="invite" className="text-[#b9bbbe] text-xs font-bold uppercase">{t("joinDialog.inviteCodeLabel")}</Label>
                     <Input
                       id="invite"
-                      placeholder="Ex: 8X3s9D"
+                      placeholder={t("joinDialog.inviteCodePlaceholder")}
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value)}
                       className="bg-[#202225] border-none text-white focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -256,10 +261,10 @@ export default function ServerSidebar() {
                 </div>
                 <DialogFooter className="bg-[#2f3136] -m-6 mt-0 p-4 flex justify-between">
                   <Button variant="ghost" onClick={() => setIsJoinOpen(false)} className="text-[#dcddde] hover:underline">
-                    Annuler
+                    {t("joinDialog.cancel")}
                   </Button>
                   <Button onClick={handleJoinServer} disabled={joinLoading || !inviteCode.trim()} className="bg-[#5865F2] hover:bg-[#4752c4] text-white">
-                    {joinLoading ? "Rejoindre..." : "Rejoindre"}
+                    {joinLoading ? t("joinDialog.joining") : t("joinDialog.join")}
                   </Button>
                 </DialogFooter>
               </DialogContent>

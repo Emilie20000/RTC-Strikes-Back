@@ -13,6 +13,8 @@ use sqlx::{PgPool, Row};
 pub struct TypingPayload {
     pub channel_id: String,
     pub author: String,
+    pub user_id: String,
+    pub avatar_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -20,6 +22,7 @@ pub struct TypingPayload {
 pub struct StopTypingPayload {
     pub channel_id: String,
     pub author: String,
+    pub user_id: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -260,7 +263,6 @@ pub struct SignalPayload {
     socket.on("send_message", |socket: SocketRef, Data::<SendMessagePayload>(data), State::<sqlx::PgPool>(pool)| async move {
         println!("Received message from {}: {}", data.author, data.content);
         
-        // Vérifier si c'est un salon système
         if let Ok(channel_id_uuid) = uuid::Uuid::parse_str(&data.channel_id) {
             if let Ok(Some(channel)) = sqlx::query_as::<_, crate::models::channel::Channel>(
                 "SELECT * FROM channels WHERE id = $1"
@@ -268,27 +270,42 @@ pub struct SignalPayload {
             .bind(&channel_id_uuid)
             .fetch_optional(&pool)
             .await {
-                // Si c'est un salon système, vérifier les permissions
-                if channel.name.as_ref().map(|n| n.contains("arrivées") || n.contains("départs")).unwrap_or(false) {
-                    if let Some(server_id) = channel.server_id {
-                        // Récupérer l'utilisateur
-                        if let Ok(Some(user)) = sqlx::query_as::<_, crate::models::user::User>(
-                            "SELECT * FROM users WHERE username = $1"
-                        )
-                        .bind(&data.author)
-                        .fetch_optional(&pool)
-                        .await {
-                            // Vérifier le rôle
-                            if let Ok(Some(role)) = crate::services::permission::get_user_role(&pool, user.id, server_id).await {
-                                use crate::services::permission::UserRole;
-                                if role != UserRole::Owner && role != UserRole::Admin {
-                                    eprintln!("❌ User {} attempted to write in system channel", data.author);
-                                    return;
+                match channel.kind {
+                    crate::models::channel::ChannelType::Text | crate::models::channel::ChannelType::Voice => {
+                        if channel.name.as_ref().map(|n| n.contains("arrivées") || n.contains("départs")).unwrap_or(false) {
+                            if let Some(server_id) = channel.server_id {
+                                if let Ok(Some(user)) = sqlx::query_as::<_, crate::models::user::User>(
+                                    "SELECT * FROM users WHERE username = $1"
+                                )
+                                .bind(&data.author)
+                                .fetch_optional(&pool)
+                                .await {
+                                    if let Ok(Some(role)) = crate::services::permission::get_user_role(&pool, user.id, server_id).await {
+                                        use crate::services::permission::UserRole;
+                                        if role != UserRole::Owner && role != UserRole::Admin {
+                                            eprintln!("❌ User {} attempted to write in system channel", data.author);
+                                            return;
+                                        }
+                                    } else {
+                                        eprintln!("❌ User {} has no role in server", data.author);
+                                        return;
+                                    }
                                 }
-                            } else {
-                                eprintln!("❌ User {} has no role in server", data.author);
-                                return;
                             }
+                        }
+                    },
+                    crate::models::channel::ChannelType::Dm => {
+                        let is_subscriber = sqlx::query("SELECT 1 FROM channel_subscribers cs JOIN users u ON cs.user_id = u.id WHERE cs.channel_id = $1 AND u.username = $2")
+                            .bind(&channel_id_uuid)
+                            .bind(&data.author)
+                            .fetch_optional(&pool)
+                            .await
+                            .map(|opt| opt.is_some())
+                            .unwrap_or(false);
+                        
+                        if !is_subscriber {
+                            eprintln!("❌ User {} attempted to write in DM channel {} without being a subscriber", data.author, data.channel_id);
+                            return;
                         }
                     }
                 }

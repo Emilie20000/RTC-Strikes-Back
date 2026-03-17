@@ -49,14 +49,16 @@ services:
     networks:
       - app-network
 
-  frontend:
+  frontend-web:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: runner-standalone
       args:
         - NEXT_PUBLIC_GIPHY_API_KEY=${NEXT_PUBLIC_GIPHY_API_KEY}
         - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
-    container_name: frontend
+        - IS_TAURI=false
+    container_name: frontend-web
     restart: unless-stopped
     ports:
       - "3000:3000"

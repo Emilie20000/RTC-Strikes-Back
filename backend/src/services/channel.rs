@@ -95,6 +95,14 @@ pub async fn delete_channel(
     .execute(&mut *tx)
     .await?;
 
+    // Delete channel subscribers
+    sqlx::query(
+        "DELETE FROM channel_subscribers WHERE channel_id = $1"
+    )
+    .bind(&channel_id)
+    .execute(&mut *tx)
+    .await?;
+
     // Delete channel
     sqlx::query(
         "DELETE FROM channels WHERE id = $1"
@@ -106,6 +114,83 @@ pub async fn delete_channel(
     tx.commit().await?;
 
     Ok(())
+}
+
+pub async fn create_dm_channel(
+    pool: &PgPool,
+    user1_id: Uuid,
+    user2_id: Uuid,
+) -> Result<Channel, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+
+    // Check if DM channel already exists
+    let existing_dm = sqlx::query_as::<_, Channel>(
+        r#"
+        SELECT c.* 
+        FROM channels c
+        JOIN channel_subscribers cs1 ON c.id = cs1.channel_id
+        JOIN channel_subscribers cs2 ON c.id = cs2.channel_id
+        WHERE c.kind = 'DM' 
+          AND cs1.user_id = $1 
+          AND cs2.user_id = $2
+        "#
+    )
+    .bind(&user1_id)
+    .bind(&user2_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    if let Some(channel) = existing_dm {
+        return Ok(channel);
+    }
+
+    // Create new DM channel
+    let channel = sqlx::query_as::<_, Channel>(
+        r#"
+        INSERT INTO channels (kind, server_id)
+        VALUES ('DM', NULL)
+        RETURNING id, name, description, kind, server_id, created_at, updated_at
+        "#
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+
+    // Add subscribers
+    sqlx::query("INSERT INTO channel_subscribers (channel_id, user_id) VALUES ($1, $2)")
+        .bind(&channel.id)
+        .bind(&user1_id)
+        .execute(&mut *tx)
+        .await?;
+
+    if user1_id != user2_id {
+        sqlx::query("INSERT INTO channel_subscribers (channel_id, user_id) VALUES ($1, $2)")
+            .bind(&channel.id)
+            .bind(&user2_id)
+            .execute(&mut *tx)
+            .await?;
+    }
+
+    tx.commit().await?;
+
+    Ok(channel)
+}
+
+pub async fn get_user_dm_channels(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<Channel>, sqlx::Error> {
+    sqlx::query_as::<_, Channel>(
+        r#"
+        SELECT c.*
+        FROM channels c
+        JOIN channel_subscribers cs ON c.id = cs.channel_id
+        WHERE cs.user_id = $1 AND c.kind = 'DM'
+        ORDER BY c.updated_at DESC
+        "#
+    )
+    .bind(&user_id)
+    .fetch_all(pool)
+    .await
 }
 
 #[cfg(test)]

@@ -1,0 +1,323 @@
+{
+  "ui": {
+    "dialog": {
+      "close": "Close"
+    },
+    "confirmModal": {
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "gifPicker": {
+      "searchPlaceholder": "Search GIFs",
+      "noResult": "No GIF found for \"{query}\"",
+      "poweredBy": "Powered by GIPHY"
+    },
+    "typingIndicator": {
+      "typing": "is typing..."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "description": "Sign in to your account",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "********",
+      "submit": "Sign in",
+      "submitLoading": "Signing in...",
+      "errorInvalid": "Incorrect email or password.",
+      "noAccount": "No account yet?",
+      "signupLink": "Sign up"
+    },
+    "signup": {
+      "title": "Sign up",
+      "description": "Create your account to join RTC Rust",
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "handle",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "********",
+      "submit": "Sign up",
+      "submitLoading": "Signing up...",
+      "errorGeneric": "Something went wrong while signing up.",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Sign in"
+    }
+  },
+  "app": {
+    "homeSidebar": {
+      "title": "Private Messages",
+      "privateConversation": "Private Conversation",
+      "empty": "No private messages yet. Start a conversation from a member profile!"
+    },
+    "serverSidebar": {
+      "home": "Home",
+      "createServer": "Create a server",
+      "joinServer": "Join a server",
+      "toastCreated": "Server created successfully!",
+      "toastCreateError": "Error while creating server",
+      "toastJoined": "Joined server!",
+      "toastJoinErrorDefault": "Unable to join server. Check the invite code.",
+      "createDialog": {
+        "title": "Customize your server",
+        "description": "Give personality to your new server with a name and icon. You can always change this later.",
+        "serverNameLabel": "Server name",
+        "serverNamePlaceholder": "e.g. My awesome server",
+        "back": "Back",
+        "creating": "Creating...",
+        "create": "Create"
+      },
+      "joinDialog": {
+        "title": "Join a server",
+        "description": "Enter an invite code below to join an existing server.",
+        "inviteCodeLabel": "Invite code",
+        "inviteCodePlaceholder": "e.g. 8X3s9D",
+        "cancel": "Cancel",
+        "joining": "Joining...",
+        "join": "Join"
+      }
+    },
+    "chatPanel": {
+      "toastDeleteError": "Unable to delete message",
+      "toastEditError": "Unable to edit message",
+      "toastCopied": "Message copied!",
+      "privateConversation": "Private Conversation",
+      "unnamedChannel": "Unnamed channel",
+      "selectChannel": "Select a channel",
+      "voiceChannel": "Voice channel",
+      "directMessage": "Direct message",
+      "textChannel": "Text channel",
+      "editHintPrefix": "escape to",
+      "editHintMiddle": "enter to",
+      "cancel": "cancel",
+      "save": "save",
+      "welcomeIn": "Welcome to #{channel}!",
+      "thisChannel": "this channel",
+      "welcomeSubtitle": "This is the beginning of this channel's legendary conversation.",
+      "readyToChat": "Ready to chat?",
+      "selectLeftChannel": "Select a channel on the left to start chatting.",
+      "sendInChannel": "Send a message in #{channel}",
+      "selectChannelPlaceholder": "Select a channel..."
+    },
+    "serverChannelsSidebar": {
+      "toastChannelCreated": "Channel created",
+      "toastChannelCreateError": "Error while creating channel",
+      "deleteChannelTitle": "Delete channel?",
+      "deleteChannelMessage": "Are you sure you want to delete this channel? This action cannot be undone.",
+      "delete": "Delete",
+      "toastChannelDeleted": "Channel deleted",
+      "toastChannelDeleteError": "Unable to delete channel.",
+      "toastKickMembersFirst": "You must kick all members before deleting the server.",
+      "deleteServerTitle": "Delete server?",
+      "deleteServerMessage": "Are you sure you want to delete this server? This action is irreversible and will remove all content.",
+      "deleteServer": "Delete server",
+      "toastServerDeleted": "Server deleted",
+      "toastServerDeleteError": "Unable to delete server.",
+      "leaveServerConfirm": "Are you sure you want to leave this server?",
+      "leaveServerError": "Unable to leave server.",
+      "serverFallback": "Server...",
+      "menu": "Menu",
+      "serverSettings": "Server settings",
+      "manageMembers": "Manage members",
+      "leaveServer": "Leave server",
+      "textChannels": "Text channels",
+      "voiceChannels": "Voice channels",
+      "createChannel": "Create channel",
+      "inCategory": "In category {category}",
+      "channelType": "Channel type",
+      "textType": "Text",
+      "textTypeDesc": "Send messages, images...",
+      "voiceType": "Voice",
+      "voiceTypeDesc": "Talk with voice...",
+      "channelName": "Channel name",
+      "channelNamePlaceholder": "new-channel",
+      "cancel": "Cancel",
+      "creating": "Creating...",
+      "createChannelAction": "Create channel",
+      "serverSettingsFor": "Server settings for {server}",
+      "serverSettingsDesc": "Manage server settings.",
+      "overview": "Overview",
+      "members": "Members",
+      "bans": "Bans",
+      "name": "Name",
+      "invite": "Invite",
+      "copied": "Copied!",
+      "copy": "Copy"
+    },
+    "userBar": {
+      "toastStatusError": "Unable to update status",
+      "statusLabel": "Status",
+      "status": {
+        "online": "Online",
+        "away": "Away",
+        "busy": "Busy",
+        "offline": "Invisible"
+      },
+      "editProfile": "Edit profile",
+      "mute": "Toggle mute",
+      "disconnect": "Disconnect from voice",
+      "settings": "Settings"
+    },
+    "userSettings": {
+      "alerts": {
+        "updateError": "Error while updating profile.",
+        "uploadFailed": "Upload failed",
+        "uploadError": "Upload error"
+      },
+      "sidebar": {
+        "title": "User Settings",
+        "logout": "Log out"
+      },
+      "tabs": {
+        "account": "My Account",
+        "profile": "Profile",
+        "language": "Language"
+      },
+      "account": {
+        "title": "My Account",
+        "statusOnline": "Online",
+        "editProfile": "Edit Profile",
+        "noEmail": "No email",
+        "displayName": "Display name",
+        "edit": "Edit",
+        "email": "Email",
+        "notProvided": "Not provided",
+        "securityTitle": "Security and Login",
+        "changePassword": "Change Password"
+      },
+      "profile": {
+        "title": "Server Profile",
+        "description": "Customize your appearance on this server.",
+        "displayName": "Display name",
+        "avatar": "Avatar",
+        "changeAvatar": "Change avatar",
+        "remove": "Remove",
+        "preview": "Profile Preview",
+        "userFallback": "User",
+        "customizing": "Customizing profile..."
+      },
+      "language": {
+        "title": "Language",
+        "description": "Choose the application language.",
+        "label": "Language",
+        "options": "Français / English"
+      },
+      "saveBar": {
+        "unsaved": "Warning — you have unsaved changes!",
+        "reset": "Reset",
+        "saving": "Saving...",
+        "save": "Save"
+      },
+      "escape": "Esc"
+    },
+    "serverMembersList": {
+      "loading": "Loading members...",
+      "userFallback": "User",
+      "joinedSince": "Member since {date}",
+      "unknownJoinDate": "Unknown join date",
+      "toasts": {
+        "roleUpdated": "Role updated",
+        "roleUpdateError": "Error while updating role",
+        "memberKicked": "Member kicked",
+        "kickError": "Error while kicking member",
+        "banned": "{username} has been banned",
+        "banError": "Error while banning member"
+      },
+      "confirm": {
+        "transferTitle": "Transfer ownership?",
+        "transferMessage": "WARNING: This action is irreversible. If you make this member Owner, they will become your equal and you won't be able to demote them anymore. Are you sure?",
+        "transferAction": "Transfer",
+        "kickTitle": "Kick this member?",
+        "kickMessage": "Do you really want to kick this member from the server?"
+      },
+      "actions": {
+        "makeAdmin": "Promote to Admin",
+        "demoteMember": "Demote to Member",
+        "makeOwner": "Transfer Owner",
+        "kick": "Kick",
+        "ban": "Ban",
+        "cancel": "Cancel"
+      },
+      "ban": {
+        "title": "Ban {username}",
+        "description": "The user will be kicked and won't be able to return depending on selected duration.",
+        "defaultReason": "Banned by an administrator",
+        "reasonLabel": "Ban reason",
+        "reasonPlaceholder": "e.g. Inappropriate behavior",
+        "durationLabel": "Ban duration",
+        "confirmAction": "Ban user",
+        "duration": {
+          "permanent": "Permanent",
+          "oneHour": "1 Hour",
+          "twentyFourHours": "24 Hours",
+          "sevenDays": "7 Days (168h)",
+          "thirtyDays": "30 Days (720h)"
+        }
+      }
+    },
+    "serverBansList": {
+      "loading": "Loading bans...",
+      "empty": "No banned users on this server.",
+      "listTitle": "Ban list ({count})",
+      "unknownUser": "Unknown user",
+      "temporary": "Temp ({time})",
+      "permanent": "Permanent",
+      "reason": "Reason: {reason}",
+      "unknownDate": "Unknown date",
+      "bannedOn": "Banned on {date}",
+      "unban": "Unban",
+      "expired": "Expired",
+      "confirmTitle": "Unban {username}?",
+      "confirmMessage": "This user will be able to rejoin the server if they have an invite link.",
+      "toasts": {
+        "fetchError": "Error while fetching bans",
+        "unbanned": "{username} has been unbanned",
+        "unbanError": "Error while unbanning user"
+      }
+    },
+    "userProfileDialog": {
+      "online": "Online",
+      "owner": "OWNER",
+      "memberSince": "Member since",
+      "sendMessage": "Send a message",
+      "close": "Close"
+    },
+    "membersSidebar": {
+      "loading": "Loading...",
+      "title": "Members — {count}",
+      "banReason": "Banned by admin/owner",
+      "status": {
+        "online": "Online",
+        "away": "Away",
+        "busy": "Do Not Disturb",
+        "offline": "Offline"
+      },
+      "toasts": {
+        "roleUpdated": "Role updated",
+        "roleUpdateError": "Error while updating role",
+        "memberKicked": "Member kicked",
+        "kickError": "Error while kicking member",
+        "userBanned": "User banned",
+        "banError": "Error while banning user"
+      },
+      "confirm": {
+        "transferTitle": "Transfer ownership?",
+        "transferMessage": "WARNING: You are about to transfer server ownership. If you continue, you will become a regular MEMBER and the selected user will become the new OWNER. This action is irreversible. Continue?",
+        "transferAction": "Transfer",
+        "kickTitle": "Kick this member?",
+        "kickMessage": "Do you really want to kick this member?",
+        "banTitle": "Ban this user?",
+        "banMessage": "Do you really want to ban this user?"
+      },
+      "actions": {
+        "makeAdmin": "Promote to Admin",
+        "demoteMember": "Demote to Member",
+        "makeOwner": "Transfer Owner",
+        "kick": "Kick",
+        "ban": "Ban"
+      }
+    }
+  }
+}

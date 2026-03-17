@@ -78,6 +78,15 @@ pub async fn update_user_profile(
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<UpdateUserPayload>,
 ) -> Result<Json<crate::models::user::PublicUser>, (StatusCode, Json<serde_json::Value>)> {
+    if let Some(langue) = &payload.langue {
+        if langue != "fr" && langue != "en" {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(json!({"error": "Invalid langue. Allowed values: fr, en"})),
+            ));
+        }
+    }
+
     let mut tx = state.pool.begin().await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -117,6 +126,10 @@ pub async fn update_user_profile(
         query.push_str(&format!(", avatar_url = ${}", i));
         i += 1;
     }
+    if payload.langue.is_some() {
+        query.push_str(&format!(", langue = ${}", i));
+        i += 1;
+    }
 
     query.push_str(&format!(" WHERE id = ${} RETURNING *", i));
 
@@ -127,6 +140,9 @@ pub async fn update_user_profile(
     }
     if let Some(avatar_url) = &payload.avatar_url {
         q = q.bind(avatar_url);
+    }
+    if let Some(langue) = &payload.langue {
+        q = q.bind(langue);
     }
     q = q.bind(auth_user.user_id);
 
@@ -165,6 +181,30 @@ pub async fn update_user_profile(
             }
             let _ = state.io.to(server_id.to_string()).emit("voice_state_update", &*voice_state).await;
         }
+    }
+
+    // Broadcast update to DM contacts
+    let dm_recipient_ids: Vec<(uuid::Uuid,)> = sqlx::query_as(
+        r#"
+        SELECT DISTINCT cs2.user_id
+        FROM channel_subscribers cs1
+        JOIN channels c ON cs1.channel_id = c.id
+        JOIN channel_subscribers cs2 ON c.id = cs2.channel_id
+        WHERE c.kind = 'DM' AND cs1.user_id = $1 AND cs2.user_id != $1
+        "#
+    )
+    .bind(&auth_user.user_id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
+    for (recipient_id,) in dm_recipient_ids {
+        let room = format!("user:{}", recipient_id);
+        let payload = json!({
+            "user": crate::models::user::PublicUser::from(updated_user.clone()),
+            "serverId": null
+        });
+        let _ = state.io.to(room).emit("user_updated", &payload).await;
     }
 
     Ok(Json(updated_user.into()))

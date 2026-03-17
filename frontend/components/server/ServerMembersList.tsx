@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { UserProfileDialog } from "@/components/user/UserProfileDialog";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { useTranslations } from "next-intl";
 
 const EMPTY_ARRAY: any[] = [];
 
@@ -37,6 +38,7 @@ interface ServerMembersListProps {
 }
 
 export function ServerMembersList({ serverId, currentUserId }: ServerMembersListProps) {
+  const t = useTranslations("app.serverMembersList");
   const members = useAppStore((s) => s.serverMembers[serverId] || EMPTY_ARRAY);
   const setServerMembers = useAppStore((s) => s.setServerMembers);
 
@@ -89,20 +91,20 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ role: newRole }),
         });
-        toast.success("Rôle mis à jour");
+          toast.success(t("toasts.roleUpdated"));
         fetchMembers();
       } catch (e) {
         console.error("Failed to update role", e);
-        toast.error("Erreur lors de la modification du rôle");
+          toast.error(t("toasts.roleUpdateError"));
       }
     };
 
     if (newRole === "OWNER") {
       setConfirmData({
         isOpen: true,
-        title: "Transférer la propriété ?",
-        message: "ATTENTION : Cette action est irréversible ! Si vous nommez ce membre Propriétaire, il deviendra votre égal et vous ne pourrez plus le rétrograder. Êtes-vous sûr ?",
-        confirmText: "Transférer",
+        title: t("confirm.transferTitle"),
+        message: t("confirm.transferMessage"),
+        confirmText: t("confirm.transferAction"),
         isDestructive: true,
         onConfirm: performUpdate,
       });
@@ -115,20 +117,20 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
   const handleKick = async (userId: string) => {
     setConfirmData({
       isOpen: true,
-      title: "Expulser ce membre ?",
-      message: "Voulez-vous vraiment expulser ce membre du serveur ?",
-      confirmText: "Expulser",
+      title: t("confirm.kickTitle"),
+      message: t("confirm.kickMessage"),
+      confirmText: t("actions.kick"),
       isDestructive: true,
       onConfirm: async () => {
         try {
           await api(`/api/servers/${serverId}/members/${userId}`, {
             method: "DELETE",
           });
-          toast.success("Membre expulsé");
+          toast.success(t("toasts.memberKicked"));
           fetchMembers();
         } catch (e) {
           console.error("Failed to kick user", e);
-          toast.error("Erreur lors de l'expulsion");
+          toast.error(t("toasts.kickError"));
         }
       },
     });
@@ -150,7 +152,7 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
     try {
       const payload: any = {
         user_id: banData.userId,
-        reason: banReason || `Banni par un administrateur`,
+        reason: banReason || t("ban.defaultReason"),
       };
 
       if (banDuration !== "permanent") {
@@ -163,17 +165,17 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
         body: JSON.stringify(payload),
       });
 
-      toast.success(`${banData.username} a été banni`);
+      toast.success(t("toasts.banned", {username: banData.username}));
       setIsBanDialogOpen(false);
       fetchMembers();
     } catch (e) {
       console.error("Failed to ban user", e);
-      toast.error("Erreur lors du bannissement");
+      toast.error(t("toasts.banError"));
     }
   };
 
   if (loading && members.length === 0) {
-    return <div className="p-4 text-center text-muted-foreground">Chargement des membres...</div>;
+    return <div className="p-4 text-center text-muted-foreground">{t("loading")}</div>;
   }
 
   return (
@@ -195,7 +197,7 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
                 </Avatar>
                 <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm text-[#dcddde] truncate">{member.username || "Utilisateur"}</span>
+                    <span className="font-medium text-sm text-[#dcddde] truncate">{member.username || t("userFallback")}</span>
                     {member.role === "OWNER" && (
                       <Badge variant="secondary" className="bg-[#f0b232]/10 text-[#f0b232] border-none h-4 px-1 text-[9px] font-bold">
                         <ShieldCheck className="w-2.5 h-2.5 mr-0.5" /> PROP
@@ -208,7 +210,7 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
                     )}
                   </div>
                   <span className="text-[10px] text-[#8e9297] truncate">
-                    {member.joined_at ? `Membre depuis ${new Date(member.joined_at).toLocaleDateString()}` : "Date d'arrivée inconnue"}
+                    {member.joined_at ? t("joinedSince", {date: new Date(member.joined_at).toLocaleDateString()}) : t("unknownJoinDate")}
                   </span>
                 </div>
               </div>
@@ -237,19 +239,19 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
                           {member.role !== "ADMIN" && (
                             <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, "ADMIN")}>
                               <ShieldAlert className="mr-2 h-4 w-4" />
-                              <span>Nommer Admin</span>
+                              <span>{t("actions.makeAdmin")}</span>
                             </DropdownMenuItem>
                           )}
                           {member.role === "ADMIN" && (
                             <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, "MEMBER")}>
                               <ShieldCheck className="mr-2 h-4 w-4" />
-                              <span>Rétrograder Membre</span>
+                              <span>{t("actions.demoteMember")}</span>
                             </DropdownMenuItem>
                           )}
 
                           <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, "OWNER")} className="text-orange-600 focus:text-orange-600">
                             <ShieldCheck className="mr-2 h-4 w-4" />
-                            <span>Nommer Propriétaire</span>
+                            <span>{t("actions.makeOwner")}</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                         </>
@@ -262,14 +264,14 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
                             onClick={() => handleKick(member.user_id)}
                           >
                             <Ban className="mr-2 h-4 w-4" />
-                            <span>Expulser</span>
+                            <span>{t("actions.kick")}</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
-                            onClick={() => handleBan(member.user_id, member.username || "Utilisateur")}
+                            onClick={() => handleBan(member.user_id, member.username || t("userFallback"))}
                           >
                             <Ban className="mr-2 h-4 w-4" />
-                            <span>Bannir</span>
+                            <span>{t("actions.ban")}</span>
                           </DropdownMenuItem>
                         </>
                       )}
@@ -292,44 +294,45 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
       <Dialog open={isBanDialogOpen} onOpenChange={setIsBanDialogOpen}>
         <DialogContent className="bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-white text-lg font-bold">Bannir {banData.username}</DialogTitle>
+            <DialogTitle className="text-white text-lg font-bold">{t("ban.title", {username: banData.username})}</DialogTitle>
             <DialogDescription className="text-[#b9bbbe] text-xs">
-              L'utilisateur sera expulsé et ne pourra pas revenir selon la durée choisie.
+              {t("ban.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="ban-reason" className="text-[#b9bbbe] text-[10px] font-bold uppercase">Raison du bannissement</Label>
+              <Label htmlFor="ban-reason" className="text-[#b9bbbe] text-[10px] font-bold uppercase">{t("ban.reasonLabel")}</Label>
               <Input
                 id="ban-reason"
-                placeholder="Ex: Comportement inapproprié"
+                placeholder={t("ban.reasonPlaceholder")}
                 className="bg-[#1e1f22] border-none text-white h-10 focus-visible:ring-1 focus-visible:ring-[#5865F2]"
                 value={banReason}
                 onChange={(e) => setBanReason(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="ban-duration" className="text-[#b9bbbe] text-[10px] font-bold uppercase">Durée du bannissement</Label>
+              <Label htmlFor="ban-duration" className="text-[#b9bbbe] text-[10px] font-bold uppercase">{t("ban.durationLabel")}</Label>
               <select 
                 id="ban-duration"
+                title={t("ban.durationLabel")}
                 className="flex h-10 w-full rounded-md bg-[#1e1f22] px-3 py-2 text-sm text-white ring-offset-[#36393f] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5865F2] disabled:cursor-not-allowed disabled:opacity-50 appearance-none cursor-pointer"
                 value={banDuration}
                 onChange={(e) => setBanDuration(e.target.value)}
               >
-                <option value="permanent" className="bg-[#1e1f22]">Permanent</option>
-                <option value="1" className="bg-[#1e1f22]">1 Heure</option>
-                <option value="24" className="bg-[#1e1f22]">24 Heures</option>
-                <option value="168" className="bg-[#1e1f22]">7 Jours (168h)</option>
-                <option value="720" className="bg-[#1e1f22]">30 Jours (720h)</option>
+                <option value="permanent" className="bg-[#1e1f22]">{t("ban.duration.permanent")}</option>
+                <option value="1" className="bg-[#1e1f22]">{t("ban.duration.oneHour")}</option>
+                <option value="24" className="bg-[#1e1f22]">{t("ban.duration.twentyFourHours")}</option>
+                <option value="168" className="bg-[#1e1f22]">{t("ban.duration.sevenDays")}</option>
+                <option value="720" className="bg-[#1e1f22]">{t("ban.duration.thirtyDays")}</option>
               </select>
             </div>
           </div>
           <DialogFooter className="bg-[#2f3136] -m-6 mt-0 p-4 flex items-center">
             <Button variant="ghost" onClick={() => setIsBanDialogOpen(false)} className="text-white hover:underline hover:bg-transparent mr-auto text-sm">
-              Annuler
+              {t("actions.cancel")}
             </Button>
             <Button onClick={confirmBan} className="bg-[#ed4245] hover:bg-[#c03537] text-white font-bold h-10 px-6">
-              Bannir l'utilisateur
+              {t("ban.confirmAction")}
             </Button>
           </DialogFooter>
         </DialogContent>

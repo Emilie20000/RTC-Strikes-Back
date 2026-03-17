@@ -10,6 +10,7 @@ pub struct User {
     pub email: String,
     pub password_hash: String,
     pub avatar_url: Option<String>,
+    pub langue: String,
     pub status: UserStatus,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -61,6 +62,7 @@ pub struct PublicUser {
     pub username: String,
     pub email: String,
     pub avatar_url: Option<String>,
+    pub langue: String,
     pub status: UserStatus,
     pub created_at: DateTime<Utc>,
 }
@@ -72,6 +74,7 @@ impl From<User> for PublicUser {
             username: user.username,
             email: user.email,
             avatar_url: user.avatar_url,
+            langue: user.langue,
             status: user.status,
             created_at: user.created_at,
         }
@@ -83,6 +86,7 @@ impl From<User> for PublicUser {
 pub struct UpdateUserPayload {
     pub username: Option<String>,
     pub avatar_url: Option<String>,
+    pub langue: Option<String>,
 }
   
 #[cfg(test)]
@@ -100,6 +104,7 @@ mod tests {
             email: "test@example.com".to_string(),
             password_hash: "hashed_secret".to_string(),
             avatar_url: Some("http://avatar.url".to_string()),
+            langue: "fr".to_string(),
             status: UserStatus::Online,
             created_at: now,
             updated_at: now,
@@ -111,6 +116,7 @@ mod tests {
         assert_eq!(public_user.username, user.username);
         assert_eq!(public_user.email, user.email);
         assert_eq!(public_user.avatar_url, user.avatar_url);
+        assert_eq!(public_user.langue, user.langue);
         assert_eq!(public_user.status, user.status);
         assert_eq!(public_user.created_at, user.created_at);
     }
