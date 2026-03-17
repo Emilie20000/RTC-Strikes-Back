@@ -2,17 +2,13 @@
 
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { api } from "@/lib/http";
+import { useAppStore, type User } from "@/lib/store";
 
 const LOCALES = [
-  { id: "fr", label: "FR" },
-  { id: "en", label: "EN" },
+  { id: "fr", label: "🇫🇷" },
+  { id: "en", label: "🇬🇧" },
 ] as const;
 
 type Locale = (typeof LOCALES)[number]["id"];
@@ -25,33 +21,50 @@ function setLocaleCookie(locale: Locale) {
 export function LanguageSwitcher() {
   const currentLocale = useLocale() as Locale;
   const router = useRouter();
+  const currentUser = useAppStore((s) => s.currentUser);
+  const setCurrentUser = useAppStore((s) => s.setCurrentUser);
 
-  const current =
-    LOCALES.find((l) => l.id === currentLocale) ??
-    LOCALES.find((l) => l.id === "fr")!;
-
-  const onSelect = (locale: Locale) => {
+  const onSelect = async (locale: Locale) => {
     if (locale === currentLocale) return;
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (token) {
+      try {
+        const updatedUser = await api<User>("/api/users/me", {
+          method: "PATCH",
+          body: JSON.stringify({ langue: locale }),
+        });
+
+        const mergedUser = currentUser ? { ...currentUser, ...updatedUser } : updatedUser;
+        setCurrentUser(mergedUser);
+        localStorage.setItem("user", JSON.stringify(mergedUser));
+      } catch (e) {
+        console.error("Failed to persist language preference", e);
+      }
+    }
+
     setLocaleCookie(locale);
     router.refresh();
-    // Ensure server components re-render using the new locale
     window.location.reload();
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
-          {current.label}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {LOCALES.map((locale) => (
-          <DropdownMenuItem key={locale.id} onClick={() => onSelect(locale.id)}>
+    <div className="flex items-center gap-1">
+      {LOCALES.map((locale) => {
+        const isActive = locale.id === currentLocale;
+        return (
+          <Button
+            key={locale.id}
+            type="button"
+            size="sm"
+            variant={isActive ? "default" : "outline"}
+            onClick={() => onSelect(locale.id)}
+            aria-label={locale.id === "fr" ? "Français" : "English"}
+          >
             {locale.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          </Button>
+        );
+      })}
+    </div>
   );
 }

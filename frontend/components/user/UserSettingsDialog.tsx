@@ -16,13 +16,14 @@ import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/http";
 import { User as UserIcon, Settings, LogOut, Camera, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 interface UserSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type Tab = "account" | "profile";
+type Tab = "account" | "profile" | "language";
 
 export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogProps) {
   const currentUser = useAppStore((s) => s.currentUser);
@@ -99,6 +100,13 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                 onClick={() => setActiveTab("profile")}
               >
                 Profil
+              </Button>
+              <Button
+                variant="ghost"
+                className={`w-full justify-start px-2.5 h-8 font-medium rounded-sm ${activeTab === "language" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
+                onClick={() => setActiveTab("language")}
+              >
+                Langue
               </Button>
             </div>
           </div>
@@ -204,12 +212,13 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                             </div>
                             <Separator className="bg-[#4f545c]/20" />
                             <div className="space-y-3">
-                                <Label className="text-[10px] font-bold text-[#b9bbbe] uppercase">Avatar</Label>
+                              <Label htmlFor="avatar-upload-profile" className="text-[10px] font-bold text-[#b9bbbe] uppercase">Avatar</Label>
                                 <div className="flex gap-3">
                                     <input 
                                         type="file" 
                                         accept="image/*" 
                                         id="avatar-upload-profile" 
+                                  aria-label="Avatar"
                                         className="hidden" 
                                         onChange={async (e) => {
                                             const file = e.target.files?.[0];
@@ -281,6 +290,23 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                         </div>
                     </div>
                 </div>
+            )}
+
+            {activeTab === "language" && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <h1 className="text-xl font-bold text-white mb-2">Langue</h1>
+                <p className="text-[#b9bbbe] text-sm mb-6">Choisissez la langue de l'application.</p>
+
+                <div className="bg-[#2f3136] rounded-lg p-4 shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-1">Langue</div>
+                      <div className="text-sm font-medium text-white">Français / English</div>
+                    </div>
+                    <LanguageSwitcher />
+                  </div>
+                </div>
+              </div>
             )}
           </div>
             

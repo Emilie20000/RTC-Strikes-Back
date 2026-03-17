@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -24,5 +25,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [router, setCurrentUser]);
 
-  return <>{children}</>;
+  return (
+    <div className="relative">
+      <div className="absolute right-2 top-2 z-50">
+        <LanguageSwitcher />
+      </div>
+      {children}
+    </div>
+  );
 }

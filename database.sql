@@ -20,7 +20,8 @@ CREATE TABLE users (
     avatar_url TEXT,
     status user_status DEFAULT 'ONLINE',
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    langue VARCHAR(10) DEFAULT 'fr' -- pour la gestion de la langue 
 );
 
 CREATE TABLE servers (
