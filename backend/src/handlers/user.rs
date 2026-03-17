@@ -78,6 +78,15 @@ pub async fn update_user_profile(
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<UpdateUserPayload>,
 ) -> Result<Json<crate::models::user::PublicUser>, (StatusCode, Json<serde_json::Value>)> {
+    if let Some(langue) = &payload.langue {
+        if langue != "fr" && langue != "en" {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(json!({"error": "Invalid langue. Allowed values: fr, en"})),
+            ));
+        }
+    }
+
     let mut tx = state.pool.begin().await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -117,6 +126,10 @@ pub async fn update_user_profile(
         query.push_str(&format!(", avatar_url = ${}", i));
         i += 1;
     }
+    if payload.langue.is_some() {
+        query.push_str(&format!(", langue = ${}", i));
+        i += 1;
+    }
 
     query.push_str(&format!(" WHERE id = ${} RETURNING *", i));
 
@@ -127,6 +140,9 @@ pub async fn update_user_profile(
     }
     if let Some(avatar_url) = &payload.avatar_url {
         q = q.bind(avatar_url);
+    }
+    if let Some(langue) = &payload.langue {
+        q = q.bind(langue);
     }
     q = q.bind(auth_user.user_id);
 
