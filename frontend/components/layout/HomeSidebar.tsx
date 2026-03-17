@@ -6,8 +6,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { api } from "@/lib/http";
 import { UserBar } from "./UserBar";
+import { useTranslations } from "next-intl";
 
 export function HomeSidebar() {
+  const t = useTranslations("app.homeSidebar");
   const channels = useAppStore((s) => s.channels);
   const activeChannelId = useAppStore((s) => s.activeChannelId);
   const { setChannels, setActiveChannelId } = useAppStore();
@@ -26,6 +28,7 @@ export function HomeSidebar() {
       <div className="h-12 border-b border-[#202225] flex items-center px-4 font-semibold shadow-sm bg-[#2f3136] text-white">
         <div className="flex items-center justify-between w-full">
           <span className="truncate font-bold">Messages Privés</span>
+          <span className="truncate font-bold">{t("title")}</span>
         </div>
       </div>
 
@@ -49,11 +52,12 @@ export function HomeSidebar() {
                     </AvatarFallback>
                   </Avatar>
                   <span className="font-medium truncate">{c.name || "Conversation Privée"}</span>
+                  <span className="font-medium truncate">{c.name || t("privateConversation")}</span>
                 </button>
               </div>
             ))}
             {channels.length === 0 && (
-              <p className="px-4 py-10 text-center text-sm text-[#72767d] italic">Aucun message privé. Démarrez une discussion depuis le profil d&apos;un membre !</p>
+              <p className="px-4 py-10 text-center text-sm text-[#72767d] italic">{t("empty")}</p>
             )}
           </div>
         </div>

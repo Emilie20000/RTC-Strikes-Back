@@ -56,11 +56,11 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+      <div className="fixed right-4 top-4 z-50">
+        <LanguageSwitcher />
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <div className="flex justify-end">
-            <LanguageSwitcher />
-          </div>
           <CardTitle className="text-center text-2xl">{t('title')}</CardTitle>
           <CardDescription className="text-center">{t('description')}</CardDescription>
         </CardHeader>
