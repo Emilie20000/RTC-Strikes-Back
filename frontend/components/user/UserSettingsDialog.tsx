@@ -17,6 +17,7 @@ import { api } from "@/lib/http";
 import { User as UserIcon, Settings, LogOut, Camera, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { useTranslations } from "next-intl";
 
 interface UserSettingsDialogProps {
   open: boolean;
@@ -26,6 +27,7 @@ interface UserSettingsDialogProps {
 type Tab = "account" | "profile" | "language";
 
 export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogProps) {
+  const t = useTranslations("app.userSettings");
   const currentUser = useAppStore((s) => s.currentUser);
   const setCurrentUser = useAppStore((s) => s.setCurrentUser);
   const router = useRouter();
@@ -60,7 +62,7 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
       onOpenChange(false);
     } catch (e) {
       console.error("Failed to update profile", e);
-      alert("Erreur lors de la mise à jour du profil.");
+      alert(t("alerts.updateError"));
     } finally {
       setLoading(false);
     }
@@ -85,28 +87,28 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
       <DialogContent hideDefaultClose className="max-w-4xl max-h-[85vh] h-full md:h-[700px] flex p-0 gap-0 overflow-hidden bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
         <div className="w-[240px] md:w-[280px] bg-[#2f3136] flex flex-col p-0 hidden md:flex">
           <div className="p-6 pb-2 pt-10">
-            <h2 className="text-[11px] font-bold text-[#8e9297] uppercase tracking-wider mb-2 px-2.5">Paramètres utilisateur</h2>
+            <h2 className="text-[11px] font-bold text-[#8e9297] uppercase tracking-wider mb-2 px-2.5">{t("sidebar.title")}</h2>
             <div className="space-y-0.5">
               <Button
                 variant="ghost"
                 className={`w-full justify-start px-2.5 h-8 font-medium rounded-sm ${activeTab === "account" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
                 onClick={() => setActiveTab("account")}
               >
-                Mon compte
+                {t("tabs.account")}
               </Button>
               <Button
                 variant="ghost"
                 className={`w-full justify-start px-2.5 h-8 font-medium rounded-sm ${activeTab === "profile" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
                 onClick={() => setActiveTab("profile")}
               >
-                Profil
+                {t("tabs.profile")}
               </Button>
               <Button
                 variant="ghost"
                 className={`w-full justify-start px-2.5 h-8 font-medium rounded-sm ${activeTab === "language" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
                 onClick={() => setActiveTab("language")}
               >
-                Langue
+                {t("tabs.language")}
               </Button>
             </div>
           </div>
@@ -120,7 +122,7 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
               onClick={handleLogout}
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Déconnexion
+              {t("sidebar.logout")}
             </Button>
             <div className="mt-4 px-2.5 text-[10px] text-[#8e9297] font-medium uppercase">
               T-JSF-600-LIL_10 v0.1.0
@@ -132,7 +134,7 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
           <div className="max-w-3xl w-full">
             {activeTab === "account" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                 <h1 className="text-xl font-bold text-white mb-6">Mon compte</h1>
+                 <h1 className="text-xl font-bold text-white mb-6">{t("account.title")}</h1>
                  
                  <div className="bg-[#2f3136] rounded-lg overflow-hidden border-none shadow-lg">
                     <div className="h-24 bg-[#5865F2] relative">
@@ -146,26 +148,26 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                                       {currentUser?.username?.slice(0, 2).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
-                                <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#3ba55c] rounded-full border-[4px] border-[#2f3136]" title="En ligne"></div>
+                                <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#3ba55c] rounded-full border-[4px] border-[#2f3136]" title={t("account.statusOnline")}></div>
                             </div>
                             <Button 
                               className="bg-[#5865F2] hover:bg-[#4752c4] text-white h-8 text-sm px-4"
                               onClick={() => setActiveTab("profile")}
                             >
-                              Editer le profil
+                              {t("account.editProfile")}
                             </Button>
                         </div>
                         
                         <div className="mb-4">
                             <div className="text-xl font-bold text-white">{currentUser?.username}</div>
-                            <div className="text-sm text-[#b9bbbe]">{currentUser?.email || "Pas d'email"}</div>
+                            <div className="text-sm text-[#b9bbbe]">{currentUser?.email || t("account.noEmail")}</div>
                         </div>
                     </div>
                     
                     <div className="bg-[#232428] p-4 m-4 rounded-lg space-y-4">
                         <div className="flex justify-between items-center group">
                             <div>
-                                <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-0.5">Nom d'affichage</div>
+                                <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-0.5">{t("account.displayName")}</div>
                                 <div className="text-sm font-medium text-white">{currentUser?.username}</div>
                             </div>
                             <Button 
@@ -174,13 +176,13 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                               className="bg-[#4f545c] hover:bg-[#686d73] text-white h-8 w-16"
                               onClick={() => setActiveTab("profile")}
                             >
-                              Modifier
+                              {t("account.edit")}
                             </Button>
                         </div>
                         <div className="flex justify-between items-center">
                             <div>
-                                <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-0.5">Email</div>
-                                <div className="text-sm font-medium text-white">{currentUser?.email || "Non renseigné"}</div>
+                                <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-0.5">{t("account.email")}</div>
+                                <div className="text-sm font-medium text-white">{currentUser?.email || t("account.notProvided")}</div>
                             </div>
                         </div>
                     </div>
@@ -189,21 +191,21 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                  <Separator className="bg-[#4f545c]/20" />
 
                  <div className="space-y-3">
-                    <h2 className="text-[#b9bbbe] font-bold text-xs uppercase tracking-wider">Sécurité et Connexion</h2>
-                    <Button variant="outline" className="border-[#4f545c] text-white hover:bg-[#4f545c]/20 h-8">Modifier le mot de passe</Button>
+                    <h2 className="text-[#b9bbbe] font-bold text-xs uppercase tracking-wider">{t("account.securityTitle")}</h2>
+                    <Button variant="outline" className="border-[#4f545c] text-white hover:bg-[#4f545c]/20 h-8">{t("account.changePassword")}</Button>
                  </div>
               </div>
             )}
 
             {activeTab === "profile" && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <h1 className="text-xl font-bold text-white mb-2">Profil du serveur</h1>
-                    <p className="text-[#b9bbbe] text-sm mb-6">Personnalisez votre apparence sur ce serveur.</p>
+                    <h1 className="text-xl font-bold text-white mb-2">{t("profile.title")}</h1>
+                    <p className="text-[#b9bbbe] text-sm mb-6">{t("profile.description")}</p>
                     
                     <div className="flex flex-col lg:flex-row gap-8">
                         <div className="flex-1 space-y-6">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-[#b9bbbe] uppercase">Nom d'affichage</Label>
+                                <Label className="text-[10px] font-bold text-[#b9bbbe] uppercase">{t("profile.displayName")}</Label>
                                 <Input 
                                     value={username} 
                                     onChange={(e) => setUsername(e.target.value)} 
@@ -212,13 +214,13 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                             </div>
                             <Separator className="bg-[#4f545c]/20" />
                             <div className="space-y-3">
-                              <Label htmlFor="avatar-upload-profile" className="text-[10px] font-bold text-[#b9bbbe] uppercase">Avatar</Label>
+                              <Label htmlFor="avatar-upload-profile" className="text-[10px] font-bold text-[#b9bbbe] uppercase">{t("profile.avatar")}</Label>
                                 <div className="flex gap-3">
                                     <input 
                                         type="file" 
                                         accept="image/*" 
                                         id="avatar-upload-profile" 
-                                  aria-label="Avatar"
+                                          aria-label={t("profile.avatar")}
                                         className="hidden" 
                                         onChange={async (e) => {
                                             const file = e.target.files?.[0];
@@ -237,13 +239,13 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                                                     body: formData
                                                 });
                                                 
-                                                if (!res.ok) throw new Error("Upload failed");
+                                                if (!res.ok) throw new Error(t("alerts.uploadFailed"));
                                                 
                                                 const data = await res.json();
                                                 setAvatarUrl(`http://localhost:8080${data.url}`);
                                             } catch (err) {
                                                 console.error(err);
-                                                alert("Erreur lors de l'upload");
+                                              alert(t("alerts.uploadError"));
                                             }
                                         }}
                                     />
@@ -252,21 +254,21 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                                       onClick={() => document.getElementById("avatar-upload-profile")?.click()}
                                     >
                                         <Camera className="w-4 h-4 mr-2" />
-                                        Changer l'avatar
+                                        {t("profile.changeAvatar")}
                                     </Button>
                                     <Button 
                                       variant="ghost" 
                                       className="text-white hover:bg-[#4f545c]/20"
                                       onClick={() => setAvatarUrl("")}
                                     >
-                                      Supprimer
+                                      {t("profile.remove")}
                                     </Button>
                                 </div>
                             </div>
                         </div>
 
                         <div className="w-full lg:w-[300px]">
-                            <Label className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-2 block">Aperçu du profil</Label>
+                            <Label className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-2 block">{t("profile.preview")}</Label>
                             <div className="bg-[#18191c] rounded-lg overflow-hidden shadow-2xl border-none transform transition-all hover:scale-[1.01]">
                                 <div className="h-16 bg-[#5865F2]/40 relative"></div>
                                 <div className="p-4 pt-10 relative">
@@ -280,9 +282,9 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                                         <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#3ba55c] rounded-full border-[4px] border-[#18191c]"></div>
                                     </div>
                                     <div className="bg-[#232428] rounded-md p-4 mt-2">
-                                        <div className="font-bold text-lg text-white leading-tight">{username || "Utilisateur"}</div>
+                                        <div className="font-bold text-lg text-white leading-tight">{username || t("profile.userFallback")}</div>
                                         <div className="text-[#b9bbbe] text-xs mt-1 border-t border-[#4f545c]/20 pt-2">
-                                          En train de personnaliser son profil...
+                                          {t("profile.customizing")}
                                         </div>
                                     </div>
                                 </div>
@@ -294,14 +296,14 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
 
             {activeTab === "language" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <h1 className="text-xl font-bold text-white mb-2">Langue</h1>
-                <p className="text-[#b9bbbe] text-sm mb-6">Choisissez la langue de l'application.</p>
+                <h1 className="text-xl font-bold text-white mb-2">{t("language.title")}</h1>
+                <p className="text-[#b9bbbe] text-sm mb-6">{t("language.description")}</p>
 
                 <div className="bg-[#2f3136] rounded-lg p-4 shadow-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-1">Langue</div>
-                      <div className="text-sm font-medium text-white">Français / English</div>
+                      <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-1">{t("language.label")}</div>
+                      <div className="text-sm font-medium text-white">{t("language.options")}</div>
                     </div>
                     <LanguageSwitcher />
                   </div>
@@ -312,7 +314,7 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
             
           {hasChanges && (
             <div className="absolute bottom-4 left-4 right-4 bg-[#18191c] border-none shadow-2xl flex justify-between items-center animate-in slide-in-from-bottom-4 fade-in duration-300 p-3 rounded-lg z-50">
-                <div className="text-sm font-medium px-2 text-[#dcddde]">Attention — vous avez des modifications non enregistrées !</div>
+              <div className="text-sm font-medium px-2 text-[#dcddde]">{t("saveBar.unsaved")}</div>
                 <div className="flex gap-4 items-center">
                     <Button 
                       variant="ghost" 
@@ -323,7 +325,7 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                         setAvatarUrl(currentUser?.avatar_url || "");
                       }}
                     >
-                      Réinitialiser
+                      {t("saveBar.reset")}
                     </Button>
                     <Button 
                       size="sm" 
@@ -331,7 +333,7 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                       disabled={loading} 
                       className="bg-[#3ba55c] hover:bg-[#2d7d46] text-white px-4 font-bold"
                     >
-                      {loading ? "Enregistrement..." : "Enregistrer"}
+                      {loading ? t("saveBar.saving") : t("saveBar.save")}
                     </Button>
                 </div>
             </div>
@@ -346,7 +348,7 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
             >
               <div className="text-sm font-bold">✕</div>
             </Button>
-            <div className="text-[10px] text-[#72767d] font-bold group-hover:text-white transition-all uppercase tracking-tighter">Échap</div>
+            <div className="text-[10px] text-[#72767d] font-bold group-hover:text-white transition-all uppercase tracking-tighter">{t("escape")}</div>
           </div>
         </div>
       </DialogContent>

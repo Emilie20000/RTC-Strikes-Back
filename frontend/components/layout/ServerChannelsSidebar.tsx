@@ -34,8 +34,10 @@ import { socket } from "@/lib/socket";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { UserBar } from "./UserBar";
+import { useTranslations } from "next-intl";
 
 export function ServerChannelsSidebar() {
+  const t = useTranslations("app.serverChannelsSidebar");
   const currentUser = useAppStore((s) => s.currentUser);
   const servers = useAppStore((s) => s.servers);
   const activeServerId = useAppStore((s) => s.activeServerId);
@@ -224,10 +226,10 @@ export function ServerChannelsSidebar() {
       setIsCreateOpen(false);
       setNewChannelName("");
       setChannelType("TEXT");
-      toast.success("Salon créé");
+      toast.success(t("toastChannelCreated"));
     } catch (e) {
       console.error("Failed to create channel", e);
-      toast.error("Erreur lors de la création du salon");
+      toast.error(t("toastChannelCreateError"));
     } finally {
       setLoading(false);
     }
@@ -237,14 +239,14 @@ export function ServerChannelsSidebar() {
     e.stopPropagation();
     setConfirmData({
       isOpen: true,
-      title: "Supprimer le salon ?",
-      message: "Êtes-vous sûr de vouloir supprimer ce salon ? Cette action est irréversible.",
-      confirmText: "Supprimer",
+      title: t("deleteChannelTitle"),
+      message: t("deleteChannelMessage"),
+      confirmText: t("delete"),
       isDestructive: true,
       onConfirm: async () => {
         try {
           await api(`/api/channels/${channelId}`, { method: "DELETE" });
-          toast.success("Salon supprimé");
+          toast.success(t("toastChannelDeleted"));
           const newChannels = channels.filter((c) => c.id !== channelId);
           setChannels(newChannels);
           if (activeChannelId === channelId) {
@@ -252,7 +254,7 @@ export function ServerChannelsSidebar() {
           }
         } catch (e) {
           console.error("Failed to delete channel", e);
-          toast.error("Impossible de supprimer le canal.");
+          toast.error(t("toastChannelDeleteError"));
         }
       },
     });
@@ -277,20 +279,20 @@ export function ServerChannelsSidebar() {
     const members = serverMembers[activeServerId] || [];
     const otherMembers = members.filter((m: any) => m.user_id !== currentUser.id);
     if (otherMembers.length > 0) {
-      toast.error("Vous devez expulser tous les membres avant de pouvoir supprimer le serveur.");
+      toast.error(t("toastKickMembersFirst"));
       return;
     }
     setConfirmData({
       isOpen: true,
-      title: "Supprimer le serveur ?",
-      message: "Êtes-vous sûr de vouloir supprimer ce serveur ? Cette action est irréversible et supprimera tout le contenu.",
-      confirmText: "Supprimer le serveur",
+      title: t("deleteServerTitle"),
+      message: t("deleteServerMessage"),
+      confirmText: t("deleteServer"),
       isDestructive: true,
       onConfirm: async () => {
         setDeleteLoading(true);
         try {
           await api(`/api/servers/${activeServerId}`, { method: "DELETE" });
-          toast.success("Serveur supprimé");
+          toast.success(t("toastServerDeleted"));
           const newServers = servers.filter((s) => s.id !== activeServerId);
           setServers(newServers);
           setChannels([]);
@@ -298,7 +300,7 @@ export function ServerChannelsSidebar() {
           setActiveServerId(newServers.length > 0 ? newServers[0].id : null);
         } catch (e) {
           console.error("Failed to delete server", e);
-          toast.error("Impossible de supprimer le serveur.");
+          toast.error(t("toastServerDeleteError"));
         } finally {
           setDeleteLoading(false);
           setIsSettingsOpen(false);
@@ -309,7 +311,7 @@ export function ServerChannelsSidebar() {
 
   const handleLeaveServer = async () => {
     if (!activeServerId || !currentUser) return;
-    if (!confirm("Êtes-vous sûr de vouloir quitter ce serveur ?")) return;
+    if (!confirm(t("leaveServerConfirm"))) return;
     try {
       await api(`/api/servers/${activeServerId}/members/${currentUser.id}`, {
         method: "DELETE",
@@ -321,7 +323,7 @@ export function ServerChannelsSidebar() {
       setActiveChannelId(null);
     } catch (e) {
       console.error("Failed to leave server", e);
-      alert("Impossible de quitter le serveur.");
+      alert(t("leaveServerError"));
     }
   };
 
@@ -334,13 +336,13 @@ export function ServerChannelsSidebar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center justify-between w-full h-full outline-none">
-              <span className="truncate font-bold">{activeServer ? activeServer.name : "Serveur..."}</span>
+              <span className="truncate font-bold">{activeServer ? activeServer.name : t("serverFallback")}</span>
               <ChevronDown className="w-4 h-4 ml-auto opacity-70" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56 bg-[#18191c] border-none text-[#b9bbbe] p-1.5 shadow-xl">
             <DropdownMenuLabel className="text-xs font-bold uppercase text-[#b9bbbe] px-2 py-1.5">
-              {activeServer ? activeServer.name : "Menu"}
+              {activeServer ? activeServer.name : t("menu")}
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-[#2f3136]" />
             {canManageServer && (
@@ -350,14 +352,14 @@ export function ServerChannelsSidebar() {
                   className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm"
                 >
                   <Settings className="w-4 h-4 mr-2" />
-                  Paramètres du serveur
+                  {t("serverSettings")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => { setIsSettingsOpen(true); setSettingsTab("members"); }}
                   className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm"
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Gérer les membres
+                  {t("manageMembers")}
                 </DropdownMenuItem>
               </>
             )}
@@ -369,7 +371,7 @@ export function ServerChannelsSidebar() {
                   className="text-destructive focus:text-destructive"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
-                  Quitter le serveur
+                  {t("leaveServer")}
                 </DropdownMenuItem>
               </>
             )}
@@ -383,7 +385,7 @@ export function ServerChannelsSidebar() {
             <div className="flex items-center justify-between mb-1 px-1 group/header">
               <button className="flex items-center text-xs font-bold uppercase text-[#8e9297] hover:text-[#dcddde] transition-colors">
                 <ChevronDown className="w-3 h-3 mr-0.5" />
-                Salons textuels
+                {t("textChannels")}
               </button>
               {canManageServer && (
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -391,50 +393,54 @@ export function ServerChannelsSidebar() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <DialogTrigger asChild>
-                          <button className="text-[#8e9297] hover:text-[#dcddde] transition-colors">
+                          <button
+                            aria-label={t("createChannel")}
+                            title={t("createChannel")}
+                            className="text-[#8e9297] hover:text-[#dcddde] transition-colors"
+                          >
                             <Plus className="w-4 h-4" />
                           </button>
                         </DialogTrigger>
                       </TooltipTrigger>
                       <TooltipContent className="bg-black text-white border-0 text-xs font-bold">
-                        <p>Créer un salon</p>
+                        <p>{t("createChannel")}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                   <DialogContent className="bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
                     <DialogHeader>
-                      <DialogTitle className="text-white text-lg font-bold">Créer un salon</DialogTitle>
+                      <DialogTitle className="text-white text-lg font-bold">{t("createChannel")}</DialogTitle>
                       <DialogDescription className="text-[#b9bbbe] text-xs">
-                        Dans la catégorie {channelType === "TEXT" ? "Salons textuels" : "Salons vocaux"}
+                        {t("inCategory", {category: channelType === "TEXT" ? t("textChannels") : t("voiceChannels")})}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
-                        <Label className="text-[#b9bbbe] text-[10px] font-bold uppercase">Type de salon</Label>
+                        <Label className="text-[#b9bbbe] text-[10px] font-bold uppercase">{t("channelType")}</Label>
                         <div className="flex gap-2">
                           <div onClick={() => setChannelType("TEXT")} className={`flex-1 flex items-center p-3 rounded-md cursor-pointer border-none transition-colors ${channelType === "TEXT" ? "bg-[#4f545c]/60 text-white" : "bg-[#2f3136] text-[#b9bbbe] hover:bg-[#34373c]"}`}>
                             <Hash className="w-6 h-6 mr-3 text-[#b9bbbe]" />
-                            <div><div className="font-bold text-sm">Textuel</div><div className="text-[10px] opacity-70">Envoi de messages, d'images...</div></div>
+                            <div><div className="font-bold text-sm">{t("textType")}</div><div className="text-[10px] opacity-70">{t("textTypeDesc")}</div></div>
                             <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${channelType === "TEXT" ? "border-[#5865F2]" : "border-[#72767d]"}`}>{channelType === "TEXT" && <div className="w-2 h-2 rounded-full bg-[#5865F2]" />}</div>
                           </div>
                           <div onClick={() => setChannelType("VOICE")} className={`flex-1 flex items-center p-3 rounded-md cursor-pointer border-none transition-colors ${channelType === "VOICE" ? "bg-[#4f545c]/60 text-white" : "bg-[#2f3136] text-[#b9bbbe] hover:bg-[#34373c]"}`}>
                             <Volume2 className="w-6 h-6 mr-3 text-[#b9bbbe]" />
-                            <div><div className="font-bold text-sm">Vocal</div><div className="text-[10px] opacity-70">Discutez en vocal...</div></div>
+                            <div><div className="font-bold text-sm">{t("voiceType")}</div><div className="text-[10px] opacity-70">{t("voiceTypeDesc")}</div></div>
                             <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${channelType === "VOICE" ? "border-[#5865F2]" : "border-[#72767d]"}`}>{channelType === "VOICE" && <div className="w-2 h-2 rounded-full bg-[#5865F2]" />}</div>
                           </div>
                         </div>
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="channel-name" className="text-[#b9bbbe] text-[10px] font-bold uppercase">Nom du salon</Label>
+                        <Label htmlFor="channel-name" className="text-[#b9bbbe] text-[10px] font-bold uppercase">{t("channelName")}</Label>
                         <div className="relative">
                           <span className="absolute left-3 top-2.5 text-[#b9bbbe]"><Hash className="w-4 h-4" /></span>
-                          <Input id="channel-name" placeholder="nouveau-salon" className="pl-9 bg-[#1e1f22] border-none text-white h-10 focus-visible:ring-1 focus-visible:ring-[#5865F2]" value={newChannelName} onChange={(e) => setNewChannelName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} />
+                          <Input id="channel-name" placeholder={t("channelNamePlaceholder")} className="pl-9 bg-[#1e1f22] border-none text-white h-10 focus-visible:ring-1 focus-visible:ring-[#5865F2]" value={newChannelName} onChange={(e) => setNewChannelName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} />
                         </div>
                       </div>
                     </div>
                     <DialogFooter className="bg-[#2f3136] -m-6 mt-0 p-4 pt-4 flex items-center">
-                      <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-white hover:underline hover:bg-transparent mr-auto text-sm">Annuler</Button>
-                      <Button onClick={handleCreateChannel} disabled={loading || !newChannelName.trim()} className="bg-[#5865F2] hover:bg-[#4752c4] text-white font-bold h-10 px-6">{loading ? "Création..." : "Créer le salon"}</Button>
+                      <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-white hover:underline hover:bg-transparent mr-auto text-sm">{t("cancel")}</Button>
+                      <Button onClick={handleCreateChannel} disabled={loading || !newChannelName.trim()} className="bg-[#5865F2] hover:bg-[#4752c4] text-white font-bold h-10 px-6">{loading ? t("creating") : t("createChannelAction")}</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -460,9 +466,11 @@ export function ServerChannelsSidebar() {
 
           <div>
             <div className="flex items-center justify-between mb-1 px-1 group/header">
-              <span className="text-xs font-bold uppercase text-[#8e9297]">Salons vocaux</span>
+              <span className="text-xs font-bold uppercase text-[#8e9297]">{t("voiceChannels")}</span>
               {canManageServer && (
                 <button 
+                  aria-label={t("createChannel")}
+                  title={t("createChannel")}
                   className="text-[#8e9297] hover:text-[#dcddde] transition-colors"
                   onClick={() => {
                     setChannelType("VOICE");
@@ -512,31 +520,31 @@ export function ServerChannelsSidebar() {
       {/* Settings Dialog (moved here for clarity) */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogContent hideDefaultClose className="max-w-4xl h-[700px] flex p-0 gap-0 overflow-hidden bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
-          <DialogTitle className="sr-only">Paramètres du serveur {activeServer?.name}</DialogTitle>
-          <DialogDescription className="sr-only">Gérez les paramètres du serveur.</DialogDescription>
+          <DialogTitle className="sr-only">{t("serverSettingsFor", {server: activeServer?.name || ""})}</DialogTitle>
+          <DialogDescription className="sr-only">{t("serverSettingsDesc")}</DialogDescription>
           <div className="w-60 bg-[#2f3136] flex flex-col pt-10 px-2 gap-0.5">
-            <div className="text-[11px] font-bold text-[#8e9297] uppercase tracking-wider mb-2 px-2.5">Menu</div>
-            <Button variant="ghost" className={`justify-start w-full h-8 px-2.5 font-medium rounded-sm ${settingsTab === "general" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`} onClick={() => setSettingsTab("general")}>Vue d'ensemble</Button>
-            <Button variant="ghost" className={`justify-start w-full h-8 px-2.5 font-medium rounded-sm ${settingsTab === "members" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`} onClick={() => setSettingsTab("members")}>Membres</Button>
-            {canManageServer && <Button variant="ghost" className={`justify-start w-full h-8 px-2.5 font-medium rounded-sm ${settingsTab === "bans" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`} onClick={() => setSettingsTab("bans")}>Bannissements</Button>}
+            <div className="text-[11px] font-bold text-[#8e9297] uppercase tracking-wider mb-2 px-2.5">{t("menu")}</div>
+            <Button variant="ghost" className={`justify-start w-full h-8 px-2.5 font-medium rounded-sm ${settingsTab === "general" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`} onClick={() => setSettingsTab("general")}>{t("overview")}</Button>
+            <Button variant="ghost" className={`justify-start w-full h-8 px-2.5 font-medium rounded-sm ${settingsTab === "members" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`} onClick={() => setSettingsTab("members")}>{t("members")}</Button>
+            {canManageServer && <Button variant="ghost" className={`justify-start w-full h-8 px-2.5 font-medium rounded-sm ${settingsTab === "bans" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`} onClick={() => setSettingsTab("bans")}>{t("bans")}</Button>}
             {activeServer && currentUser && activeServer.owner_id === currentUser.id && (
-              <Button variant="ghost" className="justify-start w-full h-8 px-2.5 font-medium rounded-sm text-[#ed4245] hover:bg-[#ed4245]/10" onClick={() => setSettingsTab("danger")}>Supprimer le serveur</Button>
+              <Button variant="ghost" className="justify-start w-full h-8 px-2.5 font-medium rounded-sm text-[#ed4245] hover:bg-[#ed4245]/10" onClick={() => setSettingsTab("danger")}>{t("deleteServer")}</Button>
             )}
           </div>
           <div className="flex-1 p-10 overflow-y-auto bg-[#36393f] relative">
             {settingsTab === "general" && (
               <div className="space-y-6 max-w-2xl">
-                <h3 className="text-xl font-bold text-white mb-6">Vue d'ensemble</h3>
-                <div className="grid gap-2"><Label className="text-[#b9bbbe] font-bold text-[10px] uppercase">Nom</Label><Input value={activeServer?.name || ""} readOnly className="bg-[#1e1f22] border-none text-white h-10" /></div>
-                <div className="grid gap-2"><Label className="text-[#b9bbbe] font-bold text-[10px] uppercase">Invitation</Label><div className="flex gap-2"><Input readOnly value={activeServer?.invite_code || "..."} className="bg-[#1e1f22] border-none text-white font-mono h-10" /><Button className="bg-[#5865F2]" onClick={() => { navigator.clipboard.writeText(activeServer?.invite_code || ""); toast.success("Copié !"); }}>Copier</Button></div></div>
+                <h3 className="text-xl font-bold text-white mb-6">{t("overview")}</h3>
+                <div className="grid gap-2"><Label className="text-[#b9bbbe] font-bold text-[10px] uppercase">{t("name")}</Label><Input value={activeServer?.name || ""} readOnly className="bg-[#1e1f22] border-none text-white h-10" /></div>
+                <div className="grid gap-2"><Label className="text-[#b9bbbe] font-bold text-[10px] uppercase">{t("invite")}</Label><div className="flex gap-2"><Input readOnly value={activeServer?.invite_code || "..."} className="bg-[#1e1f22] border-none text-white font-mono h-10" /><Button className="bg-[#5865F2]" onClick={() => { navigator.clipboard.writeText(activeServer?.invite_code || ""); toast.success(t("copied")); }}>{t("copy")}</Button></div></div>
               </div>
             )}
             {settingsTab === "members" && activeServer && <ServerMembersList serverId={activeServer.id} currentUserId={currentUser?.id} />}
             {settingsTab === "bans" && activeServer && <ServerBansList serverId={activeServer.id} />}
             {settingsTab === "danger" && activeServer && (
               <div className="border border-[#ed4245]/50 rounded-lg p-6 bg-[#ed4245]/5">
-                <h4 className="font-bold text-white">Supprimer le serveur</h4>
-                <Button variant="destructive" className="mt-4" onClick={handleDeleteServer} disabled={deleteLoading}>Supprimer</Button>
+                <h4 className="font-bold text-white">{t("deleteServer")}</h4>
+                <Button variant="destructive" className="mt-4" onClick={handleDeleteServer} disabled={deleteLoading}>{t("delete")}</Button>
               </div>
             )}
             <div className="absolute right-6 top-6"><Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(false)}>✕</Button></div>

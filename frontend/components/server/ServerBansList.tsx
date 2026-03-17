@@ -10,12 +10,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Hammer, RotateCcw, ShieldAlert, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { useTranslations } from "next-intl";
 
 interface ServerBansListProps {
   serverId: string;
 }
 
 export function ServerBansList({ serverId }: ServerBansListProps) {
+  const t = useTranslations("app.serverBansList");
   const [bans, setBans] = useState<ServerBan[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmData, setConfirmData] = useState<{
@@ -35,7 +37,7 @@ export function ServerBansList({ serverId }: ServerBansListProps) {
       setBans(data);
     } catch (e) {
       console.error("Failed to fetch bans", e);
-      toast.error("Erreur lors de la récupération des bannissements");
+      toast.error(t("toasts.fetchError"));
     } finally {
       setLoading(false);
     }
@@ -52,12 +54,12 @@ export function ServerBansList({ serverId }: ServerBansListProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: confirmData.userId }),
       });
-      toast.success(`${confirmData.username} a été débanni`);
+      toast.success(t("toasts.unbanned", {username: confirmData.username}));
       setConfirmData({ ...confirmData, isOpen: false });
       fetchBans();
     } catch (e) {
       console.error("Failed to unban user", e);
-      toast.error("Erreur lors du débannissement");
+      toast.error(t("toasts.unbanError"));
     }
   };
 
@@ -66,7 +68,7 @@ export function ServerBansList({ serverId }: ServerBansListProps) {
     const now = new Date();
     const diff = expires.getTime() - now.getTime();
     
-    if (diff <= 0) return "Expiré";
+    if (diff <= 0) return t("expired");
     
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -76,14 +78,14 @@ export function ServerBansList({ serverId }: ServerBansListProps) {
   };
 
   if (loading) {
-    return <div className="p-4 text-center text-muted-foreground">Chargement des bannissements...</div>;
+    return <div className="p-4 text-center text-muted-foreground">{t("loading")}</div>;
   }
 
   if (bans.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
         <ShieldAlert className="w-12 h-12 mb-4 opacity-20" />
-        <p>Aucun utilisateur banni sur ce serveur.</p>
+        <p>{t("empty")}</p>
       </div>
     );
   }
@@ -95,7 +97,7 @@ export function ServerBansList({ serverId }: ServerBansListProps) {
           <div className="bg-[#202225] p-3 rounded-md mb-4 border border-[#4f545c]/20">
             <div className="flex items-center gap-2 text-xs font-bold text-[#b9bbbe] uppercase tracking-wider">
               <Hammer className="w-4 h-4" />
-              <span>Liste des bannissements ({bans.length})</span>
+              <span>{t("listTitle", {count: bans.length})}</span>
             </div>
           </div>
 
@@ -114,26 +116,26 @@ export function ServerBansList({ serverId }: ServerBansListProps) {
                   </Avatar>
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-white truncate">{ban.username || "Utilisateur inconnu"}</span>
+                      <span className="font-bold text-white truncate">{ban.username || t("unknownUser")}</span>
                       {ban.expires_at ? (
                         <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-none flex items-center gap-1 text-[10px] py-0 h-5">
                           <Clock className="w-3 h-3" />
-                          Tempo ({getRemainingTime(ban.expires_at)})
+                          {t("temporary", {time: getRemainingTime(ban.expires_at)})}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="bg-red-500/10 text-red-500 border-none flex items-center gap-1 text-[10px] py-0 h-5">
                           <Hammer className="w-3 h-3" />
-                          Permanent
+                          {t("permanent")}
                         </Badge>
                       )}
                     </div>
                     {ban.reason && (
                       <span className="text-xs text-[#b9bbbe] truncate max-w-[300px]">
-                        Raison: {ban.reason}
+                        {t("reason", {reason: ban.reason})}
                       </span>
                     )}
                     <span className="text-[10px] text-[#72767d]">
-                      Banni le {ban.banned_at ? new Date(ban.banned_at).toLocaleDateString() : "Date inconnue"}
+                      {t("bannedOn", {date: ban.banned_at ? new Date(ban.banned_at).toLocaleDateString() : t("unknownDate")})}
                     </span>
                   </div>
                 </div>
@@ -145,7 +147,7 @@ export function ServerBansList({ serverId }: ServerBansListProps) {
                   onClick={() => setConfirmData({ isOpen: true, userId: ban.user_id, username: ban.username })}
                 >
                   <RotateCcw className="w-4 h-4" />
-                  <span>Débannir</span>
+                  <span>{t("unban")}</span>
                 </Button>
               </div>
             ))}
@@ -157,9 +159,9 @@ export function ServerBansList({ serverId }: ServerBansListProps) {
         isOpen={confirmData.isOpen}
         onClose={() => setConfirmData({ ...confirmData, isOpen: false })}
         onConfirm={handleUnban}
-        title={`Débannir ${confirmData.username} ?`}
-        message={`Cet utilisateur pourra de nouveau rejoindre le serveur s'il possède un lien d'invitation.`}
-        confirmText="Débannir"
+        title={t("confirmTitle", {username: confirmData.username})}
+        message={t("confirmMessage")}
+        confirmText={t("unban")}
         isDestructive={false}
       />
     </>

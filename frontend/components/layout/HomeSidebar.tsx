@@ -27,7 +27,6 @@ export function HomeSidebar() {
     <div className="flex flex-col h-full bg-[#2f3136] w-full flex-shrink-0">
       <div className="h-12 border-b border-[#202225] flex items-center px-4 font-semibold shadow-sm bg-[#2f3136] text-white">
         <div className="flex items-center justify-between w-full">
-          <span className="truncate font-bold">Messages Privés</span>
           <span className="truncate font-bold">{t("title")}</span>
         </div>
       </div>
@@ -51,7 +50,6 @@ export function HomeSidebar() {
                       {c.name?.slice(0, 2).toUpperCase() || "DM"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="font-medium truncate">{c.name || "Conversation Privée"}</span>
                   <span className="font-medium truncate">{c.name || t("privateConversation")}</span>
                 </button>
               </div>
