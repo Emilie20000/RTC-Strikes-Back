@@ -93,8 +93,8 @@ async fn main() {
     let redis_client = redis::Client::open(redis_url).expect("Invalid Redis URL");
     
     println!("Configuring CORS for explicit origins...");
-    let render_url = env::var("RENDER_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
-    println!("Allowed Render URL: {}", render_url);
+    let render_front_url = env::var("RENDER_FRONT_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+    println!("Allowed Frontend URL: {}", render_front_url);
 
     let voice_users = Arc::new(DashMap::<String, VoiceState>::new());
 
@@ -130,16 +130,19 @@ async fn main() {
         .nest("/api/channels", routes::channel::channel_routes(state.clone()))
         .nest("/api/messages", routes::messages::message_routes(state.clone()))
         .nest("/api/users", routes::user::user_routes(state.clone()))
-        .layer(socket_layer)
         .with_state(state.clone())
+        .fallback(handle_404)
+        .layer(socket_layer)
         .layer(
             CorsLayer::new()
-                .allow_origin(tower_http::cors::Any)
+                .allow_origin(render_front_url.parse::<HeaderValue>().expect("Invalid RENDER_FRONT_URL"))
                 .allow_methods([Method::GET, Method::POST, Method::PUT, Method::PATCH, Method::DELETE, Method::OPTIONS])
-                .allow_headers(tower_http::cors::Any)
-                .allow_credentials(false),
+                .allow_headers([
+                    axum::http::header::AUTHORIZATION,
+                    axum::http::header::CONTENT_TYPE,
+                ])
+                .allow_credentials(true),
         )
-        .fallback(handle_404)
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .with_state(state);
 
