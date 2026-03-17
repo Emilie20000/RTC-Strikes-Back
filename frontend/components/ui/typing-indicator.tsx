@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTranslations } from "next-intl";
 
 export type TypingUser = {
   username: string;
@@ -6,6 +7,7 @@ export type TypingUser = {
 };
 
 export function TypingIndicator({ users }: { users: TypingUser[] }) {
+  const t = useTranslations("ui.typingIndicator");
   if (users.length === 0) return null;
 
   return (
@@ -28,7 +30,7 @@ export function TypingIndicator({ users }: { users: TypingUser[] }) {
               <span className="text-sm font-medium leading-none text-muted-foreground">
                 {user.username}
               </span>
-              <span className="text-[10px] text-muted-foreground">écrit...</span>
+              <span className="text-[10px] text-muted-foreground">{t("typing")}</span>
             </div>
             <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-muted/50 border shadow-sm flex items-center gap-1 h-[38px]">
               <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>

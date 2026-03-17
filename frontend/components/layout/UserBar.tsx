@@ -16,8 +16,10 @@ import { UserSettingsDialog } from "@/components/user/UserSettingsDialog";
 import { api } from "@/lib/http";
 import { socket } from "@/lib/socket";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 export function UserBar() {
+  const t = useTranslations("app.userBar");
   const currentUser = useAppStore((s) => s.currentUser);
   const activeServerId = useAppStore((s) => s.activeServerId);
   const activeVoiceChannelId = useAppStore((s) => s.activeVoiceChannelId);
@@ -52,7 +54,7 @@ export function UserBar() {
       setUserStatus(newStatus);
     } catch (e) {
       console.error("Failed to update status", e);
-      toast.error("Impossible de mettre à jour le statut");
+      toast.error(t("toastStatusError"));
     }
   };
 
@@ -122,28 +124,30 @@ export function UserBar() {
               </div>
             </div>
             <DropdownMenuSeparator className="bg-[#2f3136]" />
-            <DropdownMenuLabel className="text-[10px] font-bold uppercase text-[#8e9297] px-2 py-1.5">Statut</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-[10px] font-bold uppercase text-[#8e9297] px-2 py-1.5">{t("statusLabel")}</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => handleStatusChange("Online")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#3ba55c]" /> En ligne
+              <div className="w-2.5 h-2.5 rounded-full bg-[#3ba55c]" /> {t("status.online")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleStatusChange("Away")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#faa61a]" /> Absent
+              <div className="w-2.5 h-2.5 rounded-full bg-[#faa61a]" /> {t("status.away")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleStatusChange("Busy")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#ED4245]" /> Occupé
+              <div className="w-2.5 h-2.5 rounded-full bg-[#ED4245]" /> {t("status.busy")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleStatusChange("Offline")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#747f8d]" /> Invisible
+              <div className="w-2.5 h-2.5 rounded-full bg-[#747f8d]" /> {t("status.offline")}
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-[#2f3136]" />
             <DropdownMenuItem onClick={() => setIsUserSettingsOpen(true)} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm">
-              Modifier le profil
+              {t("editProfile")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
         <div className="flex items-center">
           <button
+            aria-label={t("mute")}
+            title={t("mute")}
             className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#393c43] text-[#b9bbbe] hover:text-[#dcddde] transition-colors relative"
             onClick={toggleMute}
           >
@@ -154,12 +158,16 @@ export function UserBar() {
             )}
           </button>
           <button
+            aria-label={t("disconnect")}
+            title={t("disconnect")}
             className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#393c43] text-[#b9bbbe] hover:text-[#dcddde] transition-colors"
             onClick={handleDisconnect}
           >
             <PhoneOff className="w-5 h-5" />
           </button>
           <button
+            aria-label={t("settings")}
+            title={t("settings")}
             className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#393c43] text-[#b9bbbe] hover:text-[#dcddde] transition-colors"
             onClick={() => setIsUserSettingsOpen(true)}
           >

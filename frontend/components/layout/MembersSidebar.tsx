@@ -24,8 +24,10 @@ interface MembersSidebarProps {
 import { UserProfileDialog } from "@/components/user/UserProfileDialog";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { useTranslations } from "next-intl";
 
 export default function MembersSidebar({ serverId, onClose }: MembersSidebarProps) {
+  const t = useTranslations("app.membersSidebar");
   const serverMembers = useAppStore((s) => s.serverMembers);
   const setServerMembers = useAppStore((s) => s.setServerMembers);
   const updateMemberStatus = useAppStore((s) => s.updateMemberStatus);
@@ -110,20 +112,20 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ role: newRole }),
         });
-        toast.success("Rôle mis à jour");
+          toast.success(t("toasts.roleUpdated"));
         fetchMembers();
       } catch (e) {
         console.error("Failed to update role", e);
-        toast.error("Erreur lors de la modification du rôle");
+          toast.error(t("toasts.roleUpdateError"));
       }
     };
 
     if (newRole === "OWNER") {
       setConfirmData({
         isOpen: true,
-        title: "Transférer la propriété ?",
-        message: "ATTENTION : Vous êtes sur le point de transférer la propriété du serveur ! Si vous acceptez, vous deviendrez un simple MEMBRE et l'utilisateur choisi deviendra le nouveau PROPRIÉTAIRE. Cette action est irréversible. Voulez-vous continuer ?",
-        confirmText: "Transférer",
+        title: t("confirm.transferTitle"),
+        message: t("confirm.transferMessage"),
+        confirmText: t("confirm.transferAction"),
         isDestructive: true,
         onConfirm: performUpdate,
       });
@@ -136,20 +138,20 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
   const handleKick = async (userId: string) => {
     setConfirmData({
       isOpen: true,
-      title: "Expulser ce membre ?",
-      message: "Voulez-vous vraiment expulser ce membre ?",
-      confirmText: "Expulser",
+      title: t("confirm.kickTitle"),
+      message: t("confirm.kickMessage"),
+      confirmText: t("actions.kick"),
       isDestructive: true,
       onConfirm: async () => {
         try {
           await api(`/api/servers/${serverId}/members/${userId}`, {
             method: "DELETE",
           });
-          toast.success("Membre expulsé");
+          toast.success(t("toasts.memberKicked"));
           fetchMembers();
         } catch (e) {
           console.error("Failed to kick user", e);
-          toast.error("Erreur lors de l'expulsion");
+          toast.error(t("toasts.kickError"));
         }
       },
     });
@@ -158,22 +160,22 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
   const handleBan = async (userId: string) => {
     setConfirmData({
       isOpen: true,
-      title: "Bannir cet utilisateur ?",
-      message: "Voulez-vous vraiment bannir cet utilisateur ?",
-      confirmText: "Bannir",
+      title: t("confirm.banTitle"),
+      message: t("confirm.banMessage"),
+      confirmText: t("actions.ban"),
       isDestructive: true,
       onConfirm: async () => {
         try {
           await api(`/api/servers/${serverId}/ban`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, reason: "Banned by admin/owner" }),
+            body: JSON.stringify({ user_id: userId, reason: t("banReason") }),
           });
-          toast.success("Utilisateur banni");
+          toast.success(t("toasts.userBanned"));
           fetchMembers();
         } catch (e) {
           console.error("Failed to ban user", e);
-          toast.error("Erreur lors du bannissement");
+          toast.error(t("toasts.banError"));
         }
       },
     });
@@ -189,7 +191,7 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
   if (loading && members.length === 0) {
     return (
       <div className="flex flex-col h-full bg-muted/10 border-l w-60 items-center justify-center">
-        <p className="text-sm text-muted-foreground">Chargement...</p>
+        <p className="text-sm text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
@@ -203,7 +205,7 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
 
       <div className="fixed inset-0 lg:relative lg:right-0 lg:top-0 lg:bottom-0 flex flex-col h-full bg-[#2f3136] w-60 z-50">
         <div className="h-12 flex items-center justify-between px-4 font-bold shadow-sm bg-[#2f3136] border-b border-[#202225] select-none">
-          <span className="text-xs font-bold text-[#8e9297] uppercase tracking-wide">Membres — {members.length}</span>
+          <span className="text-xs font-bold text-[#8e9297] uppercase tracking-wide">{t("title", {count: members.length})}</span>
           <Button
             variant="ghost"
             size="icon"
@@ -220,10 +222,10 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
               if (statusMembers.length === 0) return null;
 
               const statusLabels: Record<string, string> = {
-                Online: "En ligne",
-                Away: "Absent",
-                Busy: "Ne pas déranger",
-                Offline: "Hors ligne",
+                Online: t("status.online"),
+                Away: t("status.away"),
+                Busy: t("status.busy"),
+                Offline: t("status.offline"),
               };
 
               const isCollapsed = collapsedSections.has(status);
@@ -285,19 +287,19 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
                                       {member.role !== "ADMIN" && (
                                         <DropdownMenuItem className="focus:bg-[#5865F2] focus:text-white cursor-pointer" onClick={() => handleUpdateRole(member.user_id, "ADMIN")}>
                                           <ShieldAlert className="mr-2 h-4 w-4" />
-                                          <span>Nommer Admin</span>
+                                          <span>{t("actions.makeAdmin")}</span>
                                         </DropdownMenuItem>
                                       )}
                                       {member.role === "ADMIN" && (
                                         <DropdownMenuItem className="focus:bg-[#5865F2] focus:text-white cursor-pointer" onClick={() => handleUpdateRole(member.user_id, "MEMBER")}>
                                           <ShieldCheck className="mr-2 h-4 w-4" />
-                                          <span>Rétrograder Membre</span>
+                                          <span>{t("actions.demoteMember")}</span>
                                         </DropdownMenuItem>
                                       )}
 
                                       <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, "OWNER")} className="text-[#DA373C] focus:bg-[#DA373C] focus:text-white cursor-pointer">
                                         <ShieldCheck className="mr-2 h-4 w-4" />
-                                        <span>Nommer Propriétaire</span>
+                                        <span>{t("actions.makeOwner")}</span>
                                       </DropdownMenuItem>
                                       <DropdownMenuSeparator className="bg-[#2f3136]" />
                                     </>
@@ -310,14 +312,14 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
                                         onClick={() => handleKick(member.user_id)}
                                       >
                                         <Ban className="mr-2 h-4 w-4" />
-                                        <span>Expulser</span>
+                                        <span>{t("actions.kick")}</span>
                                       </DropdownMenuItem>
                                       <DropdownMenuItem
                                         className="text-[#DA373C] focus:bg-[#DA373C] focus:text-white cursor-pointer"
                                         onClick={() => handleBan(member.user_id)}
                                       >
                                         <Ban className="mr-2 h-4 w-4" />
-                                        <span>Bannir</span>
+                                        <span>{t("actions.ban")}</span>
                                       </DropdownMenuItem>
                                     </>
                                   )}

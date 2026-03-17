@@ -1,4 +1,21 @@
 {
+  "ui": {
+    "dialog": {
+      "close": "Fermer"
+    },
+    "confirmModal": {
+      "confirm": "Confirmer",
+      "cancel": "Annuler"
+    },
+    "gifPicker": {
+      "searchPlaceholder": "Rechercher des GIFs",
+      "noResult": "Aucun GIF trouvé pour \"{query}\"",
+      "poweredBy": "Propulsé par GIPHY"
+    },
+    "typingIndicator": {
+      "typing": "écrit..."
+    }
+  },
   "auth": {
     "login": {
       "title": "Connexion",
@@ -27,6 +44,280 @@
       "errorGeneric": "Une erreur est survenue lors de l'inscription.",
       "haveAccount": "Déjà un compte ?",
       "loginLink": "Se connecter"
+    }
+  },
+  "app": {
+    "homeSidebar": {
+      "title": "Messages privés",
+      "privateConversation": "Conversation privée",
+      "empty": "Aucun message privé. Démarrez une discussion depuis le profil d'un membre !"
+    },
+    "serverSidebar": {
+      "home": "Accueil",
+      "createServer": "Créer un serveur",
+      "joinServer": "Rejoindre un serveur",
+      "toastCreated": "Serveur créé avec succès !",
+      "toastCreateError": "Erreur lors de la création du serveur",
+      "toastJoined": "Serveur rejoint !",
+      "toastJoinErrorDefault": "Impossible de rejoindre le serveur. Vérifiez le code.",
+      "createDialog": {
+        "title": "Personnalise ton serveur",
+        "description": "Donne une personnalité à ton nouveau serveur avec un nom et une icône. Tu pourras toujours changer ça plus tard.",
+        "serverNameLabel": "Nom du serveur",
+        "serverNamePlaceholder": "Ex: Le serveur de ouf",
+        "back": "Retour",
+        "creating": "Création...",
+        "create": "Créer"
+      },
+      "joinDialog": {
+        "title": "Rejoindre un serveur",
+        "description": "Saisis ci-dessous l'invitation pour rejoindre un serveur existant.",
+        "inviteCodeLabel": "Code d'invitation",
+        "inviteCodePlaceholder": "Ex: 8X3s9D",
+        "cancel": "Annuler",
+        "joining": "Rejoindre...",
+        "join": "Rejoindre"
+      }
+    },
+    "chatPanel": {
+      "toastDeleteError": "Impossible de supprimer le message",
+      "toastEditError": "Impossible de modifier le message",
+      "toastCopied": "Message copié !",
+      "privateConversation": "Conversation privée",
+      "unnamedChannel": "Canal sans nom",
+      "selectChannel": "Sélectionner un canal",
+      "voiceChannel": "Salon vocal",
+      "directMessage": "Message privé",
+      "textChannel": "Salon textuel",
+      "editHintPrefix": "échap pour",
+      "editHintMiddle": "entrée pour",
+      "cancel": "annuler",
+      "save": "sauvegarder",
+      "welcomeIn": "Bienvenue dans #{channel} !",
+      "thisChannel": "ce salon",
+      "welcomeSubtitle": "C'est le début de la conversation légendaire de ce salon.",
+      "readyToChat": "Prêt à discuter ?",
+      "selectLeftChannel": "Sélectionnez un salon sur la gauche pour commencer la conversation.",
+      "sendInChannel": "Envoyer un message dans #{channel}",
+      "selectChannelPlaceholder": "Sélectionnez un canal..."
+    },
+    "serverChannelsSidebar": {
+      "toastChannelCreated": "Salon créé",
+      "toastChannelCreateError": "Erreur lors de la création du salon",
+      "deleteChannelTitle": "Supprimer le salon ?",
+      "deleteChannelMessage": "Êtes-vous sûr de vouloir supprimer ce salon ? Cette action est irréversible.",
+      "delete": "Supprimer",
+      "toastChannelDeleted": "Salon supprimé",
+      "toastChannelDeleteError": "Impossible de supprimer le canal.",
+      "toastKickMembersFirst": "Vous devez expulser tous les membres avant de pouvoir supprimer le serveur.",
+      "deleteServerTitle": "Supprimer le serveur ?",
+      "deleteServerMessage": "Êtes-vous sûr de vouloir supprimer ce serveur ? Cette action est irréversible et supprimera tout le contenu.",
+      "deleteServer": "Supprimer le serveur",
+      "toastServerDeleted": "Serveur supprimé",
+      "toastServerDeleteError": "Impossible de supprimer le serveur.",
+      "leaveServerConfirm": "Êtes-vous sûr de vouloir quitter ce serveur ?",
+      "leaveServerError": "Impossible de quitter le serveur.",
+      "serverFallback": "Serveur...",
+      "menu": "Menu",
+      "serverSettings": "Paramètres du serveur",
+      "manageMembers": "Gérer les membres",
+      "leaveServer": "Quitter le serveur",
+      "textChannels": "Salons textuels",
+      "voiceChannels": "Salons vocaux",
+      "createChannel": "Créer un salon",
+      "inCategory": "Dans la catégorie {category}",
+      "channelType": "Type de salon",
+      "textType": "Textuel",
+      "textTypeDesc": "Envoi de messages, d'images...",
+      "voiceType": "Vocal",
+      "voiceTypeDesc": "Discutez en vocal...",
+      "channelName": "Nom du salon",
+      "channelNamePlaceholder": "nouveau-salon",
+      "cancel": "Annuler",
+      "creating": "Création...",
+      "createChannelAction": "Créer le salon",
+      "serverSettingsFor": "Paramètres du serveur {server}",
+      "serverSettingsDesc": "Gérez les paramètres du serveur.",
+      "overview": "Vue d'ensemble",
+      "members": "Membres",
+      "bans": "Bannissements",
+      "name": "Nom",
+      "invite": "Invitation",
+      "copied": "Copié !",
+      "copy": "Copier"
+    },
+    "userBar": {
+      "toastStatusError": "Impossible de mettre à jour le statut",
+      "statusLabel": "Statut",
+      "status": {
+        "online": "En ligne",
+        "away": "Absent",
+        "busy": "Occupé",
+        "offline": "Invisible"
+      },
+      "editProfile": "Modifier le profil",
+      "mute": "Activer/Désactiver le micro",
+      "disconnect": "Se déconnecter du vocal",
+      "settings": "Paramètres"
+    },
+    "userSettings": {
+      "alerts": {
+        "updateError": "Erreur lors de la mise à jour du profil.",
+        "uploadFailed": "Échec de l'upload",
+        "uploadError": "Erreur lors de l'upload"
+      },
+      "sidebar": {
+        "title": "Paramètres utilisateur",
+        "logout": "Déconnexion"
+      },
+      "tabs": {
+        "account": "Mon compte",
+        "profile": "Profil",
+        "language": "Langue"
+      },
+      "account": {
+        "title": "Mon compte",
+        "statusOnline": "En ligne",
+        "editProfile": "Éditer le profil",
+        "noEmail": "Pas d'email",
+        "displayName": "Nom d'affichage",
+        "edit": "Modifier",
+        "email": "Email",
+        "notProvided": "Non renseigné",
+        "securityTitle": "Sécurité et connexion",
+        "changePassword": "Modifier le mot de passe"
+      },
+      "profile": {
+        "title": "Profil du serveur",
+        "description": "Personnalisez votre apparence sur ce serveur.",
+        "displayName": "Nom d'affichage",
+        "avatar": "Avatar",
+        "changeAvatar": "Changer l'avatar",
+        "remove": "Supprimer",
+        "preview": "Aperçu du profil",
+        "userFallback": "Utilisateur",
+        "customizing": "En train de personnaliser son profil..."
+      },
+      "language": {
+        "title": "Langue",
+        "description": "Choisissez la langue de l'application.",
+        "label": "Langue",
+        "options": "Français / English"
+      },
+      "saveBar": {
+        "unsaved": "Attention — vous avez des modifications non enregistrées !",
+        "reset": "Réinitialiser",
+        "saving": "Enregistrement...",
+        "save": "Enregistrer"
+      },
+      "escape": "Échap"
+    },
+    "serverMembersList": {
+      "loading": "Chargement des membres...",
+      "userFallback": "Utilisateur",
+      "joinedSince": "Membre depuis {date}",
+      "unknownJoinDate": "Date d'arrivée inconnue",
+      "toasts": {
+        "roleUpdated": "Rôle mis à jour",
+        "roleUpdateError": "Erreur lors de la modification du rôle",
+        "memberKicked": "Membre expulsé",
+        "kickError": "Erreur lors de l'expulsion",
+        "banned": "{username} a été banni",
+        "banError": "Erreur lors du bannissement"
+      },
+      "confirm": {
+        "transferTitle": "Transférer la propriété ?",
+        "transferMessage": "ATTENTION : Cette action est irréversible ! Si vous nommez ce membre Propriétaire, il deviendra votre égal et vous ne pourrez plus le rétrograder. Êtes-vous sûr ?",
+        "transferAction": "Transférer",
+        "kickTitle": "Expulser ce membre ?",
+        "kickMessage": "Voulez-vous vraiment expulser ce membre du serveur ?"
+      },
+      "actions": {
+        "makeAdmin": "Nommer Admin",
+        "demoteMember": "Rétrograder Membre",
+        "makeOwner": "Nommer Propriétaire",
+        "kick": "Expulser",
+        "ban": "Bannir",
+        "cancel": "Annuler"
+      },
+      "ban": {
+        "title": "Bannir {username}",
+        "description": "L'utilisateur sera expulsé et ne pourra pas revenir selon la durée choisie.",
+        "defaultReason": "Banni par un administrateur",
+        "reasonLabel": "Raison du bannissement",
+        "reasonPlaceholder": "Ex: Comportement inapproprié",
+        "durationLabel": "Durée du bannissement",
+        "confirmAction": "Bannir l'utilisateur",
+        "duration": {
+          "permanent": "Permanent",
+          "oneHour": "1 Heure",
+          "twentyFourHours": "24 Heures",
+          "sevenDays": "7 Jours (168h)",
+          "thirtyDays": "30 Jours (720h)"
+        }
+      }
+    },
+    "serverBansList": {
+      "loading": "Chargement des bannissements...",
+      "empty": "Aucun utilisateur banni sur ce serveur.",
+      "listTitle": "Liste des bannissements ({count})",
+      "unknownUser": "Utilisateur inconnu",
+      "temporary": "Tempo ({time})",
+      "permanent": "Permanent",
+      "reason": "Raison: {reason}",
+      "unknownDate": "Date inconnue",
+      "bannedOn": "Banni le {date}",
+      "unban": "Débannir",
+      "expired": "Expiré",
+      "confirmTitle": "Débannir {username} ?",
+      "confirmMessage": "Cet utilisateur pourra de nouveau rejoindre le serveur s'il possède un lien d'invitation.",
+      "toasts": {
+        "fetchError": "Erreur lors de la récupération des bannissements",
+        "unbanned": "{username} a été débanni",
+        "unbanError": "Erreur lors du débannissement"
+      }
+    },
+    "userProfileDialog": {
+      "online": "En ligne",
+      "owner": "PROPRIÉTAIRE",
+      "memberSince": "Membre depuis",
+      "sendMessage": "Envoyer un message",
+      "close": "Fermer"
+    },
+    "membersSidebar": {
+      "loading": "Chargement...",
+      "title": "Membres — {count}",
+      "banReason": "Banni par admin/propriétaire",
+      "status": {
+        "online": "En ligne",
+        "away": "Absent",
+        "busy": "Ne pas déranger",
+        "offline": "Hors ligne"
+      },
+      "toasts": {
+        "roleUpdated": "Rôle mis à jour",
+        "roleUpdateError": "Erreur lors de la modification du rôle",
+        "memberKicked": "Membre expulsé",
+        "kickError": "Erreur lors de l'expulsion",
+        "userBanned": "Utilisateur banni",
+        "banError": "Erreur lors du bannissement"
+      },
+      "confirm": {
+        "transferTitle": "Transférer la propriété ?",
+        "transferMessage": "ATTENTION : Vous êtes sur le point de transférer la propriété du serveur ! Si vous acceptez, vous deviendrez un simple MEMBRE et l'utilisateur choisi deviendra le nouveau PROPRIÉTAIRE. Cette action est irréversible. Voulez-vous continuer ?",
+        "transferAction": "Transférer",
+        "kickTitle": "Expulser ce membre ?",
+        "kickMessage": "Voulez-vous vraiment expulser ce membre ?",
+        "banTitle": "Bannir cet utilisateur ?",
+        "banMessage": "Voulez-vous vraiment bannir cet utilisateur ?"
+      },
+      "actions": {
+        "makeAdmin": "Nommer Admin",
+        "demoteMember": "Rétrograder Membre",
+        "makeOwner": "Nommer Propriétaire",
+        "kick": "Expulser",
+        "ban": "Bannir"
+      }
     }
   }
 }

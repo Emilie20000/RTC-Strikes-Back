@@ -9,6 +9,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 interface ConfirmModalProps {
     isOpen: boolean;
@@ -27,10 +28,14 @@ export function ConfirmModal({
     onConfirm,
     title,
     message,
-    confirmText = "Confirmer",
-    cancelText = "Annuler",
+    confirmText,
+    cancelText,
     isDestructive = false,
 }: ConfirmModalProps) {
+    const t = useTranslations("ui.confirmModal");
+    const resolvedConfirmText = confirmText ?? t("confirm");
+    const resolvedCancelText = cancelText ?? t("cancel");
+
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="bg-[#36393f] text-[#dcddde] border-none sm:max-w-[425px]">
@@ -46,7 +51,7 @@ export function ConfirmModal({
                         onClick={onClose}
                         className="text-[#dcddde] hover:underline"
                     >
-                        {cancelText}
+                        {resolvedCancelText}
                     </Button>
                     <Button
                         onClick={() => {
@@ -57,7 +62,7 @@ export function ConfirmModal({
                             ? "bg-[#ED4245] hover:bg-[#c03537]"
                             : "bg-[#5865F2] hover:bg-[#4752c4]"} text-white`}
                     >
-                        {confirmText}
+                        {resolvedConfirmText}
                     </Button>
                 </DialogFooter>
             </DialogContent>

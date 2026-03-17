@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ShieldAlert, ShieldCheck, Calendar, Mail } from "lucide-react";
 import { ServerMember } from "@/lib/store";
+import { useTranslations } from "next-intl";
 
 interface UserProfileDialogProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface UserProfileDialogProps {
 }
 
 export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDialogProps) {
+    const t = useTranslations("app.userProfileDialog");
   if (!member) return null;
 
   return (
@@ -34,7 +36,7 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
                               {member.username.slice(0, 2).toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
-                        <div className="absolute bottom-1 right-1 w-6 h-6 bg-[#3ba55c] rounded-full border-[4px] border-[#232428]" title="En ligne"></div>
+                        <div className="absolute bottom-1 right-1 w-6 h-6 bg-[#3ba55c] rounded-full border-[4px] border-[#232428]" title={t("online")}></div>
                     </div>
                 </div>
 
@@ -47,7 +49,7 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
                         <div className="flex gap-2">
                             {member.role === "OWNER" && (
                                 <Badge variant="secondary" className="bg-[#f0b232]/10 text-[#f0b232] border-none h-6 px-1.5 text-[10px] font-bold">
-                                    <ShieldCheck className="w-3 h-3 mr-1" /> PROPRIÉTAIRE
+                                    <ShieldCheck className="w-3 h-3 mr-1" /> {t("owner")}
                                 </Badge>
                             )}
                             {member.role === "ADMIN" && (
@@ -61,7 +63,7 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
                     <Separator className="bg-[#4f545c]/20" />
 
                     <div className="space-y-3">
-                         <div className="text-[10px] font-bold text-white uppercase tracking-wider">Membre depuis</div>
+                        <div className="text-[10px] font-bold text-white uppercase tracking-wider">{t("memberSince")}</div>
                          <div className="flex items-center gap-2 text-sm text-[#dcddde]">
                             <Calendar className="w-4 h-4 text-[#b9bbbe]" />
                             <span>
@@ -97,13 +99,15 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
                             }}
                             className="w-full bg-[#5865f2] hover:bg-[#4752c4] text-white text-sm font-bold py-2 rounded transition-colors"
                         >
-                            Envoyer un message
+                            {t("sendMessage")}
                         </button>
                     </div>
                 </div>
             </div>
 
             <button 
+              aria-label={t("close")}
+              title={t("close")}
               onClick={() => onOpenChange(false)}
               className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
             >

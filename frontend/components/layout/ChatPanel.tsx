@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
+import { enUS, fr } from "date-fns/locale";
 import GifPicker from "@/components/ui/GifPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -35,14 +35,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import MembersSidebar from "@/components/layout/MembersSidebar";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 
 type Hello = { message: string };
 
-function formatTimeRelative(ts: number) {
+function formatTimeRelative(ts: number, locale: "fr" | "en") {
   try {
-    return formatDistanceToNow(new Date(ts), { addSuffix: true, locale: fr });
+    return formatDistanceToNow(new Date(ts), { addSuffix: true, locale: locale === "fr" ? fr : enUS });
   } catch (e) {
-    return "à l'instant";
+    return locale === "fr" ? "à l'instant" : "just now";
   }
 }
 
@@ -55,7 +56,7 @@ function formatTimeOnly(ts: number) {
   }
 }
 
-function formatDateDetail(ts: number) {
+function formatDateDetail(ts: number, locale: "fr" | "en") {
   try {
     const d = new Date(ts);
     const today = new Date();
@@ -64,31 +65,35 @@ function formatDateDetail(ts: number) {
 
     const time = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
 
-    if (isToday) return `Aujourd'hui à ${time}`;
-    if (isYesterday) return `Hier à ${time}`;
-    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${time}`;
+    if (isToday) return locale === "fr" ? `Aujourd'hui à ${time}` : `Today at ${time}`;
+    if (isYesterday) return locale === "fr" ? `Hier à ${time}` : `Yesterday at ${time}`;
+    return locale === "fr"
+      ? `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${time}`
+      : `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()} ${time}`;
   } catch (e) {
     return "";
   }
 }
 
-function formatDateDivider(ts: number) {
+function formatDateDivider(ts: number, locale: "fr" | "en") {
   try {
     const d = new Date(ts);
     const today = new Date();
     const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
     const isYesterday = d.getDate() === today.getDate() - 1 && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
 
-    if (isToday) return "Aujourd'hui";
-    if (isYesterday) return "Hier";
+    if (isToday) return locale === "fr" ? "Aujourd'hui" : "Today";
+    if (isYesterday) return locale === "fr" ? "Hier" : "Yesterday";
 
-    return d.toLocaleDateString("fr-FR", { day: 'numeric', month: 'long', year: 'numeric' });
+    return d.toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", { day: 'numeric', month: 'long', year: 'numeric' });
   } catch (e) {
     return "";
   }
 }
 
 export default function ChatPanel() {
+  const t = useTranslations("app.chatPanel");
+  const locale = (useLocale() as "fr" | "en") || "fr";
   const channels = useAppStore((s) => s.channels);
   const activeChannelId = useAppStore((s) => s.activeChannelId);
   const messagesByChannel = useAppStore((s) => s.messagesByChannel);
@@ -133,7 +138,7 @@ export default function ChatPanel() {
       }
     } catch (e) {
       console.error("Failed to delete message", e);
-      toast.error("Impossible de supprimer le message");
+      toast.error(t("toastDeleteError"));
     }
   };
 
@@ -163,13 +168,13 @@ export default function ChatPanel() {
       setEditContent("");
     } catch (e) {
       console.error("Failed to update message", e);
-      toast.error("Impossible de modifier le message");
+      toast.error(t("toastEditError"));
     }
   };
 
   const handleCopyMessage = (content: string) => {
     navigator.clipboard.writeText(content);
-    toast.success("Message copié !");
+    toast.success(t("toastCopied"));
   };
 
   const [text, setText] = useState("");
@@ -406,12 +411,12 @@ export default function ChatPanel() {
               )}
               <h2 className="font-bold text-white text-base tracking-tight">
                 {activeChannel 
-                  ? (activeChannel.name || (activeChannel.kind === "DM" ? "Conversation Privée" : "Canal sans nom")) 
-                  : "Sélectionner un canal"}
+                  ? (activeChannel.name || (activeChannel.kind === "DM" ? t("privateConversation") : t("unnamedChannel"))) 
+                  : t("selectChannel")}
               </h2>
               {activeChannel && (
                 <span className="text-xs text-[#72767d] hidden sm:inline-block truncate max-w-[200px]">
-                  {activeChannel.kind === "VOICE" ? "Salon Vocal" : activeChannel.kind === "DM" ? "Message Privé" : "Salon Textuel"}
+                  {activeChannel.kind === "VOICE" ? t("voiceChannel") : activeChannel.kind === "DM" ? t("directMessage") : t("textChannel")}
                 </span>
               )}
             </div>
@@ -456,7 +461,7 @@ export default function ChatPanel() {
                               <div className="w-full border-t border-[#40444b]"></div>
                             </div>
                             <div className="relative bg-[#36393f] px-2 text-xs font-semibold text-[#72767d]">
-                              {formatDateDivider(m.createdAt)}
+                              {formatDateDivider(m.createdAt, locale)}
                             </div>
                           </div>
                         )}
@@ -503,7 +508,7 @@ export default function ChatPanel() {
                               <div className="flex items-center gap-2">
                                 <span className="text-base font-medium text-white hover:underline cursor-pointer">{m.author}</span>
                                 <span className="text-xs text-[#72767d] ml-1">
-                                  {formatDateDetail(m.createdAt)}
+                                  {formatDateDetail(m.createdAt, locale)}
                                 </span>
                               </div>
                             )}
@@ -525,7 +530,7 @@ export default function ChatPanel() {
                                     }}
                                   />
                                   <div className="text-xs text-[#b9bbbe] mt-2">
-                                    échap pour <span className="text-[#00aff4] hover:underline cursor-pointer" onClick={handleCancelEdit}>annuler</span> • entrée pour <span className="text-[#00aff4] hover:underline cursor-pointer" onClick={() => handleUpdateMessage(m.id)}>sauvegarder</span>
+                                    {t("editHintPrefix")} <span className="text-[#00aff4] hover:underline cursor-pointer" onClick={handleCancelEdit}>{t("cancel")}</span> • {t("editHintMiddle")} <span className="text-[#00aff4] hover:underline cursor-pointer" onClick={() => handleUpdateMessage(m.id)}>{t("save")}</span>
                                   </div>
                                 </div>
                               ) : (
@@ -558,8 +563,8 @@ export default function ChatPanel() {
                       <Hash className="w-12 h-12 text-white" />
                     </div>
                     <div className="text-center">
-                      <h3 className="text-2xl font-bold text-white mb-2">Bienvenue dans #{activeChannel?.name || "ce salon"} !</h3>
-                      <p className="text-[#b9bbbe]">C&apos;est le début de la conversation légendaire de ce salon.</p>
+                      <h3 className="text-2xl font-bold text-white mb-2">{t("welcomeIn", {channel: activeChannel?.name || t("thisChannel")})}</h3>
+                      <p className="text-[#b9bbbe]">{t("welcomeSubtitle")}</p>
                     </div>
                   </div>
                 )}
@@ -579,8 +584,8 @@ export default function ChatPanel() {
                   </Avatar>
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Prêt à discuter ?</h3>
-                  <p className="text-[#b9bbbe]">Sélectionnez un salon sur la gauche pour commencer la conversation.</p>
+                  <h3 className="text-xl font-bold text-white mb-2">{t("readyToChat")}</h3>
+                  <p className="text-[#b9bbbe]">{t("selectLeftChannel")}</p>
                 </div>
               </div>
             )}
@@ -592,7 +597,7 @@ export default function ChatPanel() {
             {activeChannelId && (
               <div className="absolute left-4 top-3 text-[#b9bbbe] pointer-events-none">
                 <span className="bg-[#40444b] pr-1">
-                  <div className="w-6 h-6 flex items-center justify-center bg-[#b9bbbe] rounded-full text-[#40444b] font-bold text-xs" style={{ display: text ? 'none' : 'flex' }}>
+                  <div className={`w-6 h-6 items-center justify-center bg-[#b9bbbe] rounded-full text-[#40444b] font-bold text-xs ${text ? "hidden" : "flex"}`}>
                     +
                   </div>
                 </span>
@@ -600,7 +605,7 @@ export default function ChatPanel() {
             )}
             <Input
               className="bg-transparent border-none text-[#dcddde] p-0 pl-8 h-auto focus-visible:ring-0 placeholder-[#72767d] font-normal"
-              placeholder={activeChannelId ? `Envoyer un message dans #${activeChannel?.name}` : "Sélectionnez un canal..."}
+              placeholder={activeChannelId ? t("sendInChannel", {channel: activeChannel?.name || ""}) : t("selectChannelPlaceholder")}
               value={text}
               onChange={handleInputChange}
               onKeyDown={(e) => {
