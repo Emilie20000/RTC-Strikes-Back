@@ -1,0 +1,73 @@
+name: release-on-tag
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  tests-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Frontend - setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend - install
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend - tests + coverage
+        working-directory: frontend
+        run: npm run test:coverage
+
+      - name: Frontend - build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+          NEXT_PUBLIC_GIPHY_API_KEY: dummy
+          IS_TAURI: "false"
+        run: npm run build
+
+      - name: Backend - setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Backend - cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      - name: Backend - tests
+        working-directory: backend
+        run: cargo test --all
+
+      - name: Backend - build (release)
+        working-directory: backend
+        run: cargo build --release
+
+      - name: Package artifacts
+        run: |
+          mkdir -p dist
+          tar -czf dist/frontend-build.tgz -C frontend .next
+          tar -czf dist/backend-release.tgz -C backend target/release
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-artifacts
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*

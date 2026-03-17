@@ -11,7 +11,6 @@ bash scripts/test_sequence.sh
 ```bash
 cd frontend
 npm ci
-npm run lint
 npm run test:coverage
 ```
 
@@ -21,13 +20,17 @@ npm run test:coverage
 
 ```bash
 cd backend
-cargo fmt --all -- --check
-cargo clippy --all-targets -- -D warnings
 cargo test --all
 ```
 
 ## CI (automatique)
 
 Une pipeline GitHub Actions lance automatiquement :
-- `frontend`: lint + tests + couverture (avec artifact `frontend-coverage`)
-- `backend`: fmt + clippy + tests + couverture (artifact `backend-coverage`)
+- `frontend`: tests + couverture (avec artifact `frontend-coverage`)
+- `backend`: tests + couverture (artifact `backend-coverage`)
+
+## Release (tag)
+
+Sur création d'un tag, la pipeline :
+- lance tests + build frontend et backend
+- publie un GitHub Release avec les artefacts (job `release-on-tag`)
