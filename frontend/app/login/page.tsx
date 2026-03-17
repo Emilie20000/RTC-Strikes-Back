@@ -19,6 +19,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const setLocaleCookie = (locale: "fr" | "en") => {
+    document.cookie = `NEXT_LOCALE=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
@@ -33,6 +37,11 @@ export default function LoginPage() {
       // Store session info
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+
+      const persistedLocale = data.user?.langue;
+      if (persistedLocale === "fr" || persistedLocale === "en") {
+        setLocaleCookie(persistedLocale);
+      }
       
       router.replace("/app");
     } catch (err: any) {

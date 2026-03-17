@@ -5,12 +5,14 @@ import { Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { fetchTrendingGifs, searchGifs, GiphyGif } from "@/lib/giphy";
+import { useTranslations } from "next-intl";
 
 interface GifPickerProps {
   onSelect: (url: string) => void;
 }
 
 export default function GifPicker({ onSelect }: GifPickerProps) {
+  const t = useTranslations("ui.gifPicker");
   const [gifs, setGifs] = useState<GiphyGif[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,7 +70,7 @@ export default function GifPicker({ onSelect }: GifPickerProps) {
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[#72767d]" />
           <Input
-            placeholder="Rechercher des GIFs"
+            placeholder={t("searchPlaceholder")}
             value={searchQuery}
             onChange={onSearchChange}
             className="pl-9 bg-[#202225] border-none text-white h-9 focus-visible:ring-1 focus-visible:ring-[#5865f2]"
@@ -102,13 +104,13 @@ export default function GifPicker({ onSelect }: GifPickerProps) {
         )}
         {!loading && gifs.length === 0 && searchQuery && (
           <div className="flex flex-col items-center justify-center h-full text-[#72767d] p-4 text-center">
-            <p>Aucun GIF trouvé pour "{searchQuery}"</p>
+            <p>{t("noResult", {query: searchQuery})}</p>
           </div>
         )}
       </ScrollArea>
 
       <div className="p-2 bg-[#2f3136] text-[10px] text-[#72767d] text-center border-t border-[#202225]">
-        Propulsé par GIPHY
+        {t("poweredBy")}
       </div>
     </div>
   );
