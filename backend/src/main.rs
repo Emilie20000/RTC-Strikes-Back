@@ -10,18 +10,18 @@ use axum::{
     Router,
     Json,
 };
-use axum::http::{HeaderValue, Method};
+use axum::http::{HeaderValue, Method, StatusCode};
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use serde::Serialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
-// use tower_http::services::ServeDir;
+use dashmap::DashMap;
+use serde::Deserialize;
+use tower_http::services::ServeDir;
 use dotenvy::dotenv;
 use std::env;
 use socketioxide::SocketIo;
-use dashmap::DashMap;
-use serde::Deserialize;
 
 #[derive(Serialize)]
 struct Message {
@@ -47,6 +47,7 @@ pub struct AppState {
     pub pool: PgPool,
     pub io: socketioxide::SocketIo,
     pub voice_users: Arc<DashMap<String, VoiceState>>,
+    pub redis_client: redis::Client,
 }
 
 use std::time::Duration;
@@ -86,12 +87,21 @@ async fn main() {
         Ok(_) => println!("Successfully connected to PostgreSQL!"),
         Err(e) => println!("Failed to verify PostgreSQL connection: {}", e),
     }
+
+    let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".to_string());
+    println!("Connecting to Redis at {}...", redis_url);
+    let redis_client = redis::Client::open(redis_url).expect("Invalid Redis URL");
     
     println!("Configuring CORS for explicit origins...");
+    let render_front_url = env::var("RENDER_FRONT_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+    println!("Allowed Frontend URL: {}", render_front_url);
+
+    let voice_users = Arc::new(DashMap::<String, VoiceState>::new());
 
     let (socket_layer, io) = SocketIo::builder()
         .with_state(pool.clone())
-        .with_state(Arc::new(DashMap::<String, VoiceState>::new()))
+        .with_state(redis_client.clone())
+        .with_state(voice_users.clone())
         .ping_interval(std::time::Duration::from_secs(15))
         .ping_timeout(std::time::Duration::from_secs(30))
         .build_layer();
@@ -101,11 +111,9 @@ async fn main() {
     let state = Arc::new(AppState { 
         pool, 
         io: io.clone(),
-        voice_users: Arc::new(DashMap::new())
+        voice_users,
+        redis_client,
     });
-
-use tower_http::services::ServeDir;
-
 
     if let Err(e) = tokio::fs::create_dir_all("uploads").await {
         println!("Failed to create uploads directory: {}", e);
@@ -122,30 +130,28 @@ use tower_http::services::ServeDir;
         .nest("/api/channels", routes::channel::channel_routes(state.clone()))
         .nest("/api/messages", routes::messages::message_routes(state.clone()))
         .nest("/api/users", routes::user::user_routes(state.clone()))
-        .layer(socket_layer)
         .with_state(state.clone())
+        .fallback(handle_404)
+        .layer(socket_layer)
         .layer(
             CorsLayer::new()
-                .allow_origin([
-                    HeaderValue::from_static("http://localhost:3000"),
-                    HeaderValue::from_static("http://127.0.0.1:3000"),
-                    HeaderValue::from_static("http://localhost:3001"),
-                    HeaderValue::from_static("http://127.0.0.1:3001"),
-                    HeaderValue::from_static("http://localhost:5173"),
-                    HeaderValue::from_static("http://127.0.0.1:5173"),
-                ])
+                .allow_origin(render_front_url.parse::<HeaderValue>().expect("Invalid RENDER_FRONT_URL"))
                 .allow_methods([Method::GET, Method::POST, Method::PUT, Method::PATCH, Method::DELETE, Method::OPTIONS])
                 .allow_headers([
-                    axum::http::header::CONTENT_TYPE,
                     axum::http::header::AUTHORIZATION,
-                    axum::http::header::ACCEPT,
+                    axum::http::header::CONTENT_TYPE,
                 ])
                 .allow_credentials(true),
         )
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .with_state(state);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
+    let port = env::var("PORT")
+        .ok()
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(8080);
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     println!("🚀 Server listening on {}", addr);
     println!("📚 Available routes:");
     println!("   GET  /");
@@ -186,4 +192,14 @@ async fn db_check(axum::extract::State(state): axum::extract::State<Arc<AppState
             message: format!("❌ Error connecting to PostgreSQL: {}", e),
         }),
     }
+}
+
+async fn handle_404(request: axum::extract::Request) -> (StatusCode, Json<serde_json::Value>) {
+    let method = request.method().clone();
+    let path = request.uri().path().to_string();
+    println!("⚠️  404 error: {} {}", method, path);
+    (
+        StatusCode::NOT_FOUND,
+        Json(serde_json::json!({ "error": format!("Route not found: {} {}", method, path) })),
+    )
 }
