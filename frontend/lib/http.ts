@@ -28,7 +28,13 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
         if (json.error === "User not found" && typeof window !== "undefined") {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
-          window.location.href = "/login";
+          const isJsdom = typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
+          if (!isJsdom) {
+            try {
+              window.location.href = "/login";
+            } catch {
+            }
+          }
         }
       }
       error.data = json;

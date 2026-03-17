@@ -1,1 +1,4 @@
 .env
+backend/target
+backend/lcov.info
+backend/coverage

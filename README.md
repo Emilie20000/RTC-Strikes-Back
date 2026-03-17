@@ -63,3 +63,7 @@ Le projet est integralement conteneurise avec Docker.
 ## Documentation Complementaire
 
 - Documentation technique de l'API Backend : [backend/README.md](./backend/README.md)
+
+## Tests
+
+Voir [TESTING.md](./TESTING.md).
