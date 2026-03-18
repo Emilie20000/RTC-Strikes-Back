@@ -10,12 +10,15 @@ use axum::{
     Router,
     Json,
 };
-use axum::http::{HeaderValue, Method, StatusCode};
+use axum::http::{HeaderValue, Method, StatusCode, header};
+use axum::middleware::Next;
+use axum::middleware::from_fn;
+use axum::extract::Request;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use serde::Serialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 use dashmap::DashMap;
 use serde::Deserialize;
 use tower_http::services::ServeDir;
@@ -96,10 +99,15 @@ async fn main() {
     let allowed_origins_str = env::var("ALLOWED_ORIGINS").unwrap_or_else(|_| "http://localhost:3000,tauri://localhost,https://tauri.localhost".to_string());
     let allowed_origins: Vec<HeaderValue> = allowed_origins_str
         .split(',')
-        .map(|s| s.trim().parse::<HeaderValue>().expect("Invalid origin in ALLOWED_ORIGINS"))
+        .map(|s| s.trim().trim_matches(|c: char| c == '"' || c == '\''))
+        .filter(|s| !s.is_empty())
+        .map(|s| {
+            println!("   -> Adding origin: {}", s);
+            s.parse::<HeaderValue>().expect("Invalid origin")
+        })
         .collect();
     
-    println!("Allowed Origins: {:?}", allowed_origins);
+    println!("CORS configured with {} origins.", allowed_origins.len());
 
     let voice_users = Arc::new(DashMap::<String, VoiceState>::new());
 
@@ -140,14 +148,31 @@ async fn main() {
         .layer(socket_layer)
         .layer(
             CorsLayer::new()
-                .allow_origin(allowed_origins)
-                .allow_methods([Method::GET, Method::POST, Method::PUT, Method::PATCH, Method::DELETE, Method::OPTIONS])
+                .allow_origin(allowed_origins.clone())
+                .allow_methods([
+                    Method::GET,
+                    Method::POST,
+                    Method::PUT,
+                    Method::DELETE,
+                    Method::OPTIONS,
+                    Method::PATCH,
+                ])
                 .allow_headers([
-                    axum::http::header::AUTHORIZATION,
-                    axum::http::header::CONTENT_TYPE,
+                    header::AUTHORIZATION,
+                    header::CONTENT_TYPE,
+                    header::ACCEPT,
+                    header::ORIGIN,
+                    header::ACCESS_CONTROL_REQUEST_METHOD,
+                    header::ACCESS_CONTROL_REQUEST_HEADERS,
                 ])
                 .allow_credentials(true),
         )
+        .layer(from_fn(|req: Request, next: Next| async move {
+            if let Some(origin) = req.headers().get(header::ORIGIN) {
+                println!("🔍 Incoming request from origin: {:?}", origin);
+            }
+            next.run(req).await
+        }))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .with_state(state);
 
