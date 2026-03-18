@@ -1,1 +1,2 @@
-export {default} from '../../login/page';
+import LoginPageContent from "@/components/pages/LoginPageContent";
+export default LoginPageContent;

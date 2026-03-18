@@ -92,9 +92,14 @@ async fn main() {
     println!("Connecting to Redis at {}...", redis_url);
     let redis_client = redis::Client::open(redis_url).expect("Invalid Redis URL");
     
-    println!("Configuring CORS for explicit origins...");
-    let render_front_url = env::var("RENDER_FRONT_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
-    println!("Allowed Frontend URL: {}", render_front_url);
+    println!("Configuring CORS...");
+    let allowed_origins_str = env::var("ALLOWED_ORIGINS").unwrap_or_else(|_| "http://localhost:3000,tauri://localhost,https://tauri.localhost".to_string());
+    let allowed_origins: Vec<HeaderValue> = allowed_origins_str
+        .split(',')
+        .map(|s| s.trim().parse::<HeaderValue>().expect("Invalid origin in ALLOWED_ORIGINS"))
+        .collect();
+    
+    println!("Allowed Origins: {:?}", allowed_origins);
 
     let voice_users = Arc::new(DashMap::<String, VoiceState>::new());
 
@@ -135,7 +140,7 @@ async fn main() {
         .layer(socket_layer)
         .layer(
             CorsLayer::new()
-                .allow_origin(render_front_url.parse::<HeaderValue>().expect("Invalid RENDER_FRONT_URL"))
+                .allow_origin(allowed_origins)
                 .allow_methods([Method::GET, Method::POST, Method::PUT, Method::PATCH, Method::DELETE, Method::OPTIONS])
                 .allow_headers([
                     axum::http::header::AUTHORIZATION,
