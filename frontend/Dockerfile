@@ -36,11 +36,13 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 CMD ["node", "server.js"]
 
-FROM node:20-alpine AS runner-export
+# Stage for Development
+FROM node:20-alpine AS runner-dev
 WORKDIR /app
-RUN npm install -g serve
-COPY --from=builder /app/out ./out
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+ENV NODE_ENV=development
 EXPOSE 3000
-CMD ["serve", "-s", "out", "-l", "3000"]
+CMD ["npm", "run", "dev"]
 
 FROM runner-standalone AS final
