@@ -30,13 +30,13 @@ elif [ "$MODE" == "--dev" ]; then
     echo "Nettoyage des services Docker..."
     docker compose down
     
-    echo "Lancement des services Backend & Frontend (Dev)..."
-    docker compose up --build -d backend pgadmin redis frontend-dev
+    echo "Lancement des services Backend (Dev)..."
+    docker compose up --build -d backend pgadmin postgres redis frontend-dev
     
-    # echo "Lancement de Tauri en mode Dev..."
-    # cd frontend
-    # npm install
-    # npm run tauri dev
+    echo "Lancement de Tauri en mode Dev..."
+    cd frontend
+    npm install
+    npm run tauri dev
 
 else
     echo "Usage: ./launcher.sh [--dev | --prod]"
