@@ -33,6 +33,8 @@ pub struct StopTypingPayload {
 pub struct SendMessagePayload {
     pub channel_id: String,
     pub author: String,
+    #[serde(rename = "authorId")]
+    pub author_id: Option<Uuid>,
     pub content: String,
 }
 
@@ -202,10 +204,11 @@ pub async fn on_connect(socket: SocketRef) {
     socket.on("send_message", |socket: SocketRef, Data::<SendMessagePayload>(data), State::<PgPool>(pool), State::<redis::Client>(redis_client)| async move {
         let created_at = chrono::Utc::now().timestamp_millis();
         let result = sqlx::query_as::<_, ChatMessage>(
-            "INSERT INTO messages (channel_id, author, content, created_at) VALUES ($1, $2, $3, $4) RETURNING id, channel_id, author, content, created_at"
+            "INSERT INTO messages (channel_id, author, author_id, content, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id, channel_id, author, author_id, content, created_at"
         )
         .bind(&data.channel_id)
         .bind(&data.author)
+        .bind(&data.author_id)
         .bind(&data.content)
         .bind(created_at)
         .fetch_one(&pool)

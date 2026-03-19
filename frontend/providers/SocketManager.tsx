@@ -13,12 +13,18 @@ export function SocketManager() {
     if (!socket || !currentUser) return;
 
     const userRoom = `user:${currentUser.id}`;
+    const serverRoom = activeServerId ? `server:${activeServerId}` : null;
+
+    // Join rooms immediately
     socket.emit("join", userRoom);
+    if (serverRoom) {
+      socket.emit("join", serverRoom);
+    }
 
     function onConnect() {
       socket.emit("join", userRoom);
-      if (activeServerId) {
-        socket.emit("join", `server:${activeServerId}`);
+      if (serverRoom) {
+        socket.emit("join", serverRoom);
       }
     }
 
@@ -38,6 +44,9 @@ export function SocketManager() {
       socket.off("connect", onConnect);
       socket.off("user_updated", onUserUpdated);
       socket.emit("leave", userRoom);
+      if (serverRoom) {
+        socket.emit("leave", serverRoom);
+      }
     };
   }, [currentUser?.id, activeServerId, updateGlobalUser, updateMember]);
 
