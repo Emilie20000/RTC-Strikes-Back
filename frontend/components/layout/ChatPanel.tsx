@@ -268,6 +268,7 @@ export default function ChatPanel() {
         id: String(data.id),
         channelId: data.channelId,
         author: data.author,
+        authorId: data.authorId,
         content: data.content,
         createdAt: data.createdAt,
       };
@@ -445,7 +446,8 @@ export default function ChatPanel() {
 
     socket.emit("send_message", {
       channelId: activeChannelId,
-      author: username,
+      author: currentUser?.username || username,
+      authorId: currentUser?.id,
       content,
     });
 
@@ -500,8 +502,8 @@ export default function ChatPanel() {
             {activeChannelId ? (
               <>
                 {msgs.length > 0 ? (
-                  msgs.map((m, i) => {
-                    const isMe = m.author === username;
+                   msgs.map((m, i) => {
+                    const isMe = m.authorId ? m.authorId === currentUser?.id : m.author === username;
                     const prevMsg = msgs[i - 1];
                     const isSequence = i > 0 && prevMsg.author === m.author && (new Date(m.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 60000 * 5); // 5 min grouping + same author
                     const isNewDay = i === 0 || new Date(m.createdAt).toDateString() !== new Date(prevMsg.createdAt).toDateString();
@@ -564,14 +566,14 @@ export default function ChatPanel() {
                           {!isSequence ? (
                             <Avatar className="w-10 h-10 mt-0.5 mr-4 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
                               <AvatarImage src={
-                                (m.author === currentUser?.username 
-                                  ? currentUser.avatar_url 
+                                (m.authorId === currentUser?.id 
+                                  ? currentUser?.avatar_url 
                                   : (activeChannel?.kind === "DM" 
                                       ? activeChannel.avatarUrl 
-                                      : memberMap[m.author]?.avatar_url)) 
+                                      : (m.authorId ? currentServerMembers.find(sm => sm.user_id === m.authorId)?.avatar_url : memberMap[m.author]?.avatar_url))) 
                                 || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.author}`
                               } />
-                              <AvatarFallback className="bg-[#5865F2] text-white font-medium">{m.author.slice(0, 2).toUpperCase()}</AvatarFallback>
+                              <AvatarFallback className="bg-[#5865F2] text-white font-medium">{(m.authorId ? currentServerMembers.find(sm => sm.user_id === m.authorId)?.username : m.author)?.slice(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                           ) : (
                             <div className="w-10 mr-4 text-xs text-[#72767d] opacity-0 group-hover:opacity-100 text-right select-none pt-1">
@@ -582,7 +584,12 @@ export default function ChatPanel() {
                           <div className="flex flex-col flex-1 min-w-0">
                             {!isSequence && (
                               <div className="flex items-center gap-2">
-                                <span className="text-base font-medium text-white hover:underline cursor-pointer">{m.author}</span>
+                                <span className="text-base font-medium text-white hover:underline cursor-pointer">
+                                  {m.authorId 
+                                    ? (m.authorId === currentUser?.id ? currentUser.username : currentServerMembers.find(sm => sm.user_id === m.authorId)?.username || m.author)
+                                    : m.author
+                                  }
+                                </span>
                                 <span className="text-xs text-[#72767d] ml-1">
                                   {formatDateDetail(m.createdAt, locale)}
                                 </span>

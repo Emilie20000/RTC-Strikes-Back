@@ -62,6 +62,7 @@ export type ChatMessage = {
   id: string;
   channelId: string;
   author: string;
+  authorId?: string;
   content: string;
   createdAt: number; // timestamp ms
 };

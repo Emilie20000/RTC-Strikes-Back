@@ -70,6 +70,7 @@ CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
     channel_id VARCHAR(50) NOT NULL,
     author VARCHAR(50) NOT NULL,
+    author_id UUID REFERENCES users(id),
     content TEXT NOT NULL,
     created_at BIGINT NOT NULL
 );

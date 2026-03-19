@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct ChatMessage {
@@ -8,6 +9,9 @@ pub struct ChatMessage {
     #[serde(rename = "channelId")]
     pub channel_id: String,
     pub author: String,
+    #[sqlx(rename = "author_id")]
+    #[serde(rename = "authorId")]
+    pub author_id: Option<uuid::Uuid>,
     pub content: String,
     #[sqlx(rename = "created_at")]
     #[serde(rename = "createdAt")]
@@ -25,6 +29,7 @@ mod tests {
             id: 1,
             channel_id: "123".to_string(),
             author: "User".to_string(),
+            author_id: Some(Uuid::new_v4()),
             content: "Hello".to_string(),
             created_at: 1600000000,
         };

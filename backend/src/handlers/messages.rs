@@ -47,7 +47,7 @@ pub async fn update_message(
 ) -> Result<Json<ChatMessage>, (StatusCode, Json<serde_json::Value>)> {
     // 1. Get message
     let message = sqlx::query_as::<_, ChatMessage>(
-        "SELECT id, channel_id, author, content, created_at FROM messages WHERE id = $1"
+        "SELECT id, channel_id, author, author_id, content, created_at FROM messages WHERE id = $1"
     )
     .bind(message_id)
     .fetch_optional(&state.pool)
@@ -91,7 +91,7 @@ pub async fn update_message(
 
     // 4. Update message
     let updated_message = sqlx::query_as::<_, ChatMessage>(
-        "UPDATE messages SET content = $1 WHERE id = $2 RETURNING id, channel_id, author, content, created_at"
+        "UPDATE messages SET content = $1 WHERE id = $2 RETURNING id, channel_id, author, author_id, content, created_at"
     )
     .bind(&payload.content)
     .bind(message_id)
@@ -137,7 +137,7 @@ pub async fn get_messages(
 
     // Fallback to database
     let messages = sqlx::query_as::<_, ChatMessage>(
-        "SELECT id, channel_id, author, content, created_at FROM messages WHERE channel_id = $1 ORDER BY created_at ASC"
+        "SELECT id, channel_id, author, author_id, content, created_at FROM messages WHERE channel_id = $1 ORDER BY created_at ASC"
     )
     .bind(&channel_id)
     .fetch_all(&state.pool)
@@ -167,7 +167,7 @@ pub async fn delete_message(
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     // 1. Get message
     let message = sqlx::query_as::<_, ChatMessage>(
-        "SELECT id, channel_id, author, content, created_at FROM messages WHERE id = $1"
+        "SELECT id, channel_id, author, author_id, content, created_at FROM messages WHERE id = $1"
     )
     .bind(message_id)
     .fetch_optional(&state.pool)
