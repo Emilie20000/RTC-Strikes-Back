@@ -33,7 +33,6 @@ import { ServerBansList } from "@/components/server/ServerBansList";
 import { socket } from "@/lib/socket";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { UserBar } from "./UserBar";
 import { useTranslations } from "next-intl";
 
 export function ServerChannelsSidebar() {
@@ -270,7 +269,7 @@ export function ServerChannelsSidebar() {
         serverId: activeServerId
       });
     }
-    setActiveVoiceChannelId(channelId);
+    setActiveVoiceChannelId(channelId, activeServerId);
     setActiveChannelId(channelId);
   };
 
@@ -515,7 +514,6 @@ export function ServerChannelsSidebar() {
         </div>
       </ScrollArea>
 
-      <UserBar />
 
       {/* Settings Dialog (moved here for clarity) */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>

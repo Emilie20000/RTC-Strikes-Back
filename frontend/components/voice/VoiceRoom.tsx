@@ -9,6 +9,7 @@ export default function VoiceRoom() {
     const setActiveVoiceChannelId = useAppStore(s => s.setActiveVoiceChannelId);
     const currentUser = useAppStore(s => s.currentUser);
     const activeServerId = useAppStore(s => s.activeServerId);
+    const voiceServerId = useAppStore(s => s.voiceServerId);
     const voiceStates = useAppStore(s => s.voiceStates);
 
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -68,7 +69,7 @@ export default function VoiceRoom() {
     }, [voiceStates, currentUser, localStream]);
 
     useEffect(() => {
-        if (!activeVoiceChannelId || !currentUser || !activeServerId) {
+        if (!activeVoiceChannelId || !currentUser || !voiceServerId) {
             // Cleanup
             if (localStreamRef.current) {
                 localStreamRef.current.getTracks().forEach(t => t.stop());
@@ -85,14 +86,14 @@ export default function VoiceRoom() {
         const roomId = activeVoiceChannelId;
 
         const joinVoice = () => {
-            if (currentUser && activeServerId) {
+            if (currentUser && voiceServerId) {
                 // Ensure we are in our signaling room FIRST to receive offers
                 socket.emit("join", `user:${currentUser.id}`);
                 
                 socket.emit("join_voice", { 
                     channelId: roomId, 
                     userId: currentUser.id,
-                    serverId: activeServerId 
+                    serverId: voiceServerId 
                 });
             }
         };
@@ -201,7 +202,7 @@ export default function VoiceRoom() {
             socket.off("user_left_voice", handleUserLeft);
         };
 
-    }, [activeVoiceChannelId, currentUser, activeServerId]);
+    }, [activeVoiceChannelId, currentUser, voiceServerId]);
 
     const createPeer = (targetUserId: string, initiator: boolean) => {
         if (peersRef.current[targetUserId]) return peersRef.current[targetUserId];
