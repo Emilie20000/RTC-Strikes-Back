@@ -58,6 +58,7 @@ export type VoiceState = {
 };
 
 export type ChatMessage = {
+  reactions: any[];
   id: string;
   channelId: string;
   author: string;
@@ -95,7 +96,7 @@ type AppState = {
 
   messagesByChannel: Record<string, ChatMessage[]>;
   setMessagesForChannel: (channelId: string, msgs: ChatMessage[]) => void;
-  addMessage: (msg: ChatMessage) => void;
+  addMessage: (msg: { id: string; channelId: any; author: any; content: any; createdAt: any }) => void;
 
   currentUser: User | null;
   setCurrentUser: (u: User | null) => void;
