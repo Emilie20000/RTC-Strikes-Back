@@ -8,6 +8,9 @@ use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
 
+use sqlx::PgPool;
+use socketioxide::SocketIo;
+use crate::services::message::add_reaction;
 use crate::{
     models::{message::ChatMessage, user::User},
     services::{
@@ -19,10 +22,18 @@ use crate::{
 };
 
 use serde::Deserialize;
+use crate::services::message::AddReactionSchema;
+use crate::services::message;
 
 #[derive(Deserialize)]
 pub struct UpdateMessageSchema {
     pub content: String,
+}
+
+#[derive(Deserialize)]
+pub struct AddReactionRequest {
+    pub message_id: i32,
+    pub emoji: String,
 }
 
 use redis::AsyncCommands;
@@ -228,7 +239,6 @@ pub async fn delete_message(
             )
         })?;
 
-    // Invalidate cache
     if let Ok(mut conn) = state.redis_client.get_multiplexed_tokio_connection().await {
         let cache_key = format!("messages:{}", channel_id);
         let _: () = conn.del(cache_key).await.unwrap_or_default();
@@ -237,4 +247,33 @@ pub async fn delete_message(
     crate::socket::broadcast_message_deleted(&state.io, message.channel_id.clone(), message_id as i64).await;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn add_reaction_handler(
+    State(state): State<Arc<AppState>>,
+    Extension(auth_user): Extension<AuthUser>,
+    Json(payload): Json<AddReactionRequest>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+
+    let AddReactionRequest { message_id, emoji } = payload;
+
+    let schema = AddReactionSchema {
+        message_id,
+        user_id: auth_user.user_id,
+        emoji: emoji.clone(),
+    };
+
+    let channel_id = message::add_reaction(&state.pool, schema)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let ws_payload = serde_json::json!({
+        "messageId": message_id,
+        "userId": auth_user.user_id,
+        "emoji": emoji
+    });
+
+    let _ = state.io.to(channel_id).emit("reaction_added", &ws_payload).await;
+
+    Ok(Json(serde_json::json!({ "status": "ok" })))
 }
