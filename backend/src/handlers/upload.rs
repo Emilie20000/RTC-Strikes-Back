@@ -83,7 +83,7 @@ pub async fn upload_file(mut multipart: Multipart) -> Response {
                         }
                     }
                     
-                    return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": format!("Cloudinary error: {}", body) }))).into_response()
+                    return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": format!("Cloudinary error: {}", body) }))).into_response();
                 }
                 Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": format!("Upload failed: {}", e) }))).into_response(),
             }
