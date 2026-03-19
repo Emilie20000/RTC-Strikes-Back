@@ -11,6 +11,7 @@ import { Hammer, RotateCcw, ShieldAlert, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { useTranslations } from "next-intl";
+import { getFileUrl } from "@/lib/utils";
 
 interface ServerBansListProps {
   serverId: string;
@@ -109,7 +110,7 @@ export function ServerBansList({ serverId }: ServerBansListProps) {
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={ban.avatar_url} />
+                    <AvatarImage src={getFileUrl(ban.avatar_url)} />
                     <AvatarFallback className="bg-[#5865F2] text-white">
                       {ban.username?.slice(0, 2).toUpperCase() || "??"}
                     </AvatarFallback>

@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct ChatMessage {
@@ -29,7 +28,7 @@ mod tests {
             id: 1,
             channel_id: "123".to_string(),
             author: "User".to_string(),
-            author_id: Some(Uuid::new_v4()),
+            author_id: Some(uuid::Uuid::new_v4()),
             content: "Hello".to_string(),
             created_at: 1600000000,
         };
