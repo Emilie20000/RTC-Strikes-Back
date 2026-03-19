@@ -95,6 +95,11 @@ async fn main() {
     println!("Connecting to Redis at {}...", redis_url);
     let redis_client = redis::Client::open(redis_url).expect("Invalid Redis URL");
     
+    match redis_client.get_connection() {
+        Ok(_) => println!("Connected to Redis!"),
+        Err(e) => println!("Failed to connect to Redis: {}", e),
+    }
+    
     println!("Configuring CORS...");
     let allowed_origins_str = env::var("ALLOWED_ORIGINS").unwrap_or_else(|_| "http://localhost:3000,tauri://localhost,https://tauri.localhost".to_string());
     let allowed_origins: Vec<HeaderValue> = allowed_origins_str
@@ -136,6 +141,7 @@ async fn main() {
         .route("/", get(root))
         .route("/api/hello", get(hello_world))
         .route("/api/db-check", get(db_check))
+        .route("/api/redis-check", get(redis_check))
         .route("/api/uploads", axum::routing::post(handlers::upload::upload_file))
         .nest_service("/uploads", ServeDir::new("uploads"))
         .nest("/api/auth", routes::auth::auth_routes(state.clone()))
@@ -222,6 +228,27 @@ async fn db_check(axum::extract::State(state): axum::extract::State<Arc<AppState
             message: format!("❌ Error connecting to PostgreSQL: {}", e),
         }),
     }
+}
+
+async fn redis_check(axum::extract::State(state): axum::extract::State<Arc<AppState>>) -> Json<Message> {
+    let mut conn = match state.redis_client.get_connection() {
+        Ok(c) => c,
+        Err(e) => return Json(Message { message: format!("❌ Redis Connection Error: {}", e) }),
+    };
+
+    let _: () = match redis::cmd("SET").arg("test_key").arg("working").query::<()>(&mut conn) {
+        Ok(_) => (),
+        Err(e) => return Json(Message { message: format!("❌ Redis Write Error: {}", e) }),
+    };
+
+    let val: String = match redis::cmd("GET").arg("test_key").query(&mut conn) {
+        Ok(v) => v,
+        Err(e) => return Json(Message { message: format!("❌ Redis Read Error: {}", e) }),
+    };
+
+    Json(Message {
+        message: format!("✅ Redis is WORKING! (test_key = {})", val),
+    })
 }
 
 async fn handle_404(request: axum::extract::Request) -> (StatusCode, Json<serde_json::Value>) {
