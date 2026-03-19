@@ -22,6 +22,7 @@ export function UserBar() {
   const t = useTranslations("app.userBar");
   const currentUser = useAppStore((s) => s.currentUser);
   const activeServerId = useAppStore((s) => s.activeServerId);
+  const voiceServerId = useAppStore((s) => s.voiceServerId);
   const activeVoiceChannelId = useAppStore((s) => s.activeVoiceChannelId);
   const voiceStates = useAppStore((s) => s.voiceStates);
   const { setActiveVoiceChannelId } = useAppStore();
@@ -59,7 +60,7 @@ export function UserBar() {
   };
 
   const toggleMute = () => {
-    if (!currentUser || !activeVoiceChannelId || !activeServerId) return;
+    if (!currentUser || !activeVoiceChannelId || !voiceServerId) return;
 
     const currentVoiceState = voiceStates[currentUser.id];
     const isMuted = currentVoiceState?.muted || false;
@@ -67,18 +68,18 @@ export function UserBar() {
     socket.emit("voice_mute", {
       channelId: activeVoiceChannelId,
       userId: currentUser.id,
-      serverId: activeServerId,
+      serverId: voiceServerId,
       muted: !isMuted
     });
   };
 
   const handleDisconnect = () => {
-    if (!currentUser || !activeVoiceChannelId || !activeServerId) return;
+    if (!currentUser || !activeVoiceChannelId || !voiceServerId) return;
 
     socket.emit("leave_voice", {
       channelId: activeVoiceChannelId,
       userId: currentUser.id,
-      serverId: activeServerId
+      serverId: voiceServerId
     });
 
     setActiveVoiceChannelId(null);

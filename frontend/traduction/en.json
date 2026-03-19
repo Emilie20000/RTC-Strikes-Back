@@ -160,6 +160,13 @@
       "disconnect": "Disconnect from voice",
       "settings": "Settings"
     },
+    "voiceConnectionBar": {
+      "voiceConnected": "Voice connected",
+      "voiceChannel": "Voice channel",
+      "server": "Server",
+      "info": "Connection info",
+      "disconnect": "Disconnect"
+    },
     "userSettings": {
       "alerts": {
         "updateError": "Error while updating profile.",

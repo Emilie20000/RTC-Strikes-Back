@@ -83,7 +83,8 @@ type AppState = {
   setActiveChannelId: (id: string | null) => void;
 
   activeVoiceChannelId: string | null;
-  setActiveVoiceChannelId: (id: string | null) => void;
+  voiceServerId: string | null;
+  setActiveVoiceChannelId: (id: string | null, serverId?: string | null) => void;
 
   voiceStates: Record<string, VoiceState>;
   setVoiceStates: (states: Record<string, VoiceState>) => void;
@@ -130,7 +131,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   setActiveChannelId: (activeChannelId) => set({ activeChannelId }),
 
   activeVoiceChannelId: null,
-  setActiveVoiceChannelId: (activeVoiceChannelId) => set({ activeVoiceChannelId }),
+  voiceServerId: null,
+  setActiveVoiceChannelId: (activeVoiceChannelId, voiceServerId = null) => {
+    if (activeVoiceChannelId === null) {
+      set({ activeVoiceChannelId: null, voiceServerId: null });
+    } else {
+      set({ activeVoiceChannelId, voiceServerId: voiceServerId || get().voiceServerId });
+    }
+  },
 
   voiceStates: {},
   setVoiceStates: (voiceStates) => set({ voiceStates }),

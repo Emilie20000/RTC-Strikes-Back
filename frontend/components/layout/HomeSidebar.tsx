@@ -5,7 +5,6 @@ import { useAppStore, type Channel } from "@/lib/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { api } from "@/lib/http";
-import { UserBar } from "./UserBar";
 import { useTranslations } from "next-intl";
 
 export function HomeSidebar() {
@@ -61,7 +60,6 @@ export function HomeSidebar() {
         </div>
       </ScrollArea>
 
-      <UserBar />
     </div>
   );
 }
