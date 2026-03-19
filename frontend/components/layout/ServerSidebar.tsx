@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/lib/http";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { getFileUrl } from "@/lib/utils";
 
 export default function ServerSidebar() {
   const t = useTranslations("app.serverSidebar");
@@ -156,7 +157,7 @@ export default function ServerSidebar() {
                         `}
                       >
                         {s.icon_url ? (
-                          <img src={s.icon_url} alt={s.name} className="w-full h-full object-cover" />
+                          <img src={getFileUrl(s.icon_url)} alt={s.name} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-sm font-medium transition-transform duration-200 group-hover:scale-105">
                             {s.name.slice(0, 2).toUpperCase()}

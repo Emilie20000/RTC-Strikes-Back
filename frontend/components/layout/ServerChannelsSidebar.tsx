@@ -33,8 +33,8 @@ import { ServerBansList } from "@/components/server/ServerBansList";
 import { socket } from "@/lib/socket";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { UserBar } from "./UserBar";
 import { useTranslations } from "next-intl";
+import { getFileUrl } from "@/lib/utils";
 
 export function ServerChannelsSidebar() {
   const t = useTranslations("app.serverChannelsSidebar");
@@ -270,7 +270,7 @@ export function ServerChannelsSidebar() {
         serverId: activeServerId
       });
     }
-    setActiveVoiceChannelId(channelId);
+    setActiveVoiceChannelId(channelId, activeServerId);
     setActiveChannelId(channelId);
   };
 
@@ -497,7 +497,7 @@ export function ServerChannelsSidebar() {
                           return (
                             <div key={u.userId} className="flex items-center gap-2 text-[#b9bbbe] group/user hover:bg-[#34373c] p-1 rounded transition-colors cursor-default">
                               <Avatar className={`w-6 h-6 border-[2px] transition-all duration-100 ${isSpeaking ? "border-[#57F287]" : "border-transparent"}`}>
-                                <AvatarImage src={u.avatarUrl} />
+                                <AvatarImage src={getFileUrl(u.avatarUrl)} />
                                 <AvatarFallback className="text-[9px] bg-[#5865F2] text-white">{u.username.slice(0, 2).toUpperCase()}</AvatarFallback>
                               </Avatar>
                               <span className={`text-xs truncate max-w-[120px] font-medium transition-colors ${isSpeaking ? "text-white" : ""}`}>{u.username}</span>
@@ -515,7 +515,6 @@ export function ServerChannelsSidebar() {
         </div>
       </ScrollArea>
 
-      <UserBar />
 
       {/* Settings Dialog (moved here for clarity) */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>

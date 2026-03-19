@@ -1,1 +1,2 @@
-export {default} from '../../presentation/page';
+import PresentationPageContent from "@/components/pages/PresentationPageContent";
+export default PresentationPageContent;

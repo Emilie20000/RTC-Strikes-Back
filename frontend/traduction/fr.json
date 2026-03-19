@@ -160,12 +160,14 @@
       "disconnect": "Se déconnecter du vocal",
       "settings": "Paramètres"
     },
+    "voiceConnectionBar": {
+      "voiceConnected": "Vocal connecté",
+      "voiceChannel": "Salon vocal",
+      "server": "Serveur",
+      "info": "Informations de connexion",
+      "disconnect": "Déconnecter"
+    },
     "userSettings": {
-      "alerts": {
-        "updateError": "Erreur lors de la mise à jour du profil.",
-        "uploadFailed": "Échec de l'upload",
-        "uploadError": "Erreur lors de l'upload"
-      },
       "sidebar": {
         "title": "Paramètres utilisateur",
         "logout": "Déconnexion"
@@ -210,7 +212,13 @@
         "saving": "Enregistrement...",
         "save": "Enregistrer"
       },
-      "escape": "Échap"
+      "escape": "Échap",
+      "alerts": {
+        "uploadSuccess": "Avatar téléchargé avec succès ! Cliquez sur Enregistrer pour confirmer.",
+        "uploadError": "Erreur lors du téléchargement de l'avatar.",
+        "saveSuccess": "Profil mis à jour !",
+        "saveError": "Erreur lors de la mise à jour du profil."
+      }
     },
     "serverMembersList": {
       "loading": "Chargement des membres...",
@@ -278,6 +286,8 @@
       }
     },
     "userProfileDialog": {
+      "title": "Profil de {username}",
+      "description": "Informations détaillées sur le membre {username}",
       "online": "En ligne",
       "owner": "PROPRIÉTAIRE",
       "memberSince": "Membre depuis",

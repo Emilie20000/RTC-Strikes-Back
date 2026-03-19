@@ -10,7 +10,10 @@ use axum::{
     Router,
     Json,
 };
-use axum::http::{HeaderValue, Method, StatusCode};
+use axum::http::{HeaderValue, Method, StatusCode, header};
+use axum::middleware::Next;
+use axum::middleware::from_fn;
+use axum::extract::Request;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use serde::Serialize;
 use std::net::SocketAddr;
@@ -92,9 +95,24 @@ async fn main() {
     println!("Connecting to Redis at {}...", redis_url);
     let redis_client = redis::Client::open(redis_url).expect("Invalid Redis URL");
     
-    println!("Configuring CORS for explicit origins...");
-    let render_front_url = env::var("RENDER_FRONT_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
-    println!("Allowed Frontend URL: {}", render_front_url);
+    match redis_client.get_connection() {
+        Ok(_) => println!("Connected to Redis!"),
+        Err(e) => println!("Failed to connect to Redis: {}", e),
+    }
+    
+    println!("Configuring CORS...");
+    let allowed_origins_str = env::var("ALLOWED_ORIGINS").unwrap_or_else(|_| "http://localhost:3000,tauri://localhost,https://tauri.localhost".to_string());
+    let allowed_origins: Vec<HeaderValue> = allowed_origins_str
+        .split(',')
+        .map(|s| s.trim().trim_matches(|c: char| c == '"' || c == '\''))
+        .filter(|s| !s.is_empty())
+        .map(|s| {
+            println!("   -> Adding origin: {}", s);
+            s.parse::<HeaderValue>().expect("Invalid origin")
+        })
+        .collect();
+    
+    println!("CORS configured with {} origins.", allowed_origins.len());
 
     let voice_users = Arc::new(DashMap::<String, VoiceState>::new());
 
@@ -123,6 +141,7 @@ async fn main() {
         .route("/", get(root))
         .route("/api/hello", get(hello_world))
         .route("/api/db-check", get(db_check))
+        .route("/api/redis-check", get(redis_check))
         .route("/api/uploads", axum::routing::post(handlers::upload::upload_file))
         .nest_service("/uploads", ServeDir::new("uploads"))
         .nest("/api/auth", routes::auth::auth_routes(state.clone()))
@@ -135,14 +154,31 @@ async fn main() {
         .layer(socket_layer)
         .layer(
             CorsLayer::new()
-                .allow_origin(render_front_url.parse::<HeaderValue>().expect("Invalid RENDER_FRONT_URL"))
-                .allow_methods([Method::GET, Method::POST, Method::PUT, Method::PATCH, Method::DELETE, Method::OPTIONS])
+                .allow_origin(allowed_origins.clone())
+                .allow_methods([
+                    Method::GET,
+                    Method::POST,
+                    Method::PUT,
+                    Method::DELETE,
+                    Method::OPTIONS,
+                    Method::PATCH,
+                ])
                 .allow_headers([
-                    axum::http::header::AUTHORIZATION,
-                    axum::http::header::CONTENT_TYPE,
+                    header::AUTHORIZATION,
+                    header::CONTENT_TYPE,
+                    header::ACCEPT,
+                    header::ORIGIN,
+                    header::ACCESS_CONTROL_REQUEST_METHOD,
+                    header::ACCESS_CONTROL_REQUEST_HEADERS,
                 ])
                 .allow_credentials(true),
         )
+        .layer(from_fn(|req: Request, next: Next| async move {
+            if let Some(origin) = req.headers().get(header::ORIGIN) {
+                println!("🔍 Incoming request from origin: {:?}", origin);
+            }
+            next.run(req).await
+        }))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .with_state(state);
 
@@ -192,6 +228,27 @@ async fn db_check(axum::extract::State(state): axum::extract::State<Arc<AppState
             message: format!("❌ Error connecting to PostgreSQL: {}", e),
         }),
     }
+}
+
+async fn redis_check(axum::extract::State(state): axum::extract::State<Arc<AppState>>) -> Json<Message> {
+    let mut conn = match state.redis_client.get_connection() {
+        Ok(c) => c,
+        Err(e) => return Json(Message { message: format!("❌ Redis Connection Error: {}", e) }),
+    };
+
+    let _: () = match redis::cmd("SET").arg("test_key").arg("working").query::<()>(&mut conn) {
+        Ok(_) => (),
+        Err(e) => return Json(Message { message: format!("❌ Redis Write Error: {}", e) }),
+    };
+
+    let val: String = match redis::cmd("GET").arg("test_key").query(&mut conn) {
+        Ok(v) => v,
+        Err(e) => return Json(Message { message: format!("❌ Redis Read Error: {}", e) }),
+    };
+
+    Json(Message {
+        message: format!("✅ Redis is WORKING! (test_key = {})", val),
+    })
 }
 
 async fn handle_404(request: axum::extract::Request) -> (StatusCode, Json<serde_json::Value>) {

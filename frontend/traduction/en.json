@@ -160,12 +160,14 @@
       "disconnect": "Disconnect from voice",
       "settings": "Settings"
     },
+    "voiceConnectionBar": {
+      "voiceConnected": "Voice connected",
+      "voiceChannel": "Voice channel",
+      "server": "Server",
+      "info": "Connection info",
+      "disconnect": "Disconnect"
+    },
     "userSettings": {
-      "alerts": {
-        "updateError": "Error while updating profile.",
-        "uploadFailed": "Upload failed",
-        "uploadError": "Upload error"
-      },
       "sidebar": {
         "title": "User Settings",
         "logout": "Log out"
@@ -210,7 +212,13 @@
         "saving": "Saving...",
         "save": "Save"
       },
-      "escape": "Esc"
+      "escape": "Esc",
+      "alerts": {
+        "uploadSuccess": "Avatar uploaded successfully! Click Save to confirm.",
+        "uploadError": "Error while uploading avatar.",
+        "saveSuccess": "Profile updated!",
+        "saveError": "Error while updating profile."
+      }
     },
     "serverMembersList": {
       "loading": "Loading members...",
@@ -278,6 +286,8 @@
       }
     },
     "userProfileDialog": {
+      "title": "{username}'s Profile",
+      "description": "Detailed profile information for {username}",
       "online": "Online",
       "owner": "OWNER",
       "memberSince": "Member since",
