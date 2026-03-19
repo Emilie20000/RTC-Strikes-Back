@@ -7,7 +7,7 @@ import VoiceRoom from "@/components/voice/VoiceRoom";
 
 export default function AppPageContent() {
   return (
-    <div className="h-dvh w-dvw grid grid-cols-[72px_280px_1fr] bg-[#36393f] overflow-hidden">
+    <div className="h-screen w-screen grid grid-cols-[72px_280px_1fr] bg-[#36393f] overflow-hidden">
       <ServerSidebar />
       <ChannelSidebar />
       <ChatPanel />
