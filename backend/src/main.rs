@@ -18,7 +18,7 @@ use sqlx::postgres::{PgPool, PgPoolOptions};
 use serde::Serialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use dashmap::DashMap;
 use serde::Deserialize;
 use tower_http::services::ServeDir;

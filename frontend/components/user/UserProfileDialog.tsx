@@ -3,6 +3,8 @@
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { ShieldAlert, ShieldCheck, Calendar, Mail } from "lucide-react";
 import { ServerMember } from "@/lib/store";
 import { useTranslations } from "next-intl";
+import { getFileUrl } from "@/lib/utils";
 
 interface UserProfileDialogProps {
   open: boolean;
@@ -24,6 +27,8 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent hideDefaultClose className="max-w-md p-0 overflow-hidden bg-[#232428] text-[#dcddde] border-none shadow-2xl">
+        <DialogTitle className="sr-only">{t("title", {username: member.username})}</DialogTitle>
+        <DialogDescription className="sr-only">{t("description", {username: member.username})}</DialogDescription>
         <div className="relative">
             <div className="h-28 bg-[#5865f2] w-full" />
             
@@ -31,7 +36,7 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
                 <div className="flex justify-between items-end -mt-14 mb-4">
                     <div className="relative">
                         <Avatar className="w-24 h-24 border-[6px] border-[#232428] bg-[#232428] shadow-xl">
-                            <AvatarImage src={member.avatar_url} />
+                            <AvatarImage src={getFileUrl(member.avatar_url)} />
                             <AvatarFallback className="text-2xl font-bold bg-[#5865F2] text-white">
                               {member.username.slice(0, 2).toUpperCase()}
                             </AvatarFallback>

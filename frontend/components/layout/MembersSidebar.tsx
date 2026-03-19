@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatusIndicator } from "@/components/ui/StatusIndicator";
 import { api } from "@/lib/http";
+import { getFileUrl } from "@/lib/utils";
 import { socket } from "@/lib/socket";
 import { ChevronDown, ChevronRight, X, MoreVertical, ShieldCheck, ShieldAlert, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -250,7 +251,7 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
                         >
                           <div className="relative shrink-0">
                             <Avatar className="h-8 w-8 cursor-pointer" onClick={() => setSelectedMember(member)}>
-                              <AvatarImage src={member.avatar_url} />
+                              <AvatarImage src={getFileUrl(member.avatar_url)} />
                               <AvatarFallback className="bg-[#5865F2] text-white text-[10px] font-bold">
                                 {member.username.slice(0, 2).toUpperCase()}
                               </AvatarFallback>

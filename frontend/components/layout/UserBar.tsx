@@ -17,6 +17,7 @@ import { api } from "@/lib/http";
 import { socket } from "@/lib/socket";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { getFileUrl } from "@/lib/utils";
 
 export function UserBar() {
   const t = useTranslations("app.userBar");
@@ -93,7 +94,7 @@ export function UserBar() {
             <div className="group relative flex items-center hover:bg-[#393c43] p-1 rounded-md cursor-pointer transition-colors mr-auto min-w-0">
               <div className="relative mr-2 flex-shrink-0">
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src={currentUser?.avatar_url || undefined} />
+                  <AvatarImage src={getFileUrl(currentUser?.avatar_url) || undefined} />
                   <AvatarFallback className="bg-[#5865F2] text-white text-xs">{currentUser?.username?.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[3px] border-[#292b2f] 
@@ -111,7 +112,7 @@ export function UserBar() {
               <div className="flex items-center gap-2 mb-2">
                 <div className="relative">
                   <Avatar className="w-10 h-10">
-                    <AvatarImage src={currentUser?.avatar_url || undefined} />
+                    <AvatarImage src={getFileUrl(currentUser?.avatar_url) || undefined} />
                     <AvatarFallback className="bg-[#5865F2] text-white text-sm">{currentUser?.username?.slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-[#18191c] 

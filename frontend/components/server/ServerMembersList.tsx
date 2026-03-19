@@ -29,6 +29,7 @@ import { UserProfileDialog } from "@/components/user/UserProfileDialog";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { useTranslations } from "next-intl";
+import { getFileUrl } from "@/lib/utils";
 
 const EMPTY_ARRAY: any[] = [];
 
@@ -190,7 +191,7 @@ export function ServerMembersList({ serverId, currentUserId }: ServerMembersList
             >
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={member.avatar_url} />
+                  <AvatarImage src={getFileUrl(member.avatar_url)} />
                   <AvatarFallback className="bg-[#5865F2] text-white text-xs">
                     {member.username?.slice(0, 2).toUpperCase() || "??"}
                   </AvatarFallback>

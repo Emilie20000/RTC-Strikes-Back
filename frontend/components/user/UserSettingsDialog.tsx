@@ -6,18 +6,20 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/http";
+import { getFileUrl } from "@/lib/utils";
 import { User as UserIcon, Settings, LogOut, Camera, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 interface UserSettingsDialogProps {
   open: boolean;
@@ -59,10 +61,11 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
       setCurrentUser({ ...currentUser, ...updatedUser });
       localStorage.setItem("user", JSON.stringify({ ...currentUser, ...updatedUser }));
       
+      toast.success(t("alerts.saveSuccess"));
       onOpenChange(false);
     } catch (e) {
-      console.error("Failed to update profile", e);
-      alert(t("alerts.updateError"));
+      console.error("Failed to save settings", e);
+      toast.error(t("alerts.saveError"));
     } finally {
       setLoading(false);
     }
@@ -85,6 +88,8 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent hideDefaultClose className="max-w-4xl max-h-[85vh] h-full md:h-[700px] flex p-0 gap-0 overflow-hidden bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
+        <DialogTitle className="sr-only">{t("sidebar.title")}</DialogTitle>
+        <DialogDescription className="sr-only">{t("tabs.account")}</DialogDescription>
         <div className="w-[240px] md:w-[280px] bg-[#2f3136] flex flex-col p-0 hidden md:flex">
           <div className="p-6 pb-2 pt-10">
             <h2 className="text-[11px] font-bold text-[#8e9297] uppercase tracking-wider mb-2 px-2.5">{t("sidebar.title")}</h2>
@@ -143,7 +148,7 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                         <div className="flex justify-between items-end -mt-8 mb-4">
                             <div className="relative">
                                 <Avatar className="w-20 h-20 border-[6px] border-[#2f3136] bg-[#2f3136] shadow-xl">
-                                    <AvatarImage src={currentUser?.avatar_url} />
+                                    <AvatarImage src={getFileUrl(currentUser?.avatar_url)} />
                                     <AvatarFallback className="text-xl font-bold bg-[#5865F2] text-white">
                                       {currentUser?.username?.slice(0, 2).toUpperCase()}
                                     </AvatarFallback>
@@ -230,22 +235,16 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                                             formData.append("file", file);
 
                                             try {
-                                                const token = localStorage.getItem("token");
-                                                const res = await fetch("http://localhost:8080/api/uploads", {
+                                                const data = await api<{url: string}>("/api/uploads", {
                                                     method: "POST",
-                                                    headers: {
-                                                        "Authorization": `Bearer ${token}`
-                                                    },
                                                     body: formData
                                                 });
                                                 
-                                                if (!res.ok) throw new Error(t("alerts.uploadFailed"));
-                                                
-                                                const data = await res.json();
-                                                setAvatarUrl(`http://localhost:8080${data.url}`);
+                                                setAvatarUrl(data.url);
+                                                toast.success(t("alerts.uploadSuccess"));
                                             } catch (err) {
                                                 console.error(err);
-                                              alert(t("alerts.uploadError"));
+                                                toast.error(t("alerts.uploadError"));
                                             }
                                         }}
                                     />
@@ -274,7 +273,7 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                                 <div className="p-4 pt-10 relative">
                                     <div className="absolute -top-10 left-4">
                                         <Avatar className="w-20 h-20 border-[6px] border-[#18191c] bg-[#18191c] shadow-lg">
-                                            <AvatarImage src={avatarUrl} />
+                                            <AvatarImage src={getFileUrl(avatarUrl)} />
                                             <AvatarFallback className="bg-[#5865F2] text-white font-bold text-xl">
                                               {(username || "U").slice(0, 2).toUpperCase()}
                                             </AvatarFallback>
