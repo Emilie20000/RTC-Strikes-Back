@@ -25,7 +25,9 @@ import {
   X,
   Check,
   Users,
+  SmilePlus
 } from "lucide-react";
+import ReactionButton from "@/components/ui/ReactionButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -172,6 +174,21 @@ export default function ChatPanel() {
     }
   };
 
+  const handleAddReaction = async (msgId: string, emoji: string) => {
+
+    const messageIdInt = parseInt(msgId, 10);
+
+    try {
+      await api(`/api/messages/reaction`, {
+        method: "POST",
+        body: JSON.stringify({ message_id: messageIdInt, emoji }),
+      });
+    } catch (e) {
+      console.error("Failed to add reaction", e);
+      toast.error("Impossible d'ajouter la réaction");
+    }
+  };
+
   const handleCopyMessage = (content: string) => {
     navigator.clipboard.writeText(content);
     toast.success(t("toastCopied"));
@@ -193,6 +210,8 @@ export default function ChatPanel() {
     }
     return false;
   });
+
+  const [reactionPickerOpenForMsg, setReactionPickerOpenForMsg] = useState<string | null>(null);
 
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -223,9 +242,28 @@ export default function ChatPanel() {
       setIsConnected(false);
     });
 
+    function onReactionAdded(data: { messageId: number; userId: string; emoji: string }) {
+      if (!activeChannelIdRef.current) return;
+      const currentMsgs = useAppStore.getState().messagesByChannel[activeChannelIdRef.current] ?? [];
+      const newMsgs = currentMsgs.map((m) => {
+        if (m.id !== String(data.messageId)) return m;
+        const reactions = [...(m.reactions ?? [])];
+        const idx = reactions.findIndex((r) => r.emoji === data.emoji);
+        if (idx === -1) {
+          reactions.push({ emoji: data.emoji, userIds: [data.userId] });
+        } else if (!reactions[idx].userIds.includes(data.userId)) {
+          reactions[idx] = { ...reactions[idx], userIds: [...reactions[idx].userIds, data.userId] };
+        }
+        return { ...m, reactions };
+      });
+      setMessagesForChannel(activeChannelIdRef.current, newMsgs);
+    }
+
+    socket.on("reaction_added", onReactionAdded);
+
     function onMessage(data: any) {
       console.log("📩 Message received:", data);
-      const newMsg: ChatMessage = {
+      const newMsg: { id: string; channelId: any; author: any; content: any; createdAt: any } = {
         id: String(data.id),
         channelId: data.channelId,
         author: data.author,
@@ -286,6 +324,7 @@ export default function ChatPanel() {
       socket.off("stop_typing", onStopTyping);
       socket.off("message_deleted", onMessageDeleted);
       socket.off("message_updated", onMessageUpdated);
+      socket.off("reaction_added", onReactionAdded);
       socket.disconnect();
     };
   }, []);
@@ -470,18 +509,40 @@ export default function ChatPanel() {
                         >
                           {/* Actions Toolbar (Hover) */}
                           <div className="absolute right-4 -top-2 bg-[#36393f] shadow-sm border border-[#2f3136] rounded-md p-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            {/* Bouton réaction */}
+                            <div className="relative">
+                              <button
+                                  className="p-1 hover:bg-[#40444b] rounded text-[#b9bbbe] hover:text-[#dcddde]"
+                                  title="Réagir"
+                                  onClick={() => setReactionPickerOpenForMsg(
+                                      reactionPickerOpenForMsg === m.id ? null : m.id
+                                  )}
+                              >
+                                <SmilePlus className="w-4 h-4" />
+                              </button>
+                              {reactionPickerOpenForMsg === m.id && (
+                                  <ReactionButton
+                                      onSelectEmoji={(emoji) => {
+                                        handleAddReaction(m.id, emoji);
+                                        setReactionPickerOpenForMsg(null);
+                                      }}
+                                      onClose={() => setReactionPickerOpenForMsg(null)}
+                                  />
+                              )}
+                            </div>
+
                             <button className="p-1 hover:bg-[#40444b] rounded text-[#b9bbbe] hover:text-[#dcddde]" onClick={() => handleCopyMessage(m.content)} title="Copier">
                               <Copy className="w-4 h-4" />
                             </button>
                             {isMe && (
-                              <button className="p-1 hover:bg-[#40444b] rounded text-[#b9bbbe] hover:text-[#dcddde]" onClick={() => handleStartEdit(m)} title="Modifier">
-                                <Pencil className="w-4 h-4" />
-                              </button>
+                                <button className="p-1 hover:bg-[#40444b] rounded text-[#b9bbbe] hover:text-[#dcddde]" onClick={() => handleStartEdit(m)} title="Modifier">
+                                  <Pencil className="w-4 h-4" />
+                                </button>
                             )}
                             {canDelete && (
-                              <button className="p-1 hover:bg-[#40444b] rounded text-[#ED4245] hover:text-[#ED4245]" onClick={() => handleDeleteMessage(m.id)} title="Supprimer">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                                <button className="p-1 hover:bg-[#40444b] rounded text-[#ED4245] hover:text-[#ED4245]" onClick={() => handleDeleteMessage(m.id)} title="Supprimer">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                             )}
                           </div>
 
@@ -552,6 +613,27 @@ export default function ChatPanel() {
                                 </>
                               )}
                             </div>
+                            {m.reactions && m.reactions.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {m.reactions.map((r) => {
+                                    const hasReacted = r.userIds.includes(currentUser?.id ?? "");
+                                    return (
+                                        <button
+                                            key={r.emoji}
+                                            onClick={() => handleAddReaction(m.id, r.emoji)}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-sm border transition-colors
+                                             ${hasReacted
+                                                ? "bg-[#5865F2]/20 border-[#5865F2] text-white"
+                                                : "bg-[#2f3136] border-[#40444b] text-[#b9bbbe] hover:border-[#72767d]"
+                                            }`}
+                                        >
+                                          {r.emoji}
+                                          <span className="text-xs font-medium">{r.userIds.length}</span>
+                                        </button>
+                                    );
+                                  })}
+                                </div>
+                            )}
                           </div>
                         </div>
                       </div>
