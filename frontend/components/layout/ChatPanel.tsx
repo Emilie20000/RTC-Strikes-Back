@@ -214,6 +214,7 @@ export default function ChatPanel() {
   const [reactionPickerOpenForMsg, setReactionPickerOpenForMsg] = useState<string | null>(null);
 
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activeChannelIdRef = useRef(activeChannelId);
 
@@ -370,12 +371,26 @@ export default function ChatPanel() {
   }, []);
 
   useEffect(() => {
-    setTimeout(() => {
+    const scrollToBottom = () => {
       const viewport = document.querySelector('[data-radix-scroll-area-viewport]');
       if (viewport) {
         viewport.scrollTop = viewport.scrollHeight;
       }
-    }, 50);
+    };
+
+    // Initial scroll
+    scrollToBottom();
+
+    // Use ResizeObserver to detect content changes (including images loading)
+    const observer = new ResizeObserver(() => {
+      scrollToBottom();
+    });
+
+    if (messagesContainerRef.current) {
+      observer.observe(messagesContainerRef.current);
+    }
+
+    return () => observer.disconnect();
   }, [activeChannelId, msgs.length, typingUsers.size]);
 
   const ping = async () => {
@@ -480,8 +495,8 @@ export default function ChatPanel() {
           </div>
         </header>
 
-        <ScrollArea className="flex-1" ref={scrollViewportRef}>
-          <div className="flex flex-col pb-4 pt-4">
+        <ScrollArea className="flex-1 min-h-0" ref={scrollViewportRef}>
+          <div className="flex flex-col pb-4 pt-4" ref={messagesContainerRef}>
             {activeChannelId ? (
               <>
                 {msgs.length > 0 ? (
