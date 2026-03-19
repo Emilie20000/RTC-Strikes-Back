@@ -4,6 +4,7 @@ mod handlers;
 mod routes;
 mod middleware;
 mod socket;
+mod notifications;
 
 use axum::{
     routing::get,

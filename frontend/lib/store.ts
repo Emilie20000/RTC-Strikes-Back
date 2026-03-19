@@ -57,12 +57,20 @@ export type VoiceState = {
   deafened: boolean;
 };
 
+export type MessageMention = {
+  kind: "USER" | "ROLE";
+  value: string;
+  userId?: string;
+  role?: "OWNER" | "ADMIN" | "MEMBER" | string;
+};
+
 export type ChatMessage = {
   id: string;
   channelId: string;
   author: string;
   content: string;
   createdAt: number; // timestamp ms
+  mentions?: MessageMention[];
 };
 
 type AppState = {

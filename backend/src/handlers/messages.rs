@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     Extension,
     Json,
@@ -12,6 +12,7 @@ use crate::{
     models::{message::ChatMessage, user::User},
     services::{
         channel as channel_service,
+        mention,
         permission::{self, UserRole},
     },
     middleware::auth::AuthUser,
@@ -23,6 +24,11 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct UpdateMessageSchema {
     pub content: String,
+}
+
+#[derive(Deserialize)]
+pub struct MentionSuggestionQuery {
+    pub query: Option<String>,
 }
 
 use redis::AsyncCommands;
@@ -93,6 +99,15 @@ pub async fn update_message(
         )
     })?;
 
+    let updated_message = mention::enrich_message_mentions(&state.pool, updated_message)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Mention parse error: {}", e)})),
+            )
+        })?;
+
     // Invalidate cache
     let mut conn = state.redis_client.get_multiplexed_tokio_connection().await.map_err(|_| {
         (
@@ -119,7 +134,9 @@ pub async fn get_messages(
     if let Ok(mut conn) = state.redis_client.get_multiplexed_tokio_connection().await {
         if let Ok(cached_messages) = conn.get::<_, String>(&cache_key).await {
             if let Ok(messages) = serde_json::from_str::<Vec<ChatMessage>>(&cached_messages) {
-                return Ok(Json(messages));
+                if let Ok(enriched) = mention::enrich_messages_mentions(&state.pool, messages).await {
+                    return Ok(Json(enriched));
+                }
             }
         }
     }
@@ -137,6 +154,15 @@ pub async fn get_messages(
             Json(json!({"error": format!("Database error: {}", e)})),
         )
     })?;
+
+    let messages = mention::enrich_messages_mentions(&state.pool, messages)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Mention parse error: {}", e)})),
+            )
+        })?;
 
     // Cache results for 1 hour
     if let Ok(mut conn) = state.redis_client.get_multiplexed_tokio_connection().await {
@@ -237,4 +263,93 @@ pub async fn delete_message(
     crate::socket::broadcast_message_deleted(&state.io, message.channel_id.clone(), message_id as i64).await;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn get_mention_suggestions(
+    State(state): State<Arc<AppState>>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path(channel_id): Path<String>,
+    Query(query): Query<MentionSuggestionQuery>,
+) -> Result<Json<mention::MentionCandidates>, (StatusCode, Json<serde_json::Value>)> {
+    let channel_uuid = Uuid::parse_str(&channel_id).map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "Invalid channel id"})),
+        )
+    })?;
+
+    let channel_meta = mention::get_channel_meta(&state.pool, channel_uuid)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Database error: {}", e)})),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "Channel not found"})),
+        ))?;
+
+    let (_, server_id) = channel_meta.clone();
+    if let Some(server_id) = server_id {
+        let is_member = permission::is_server_member(&state.pool, auth_user.user_id, server_id)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"error": format!("Database error: {}", e)})),
+                )
+            })?;
+
+        if !is_member {
+            return Err((
+                StatusCode::FORBIDDEN,
+                Json(json!({"error": "You are not a member of this server"})),
+            ));
+        }
+    } else {
+        let is_subscriber = mention::is_dm_subscriber(&state.pool, channel_uuid, auth_user.user_id)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"error": format!("Database error: {}", e)})),
+                )
+            })?;
+
+        if !is_subscriber {
+            return Err((
+                StatusCode::FORBIDDEN,
+                Json(json!({"error": "You are not a member of this conversation"})),
+            ));
+        }
+    }
+
+    let mut candidates = mention::get_channel_mention_candidates(&state.pool, channel_uuid)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Database error: {}", e)})),
+            )
+        })?;
+
+    if let Some(q) = query.query {
+        let needle = q.trim().to_lowercase();
+        if !needle.is_empty() {
+            candidates.users = candidates
+                .users
+                .into_iter()
+                .filter(|u| u.username.to_lowercase().starts_with(&needle))
+                .collect();
+            candidates.roles = candidates
+                .roles
+                .into_iter()
+                .filter(|r| r.name.starts_with(&needle) || r.label.to_lowercase().starts_with(&needle))
+                .collect();
+        }
+    }
+
+    Ok(Json(candidates))
 }

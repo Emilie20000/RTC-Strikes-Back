@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect, type CSSProperties, type ReactNode } from "react";
 import { api } from "@/lib/http";
-import { useAppStore, type ChatMessage } from "@/lib/store";
+import { useAppStore, type ChatMessage, type MessageMention } from "@/lib/store";
 import { socket } from "@/lib/socket";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,6 +38,145 @@ import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
 
 type Hello = { message: string };
+
+type MentionableUser = {
+  id: string;
+  username: string;
+  avatarUrl?: string;
+};
+
+type MentionableRole = {
+  name: string;
+  label: string;
+};
+
+type MentionSuggestionsResponse = {
+  users: MentionableUser[];
+  roles: MentionableRole[];
+};
+
+type MentionSuggestionItem =
+  | { kind: "USER"; value: string; label: string }
+  | { kind: "ROLE"; value: string; label: string };
+
+const ROLE_SUGGESTIONS: MentionSuggestionItem[] = [
+  { kind: "ROLE", value: "owner", label: "OWNER" },
+  { kind: "ROLE", value: "admin", label: "ADMIN" },
+  { kind: "ROLE", value: "member", label: "MEMBER" },
+];
+
+function mentionStyle(kind: "USER" | "ROLE"): CSSProperties {
+  if (kind === "ROLE") {
+    return {
+      backgroundColor: "#ffcf4d",
+      color: "#1b1b1b",
+      borderRadius: 6,
+      padding: "1px 6px",
+      fontWeight: 700,
+      border: "1px solid #d5a10a",
+      display: "inline-block",
+    };
+  }
+
+  return {
+    backgroundColor: "#7aa2ff",
+    color: "#111827",
+    borderRadius: 6,
+    padding: "1px 6px",
+    fontWeight: 700,
+    border: "1px solid #4f7de8",
+    display: "inline-block",
+  };
+}
+
+function resolveMentionKind(token: string, mentions?: MessageMention[]): "USER" | "ROLE" | null {
+  if (!mentions || mentions.length === 0) return null;
+  const lowered = token.toLowerCase();
+  const found = mentions.find((m) => m.value.toLowerCase() === lowered);
+  if (!found) return null;
+  return found.kind;
+}
+
+function renderMessageWithMentions(content: string, mentions?: MessageMention[]): ReactNode {
+  const regex = /@([A-Za-z0-9._-]+)/g;
+  const out: ReactNode[] = [];
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(content)) !== null) {
+    const full = match[0];
+    const token = match[1];
+    const start = match.index;
+    const end = start + full.length;
+
+    if (start > cursor) {
+      out.push(content.slice(cursor, start));
+    }
+
+    const kind = resolveMentionKind(token, mentions);
+    if (kind) {
+      out.push(
+        <span key={`${start}-${token}`} style={mentionStyle(kind)}>
+          @{token}
+        </span>
+      );
+    } else {
+      // Visual fallback: still style @tokens even when structured mention metadata
+      // is missing from realtime payload/cache.
+      out.push(
+        <span
+          key={`${start}-${token}-fallback`}
+          style={{
+            backgroundColor: "#7aa2ff",
+            color: "#111827",
+            borderRadius: 6,
+            padding: "1px 6px",
+            fontWeight: 700,
+            border: "1px solid #4f7de8",
+            display: "inline-block",
+          }}
+        >
+          @{token}
+        </span>
+      );
+    }
+
+    cursor = end;
+  }
+
+  if (cursor < content.length) {
+    out.push(content.slice(cursor));
+  }
+
+  return out;
+}
+
+function getActiveMention(value: string, caretPos: number | null) {
+  if (caretPos === null || caretPos < 0) return null;
+
+  let atIndex = -1;
+  for (let i = caretPos - 1; i >= 0; i -= 1) {
+    const ch = value[i];
+    if (ch === "@") {
+      atIndex = i;
+      break;
+    }
+    if (/\s/.test(ch)) {
+      return null;
+    }
+  }
+
+  if (atIndex < 0) return null;
+
+  const raw = value.slice(atIndex + 1, caretPos);
+  if (!/^[A-Za-z0-9._-]*$/.test(raw)) return null;
+
+  return {
+    start: atIndex,
+    end: caretPos,
+    query: raw,
+  };
+}
 
 function formatTimeRelative(ts: number, locale: "fr" | "en") {
   try {
@@ -160,7 +299,7 @@ export default function ChatPanel() {
         body: JSON.stringify({ content: editContent }),
       });
 
-      const newMsgs = msgs.map(m => m.id === msgId ? { ...m, content: updatedMsg.content } : m);
+      const newMsgs = msgs.map(m => m.id === msgId ? { ...m, content: updatedMsg.content, mentions: updatedMsg.mentions } : m);
       if (activeChannelId) {
         setMessagesForChannel(activeChannelId, newMsgs);
       }
@@ -196,7 +335,14 @@ export default function ChatPanel() {
 
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mentionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const activeChannelIdRef = useRef(activeChannelId);
+
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionRange, setMentionRange] = useState<{ start: number; end: number } | null>(null);
+  const [mentionItems, setMentionItems] = useState<MentionSuggestionItem[]>([]);
+  const [mentionIndex, setMentionIndex] = useState(0);
 
   useEffect(() => {
     activeChannelIdRef.current = activeChannelId;
@@ -231,6 +377,7 @@ export default function ChatPanel() {
         author: data.author,
         content: data.content,
         createdAt: data.createdAt,
+        mentions: data.mentions,
       };
       addMessage(newMsg);
     }
@@ -268,7 +415,7 @@ export default function ChatPanel() {
       if (channelId === activeChannelIdRef.current) {
         const currentMsgs = useAppStore.getState().messagesByChannel[channelId] ?? [];
         const newMsgs = currentMsgs.map((m) =>
-          m.id === String(data.id) ? { ...m, content: data.content } : m
+          m.id === String(data.id) ? { ...m, content: data.content, mentions: data.mentions } : m
         );
         setMessagesForChannel(channelId, newMsgs);
       }
@@ -294,6 +441,10 @@ export default function ChatPanel() {
     if (!activeChannelId) return;
 
     setTypingUsers(new Map());
+    setMentionQuery(null);
+    setMentionRange(null);
+    setMentionItems([]);
+    setMentionIndex(0);
 
     socket.emit("join", activeChannelId);
 
@@ -339,6 +490,14 @@ export default function ChatPanel() {
     }, 50);
   }, [activeChannelId, msgs.length, typingUsers.size]);
 
+  useEffect(() => {
+    return () => {
+      if (mentionTimeoutRef.current) {
+        clearTimeout(mentionTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const ping = async () => {
     setLoading(true);
     try {
@@ -351,8 +510,122 @@ export default function ChatPanel() {
     }
   };
 
+  const closeMentionMenu = () => {
+    setMentionQuery(null);
+    setMentionRange(null);
+    setMentionItems([]);
+    setMentionIndex(0);
+  };
+
+  const getLocalMentionSuggestions = (query: string): MentionSuggestionItem[] => {
+    const needle = query.trim().toLowerCase();
+
+    const usernames = new Set<string>();
+    currentServerMembers.forEach((m) => {
+      if (m.username) usernames.add(m.username);
+    });
+    msgs.forEach((m) => {
+      if (m.author) usernames.add(m.author);
+    });
+    if (currentUser?.username) {
+      usernames.add(currentUser.username);
+    }
+    if (activeChannel?.kind === "DM" && activeChannel.name) {
+      usernames.add(activeChannel.name);
+    }
+
+    const userItems = Array.from(usernames).map((username) => ({
+      kind: "USER" as const,
+      value: username,
+      label: username,
+    }));
+
+    const roleItems = activeChannel?.serverId ? ROLE_SUGGESTIONS : [];
+    const merged: MentionSuggestionItem[] = [...userItems, ...roleItems];
+
+    if (!needle) {
+      return merged.slice(0, 8);
+    }
+
+    return merged
+      .filter((item) => item.value.toLowerCase().startsWith(needle) || item.label.toLowerCase().startsWith(needle))
+      .slice(0, 8);
+  };
+
+  const applyMentionSuggestion = (item: MentionSuggestionItem) => {
+    if (!mentionRange) return;
+    const before = text.slice(0, mentionRange.start);
+    const after = text.slice(mentionRange.end);
+    const nextText = `${before}@${item.value} ${after}`;
+    setText(nextText);
+    closeMentionMenu();
+
+    requestAnimationFrame(() => {
+      const pos = (before + `@${item.value} `).length;
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(pos, pos);
+    });
+  };
+
+  const fetchMentionSuggestions = async (query: string) => {
+    if (!activeChannelId) return;
+    try {
+      const data = await api<MentionSuggestionsResponse>(
+        `/api/messages/channel/${activeChannelId}/mentions?query=${encodeURIComponent(query)}`
+      );
+      const users: MentionSuggestionItem[] = data.users.map((u) => ({
+        kind: "USER",
+        value: u.username,
+        label: u.username,
+      }));
+      const roles: MentionSuggestionItem[] = data.roles.map((r) => ({
+        kind: "ROLE",
+        value: r.name,
+        label: r.label,
+      }));
+      const items = [...users, ...roles].slice(0, 8);
+
+      if (items.length === 0) {
+        const localItems = getLocalMentionSuggestions(query);
+        setMentionItems(localItems);
+        setMentionIndex(0);
+        return;
+      }
+
+      setMentionItems(items);
+      setMentionIndex(0);
+    } catch (e) {
+      const localItems = getLocalMentionSuggestions(query);
+      setMentionItems(localItems);
+      setMentionIndex(0);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setText(e.target.value);
+    const nextValue = e.target.value;
+    setText(nextValue);
+
+    const caretPos = e.target.selectionStart ?? nextValue.length;
+    const activeMention = getActiveMention(nextValue, caretPos);
+    if (activeMention && activeChannelId) {
+      setMentionQuery(activeMention.query);
+      setMentionRange({ start: activeMention.start, end: activeMention.end });
+
+      // Show local suggestions immediately to avoid perceived lag/failure.
+      const localItems = getLocalMentionSuggestions(activeMention.query);
+      setMentionItems(localItems);
+      setMentionIndex(0);
+
+      if (mentionTimeoutRef.current) {
+        clearTimeout(mentionTimeoutRef.current);
+      }
+
+      mentionTimeoutRef.current = setTimeout(() => {
+        fetchMentionSuggestions(activeMention.query);
+      }, 120);
+    } else {
+      closeMentionMenu();
+    }
 
     if (!activeChannelId) return;
 
@@ -396,6 +669,7 @@ export default function ChatPanel() {
     });
 
     setText("");
+    closeMentionMenu();
   };
 
   return (
@@ -547,7 +821,7 @@ export default function ChatPanel() {
                                       />
                                     </div>
                                   ) : (
-                                    m.content
+                                    renderMessageWithMentions(m.content, m.mentions)
                                   )}
                                 </>
                               )}
@@ -604,11 +878,38 @@ export default function ChatPanel() {
               </div>
             )}
             <Input
+              ref={inputRef}
               className="bg-transparent border-none text-[#dcddde] p-0 pl-8 h-auto focus-visible:ring-0 placeholder-[#72767d] font-normal"
               placeholder={activeChannelId ? t("sendInChannel", {channel: activeChannel?.name || ""}) : t("selectChannelPlaceholder")}
               value={text}
               onChange={handleInputChange}
               onKeyDown={(e) => {
+                if (mentionItems.length > 0 && mentionRange) {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setMentionIndex((idx) => (idx + 1) % mentionItems.length);
+                    return;
+                  }
+                  if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setMentionIndex((idx) => (idx - 1 + mentionItems.length) % mentionItems.length);
+                    return;
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    closeMentionMenu();
+                    return;
+                  }
+                  if (e.key === "Enter" || e.key === "Tab") {
+                    e.preventDefault();
+                    const selected = mentionItems[mentionIndex] || mentionItems[0];
+                    if (selected) {
+                      applyMentionSuggestion(selected);
+                    }
+                    return;
+                  }
+                }
+
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   send();
@@ -617,6 +918,28 @@ export default function ChatPanel() {
               disabled={!activeChannelId}
               autoComplete="off"
             />
+
+            {mentionRange && mentionItems.length > 0 && (
+              <div className="absolute left-2 right-12 bottom-[calc(100%+8px)] bg-[#18191c] border border-[#2f3136] rounded-md shadow-xl overflow-hidden z-30">
+                {mentionItems.map((item, idx) => (
+                  <button
+                    key={`${item.kind}-${item.value}-${idx}`}
+                    type="button"
+                    className={`w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors ${idx === mentionIndex ? "bg-[#5865f2] text-white" : "text-[#dcddde] hover:bg-[#32353b]"}`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      applyMentionSuggestion(item);
+                    }}
+                  >
+                    <span className="truncate">@{item.value}</span>
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${idx === mentionIndex ? "bg-white/20" : "bg-[#2f3136] text-[#b9bbbe]"}`}>
+                      {item.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="absolute right-3 top-2 flex items-center gap-2">
               <Popover>
                 <PopoverTrigger asChild>

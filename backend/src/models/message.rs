@@ -1,5 +1,22 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use uuid::Uuid;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum MentionKind {
+    User,
+    Role,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MessageMention {
+    pub kind: MentionKind,
+    pub value: String,
+    pub user_id: Option<Uuid>,
+    pub role: Option<String>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct ChatMessage {
@@ -12,6 +29,9 @@ pub struct ChatMessage {
     #[sqlx(rename = "created_at")]
     #[serde(rename = "createdAt")]
     pub created_at: i64,
+    #[serde(default)]
+    #[sqlx(skip)]
+    pub mentions: Vec<MessageMention>,
 }
 
 #[cfg(test)]
@@ -27,6 +47,7 @@ mod tests {
             author: "User".to_string(),
             content: "Hello".to_string(),
             created_at: 1600000000,
+            mentions: Vec::new(),
         };
 
         let json = serde_json::to_string(&msg).unwrap();

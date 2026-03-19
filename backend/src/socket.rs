@@ -216,8 +216,15 @@ pub async fn on_connect(socket: SocketRef) {
                 let cache_key = format!("messages:{}", data.channel_id);
                 let _: () = conn.del(cache_key).await.unwrap_or_default();
             }
+            let msg = crate::services::mention::enrich_message_mentions(&pool, msg.clone())
+                .await
+                .unwrap_or(msg);
             let _ = socket.emit("message", &msg);
             let _ = socket.to(data.channel_id.clone()).emit("message", &msg).await;
+
+            if let Err(e) = crate::notifications::emit_message_mentions(&socket, &pool, &msg).await {
+                eprintln!("Failed to emit mention notifications: {}", e);
+            }
         }
     });
 
