@@ -58,12 +58,12 @@ export type VoiceState = {
 };
 
 export type ChatMessage = {
-  reactions: any[];
   id: string;
   channelId: string;
   author: string;
   authorId?: string;
   content: string;
+  reactions?: { emoji: string; userIds: string[] }[];
   createdAt: number; // timestamp ms
 };
 
