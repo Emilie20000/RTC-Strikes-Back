@@ -1,9 +1,3 @@
-use axum::{
-    Extension,
-    Json,
-    http::StatusCode,
-};
-use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 

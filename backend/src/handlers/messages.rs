@@ -8,9 +8,6 @@ use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use sqlx::PgPool;
-use socketioxide::SocketIo;
-use crate::services::message::add_reaction;
 use crate::{
     models::{message::ChatMessage, user::User},
     services::{
@@ -24,6 +21,8 @@ use crate::{
 use serde::Deserialize;
 use crate::services::message::AddReactionSchema;
 use crate::services::message;
+use sqlx::Row;
+use crate::models::message::ReactionGroup;
 
 #[derive(Deserialize)]
 pub struct UpdateMessageSchema {
@@ -136,7 +135,7 @@ pub async fn get_messages(
     }
 
     // Fallback to database
-    let messages = sqlx::query_as::<_, ChatMessage>(
+    let mut messages = sqlx::query_as::<_, ChatMessage>(
         "SELECT id, channel_id, author, author_id, content, created_at FROM messages WHERE channel_id = $1 ORDER BY created_at ASC"
     )
     .bind(&channel_id)
@@ -148,6 +147,48 @@ pub async fn get_messages(
             Json(json!({"error": format!("Database error: {}", e)})),
         )
     })?;
+
+    let message_ids: Vec<i32> = messages.iter().map(|m| m.id).collect();
+    println!("Message IDs: {:?}", message_ids);
+
+    if !message_ids.is_empty() {
+        let rows = sqlx::query(
+            "SELECT message_id, emoji, user_id::text
+             FROM message_reactions
+             WHERE message_id = ANY($1)
+             ORDER BY message_id, emoji"
+        )
+            .bind(&message_ids as &[i32])
+            .fetch_all(&state.pool)
+            .await
+            .unwrap_or_default();
+
+        println!("✅ Reactions récupérées: {}", rows.len());
+
+
+        let mut reaction_map: std::collections::HashMap<(i32, String), Vec<String>> =
+            std::collections::HashMap::new();
+
+        for row in rows {
+            let msg_id: i32 = row.get("message_id");
+            let emoji: String = row.get("emoji");
+            let user_id: String = row.get("user_id");
+            reaction_map.entry((msg_id, emoji)).or_default().push(user_id);
+        }
+
+        for msg in &mut messages {
+            let mut groups: Vec<ReactionGroup> = reaction_map
+                .iter()
+                .filter(|((mid, _), _)| *mid == msg.id)
+                .map(|((_, emoji), user_ids)| ReactionGroup {
+                    emoji: emoji.clone(),
+                    user_ids: user_ids.clone(),
+                })
+                .collect();
+            groups.sort_by(|a, b| a.emoji.cmp(&b.emoji));
+            msg.reactions = groups;
+        }
+    }
 
     // Cache results for 1 hour
     if let Ok(mut conn) = state.redis_client.get_multiplexed_tokio_connection().await {
@@ -274,6 +315,39 @@ pub async fn add_reaction_handler(
     });
 
     let _ = state.io.to(channel_id).emit("reaction_added", &ws_payload).await;
+
+    Ok(Json(serde_json::json!({ "status": "ok" })))
+}
+
+#[derive(Deserialize)]
+pub struct RemoveReactionRequest {
+    pub message_id: i32,
+    pub emoji: String,
+}
+
+pub async fn remove_reaction_handler(
+    State(state): State<Arc<AppState>>,
+    Extension(auth_user): Extension<AuthUser>,
+    Json(payload): Json<RemoveReactionRequest>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let channel_id: String = sqlx::query_scalar(
+        "DELETE FROM message_reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3
+         RETURNING (SELECT channel_id FROM messages WHERE id = $1)"
+    )
+        .bind(payload.message_id)
+        .bind(auth_user.user_id)
+        .bind(&payload.emoji)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let ws_payload = serde_json::json!({
+        "messageId": payload.message_id,
+        "userId": auth_user.user_id,
+        "emoji": payload.emoji
+    });
+
+    let _ = state.io.to(channel_id).emit("reaction_removed", &ws_payload).await;
 
     Ok(Json(serde_json::json!({ "status": "ok" })))
 }
