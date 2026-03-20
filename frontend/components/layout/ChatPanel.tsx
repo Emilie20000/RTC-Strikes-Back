@@ -174,18 +174,27 @@ export default function ChatPanel() {
     }
   };
 
-  const handleAddReaction = async (msgId: string, emoji: string) => {
+  const handleToggleReaction = async (msgId: string, emoji: string) => {
+    const msg = msgs.find(m => m.id === msgId);
+    const reaction = msg?.reactions?.find(r => r.emoji === emoji);
+    const hasReacted = reaction?.userIds.includes(currentUser?.id ?? "");
 
     const messageIdInt = parseInt(msgId, 10);
 
     try {
-      await api(`/api/messages/reaction`, {
-        method: "POST",
-        body: JSON.stringify({ message_id: messageIdInt, emoji }),
-      });
+      if (hasReacted) {
+        await api(`/api/messages/reaction`, {
+          method: "DELETE",
+          body: JSON.stringify({ message_id: messageIdInt, emoji }),
+        });
+      } else {
+        await api(`/api/messages/reaction`, {
+          method: "POST",
+          body: JSON.stringify({ message_id: messageIdInt, emoji }),
+        });
+      }
     } catch (e) {
-      console.error("Failed to add reaction", e);
-      toast.error("Impossible d'ajouter la réaction");
+      toast.error("Impossible de modifier la réaction");
     }
   };
 
@@ -260,6 +269,23 @@ export default function ChatPanel() {
       setMessagesForChannel(activeChannelIdRef.current, newMsgs);
     }
 
+    function onReactionRemoved(data: { messageId: number; userId: string; emoji: string }) {
+      if (!activeChannelIdRef.current) return;
+      const currentMsgs = useAppStore.getState().messagesByChannel[activeChannelIdRef.current] ?? [];
+      const newMsgs = currentMsgs.map((m) => {
+        if (m.id !== String(data.messageId)) return m;
+        const reactions = (m.reactions ?? [])
+            .map(r => r.emoji !== data.emoji ? r : {
+              ...r,
+              userIds: r.userIds.filter(id => id !== data.userId)
+            })
+            .filter(r => r.userIds.length > 0);
+        return { ...m, reactions };
+      });
+      setMessagesForChannel(activeChannelIdRef.current, newMsgs);
+    }
+
+    socket.on("reaction_removed", onReactionRemoved);
     socket.on("reaction_added", onReactionAdded);
 
     function onMessage(data: any) {
@@ -327,6 +353,7 @@ export default function ChatPanel() {
       socket.off("message_deleted", onMessageDeleted);
       socket.off("message_updated", onMessageUpdated);
       socket.off("reaction_added", onReactionAdded);
+      socket.off("reaction_removed", onReactionRemoved);
       socket.disconnect();
     };
   }, []);
@@ -352,6 +379,7 @@ export default function ChatPanel() {
           ...m,
           id: String(m.id),
         }));
+        console.log("data", data)
         useAppStore.getState().setMessagesForChannel(activeChannelId, formatted);
       })
       .catch((e) => console.error("Failed to fetch messages", e));
@@ -540,7 +568,7 @@ export default function ChatPanel() {
                               {reactionPickerOpenForMsg === m.id && (
                                   <ReactionButton
                                       onSelectEmoji={(emoji) => {
-                                        handleAddReaction(m.id, emoji);
+                                          handleToggleReaction(m.id, emoji);
                                         setReactionPickerOpenForMsg(null);
                                       }}
                                       onClose={() => setReactionPickerOpenForMsg(null)}
@@ -642,7 +670,7 @@ export default function ChatPanel() {
                                     return (
                                         <button
                                             key={r.emoji}
-                                            onClick={() => handleAddReaction(m.id, r.emoji)}
+                                            onClick={() => handleToggleReaction(m.id, r.emoji)}
                                             className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-sm border transition-colors
                                              ${hasReacted
                                                 ? "bg-[#5865F2]/20 border-[#5865F2] text-white"
