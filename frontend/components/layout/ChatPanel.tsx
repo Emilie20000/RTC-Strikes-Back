@@ -382,7 +382,6 @@ export default function ChatPanel() {
           ...m,
           id: String(m.id),
         }));
-        console.log("data", data)
         useAppStore.getState().setMessagesForChannel(activeChannelId, formatted);
       })
       .catch((e) => console.error("Failed to fetch messages", e));

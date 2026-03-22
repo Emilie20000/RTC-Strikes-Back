@@ -149,7 +149,6 @@ pub async fn get_messages(
     })?;
 
     let message_ids: Vec<i32> = messages.iter().map(|m| m.id).collect();
-    println!("Message IDs: {:?}", message_ids);
 
     if !message_ids.is_empty() {
         let rows = sqlx::query(
@@ -162,8 +161,6 @@ pub async fn get_messages(
             .fetch_all(&state.pool)
             .await
             .unwrap_or_default();
-
-        println!("✅ Reactions récupérées: {}", rows.len());
 
 
         let mut reaction_map: std::collections::HashMap<(i32, String), Vec<String>> =
