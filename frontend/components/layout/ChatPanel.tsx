@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { enUS, fr } from "date-fns/locale";
 import GifPicker from "@/components/ui/GifPicker";
+import ReactionTooltip from '@/components/ui/ReactionTooltip';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Image as ImageIcon,
@@ -219,6 +220,8 @@ export default function ChatPanel() {
     }
     return false;
   });
+
+  const [showEmojiInput, setShowEmojiInput] = useState(false);
 
   const [reactionPickerOpenForMsg, setReactionPickerOpenForMsg] = useState<string | null>(null);
 
@@ -664,22 +667,18 @@ export default function ChatPanel() {
                               )}
                             </div>
                             {m.reactions && m.reactions.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1">
+                                <div className="flex flex-wrap gap-1 mt-1.5">
                                   {m.reactions.map((r) => {
                                     const hasReacted = r.userIds.includes(currentUser?.id ?? "");
                                     return (
-                                        <button
+                                        <ReactionTooltip
                                             key={r.emoji}
+                                            reaction={r}
+                                            members={currentServerMembers}
+                                            currentUserId={currentUser?.id}
+                                            hasReacted={hasReacted}
                                             onClick={() => handleToggleReaction(m.id, r.emoji)}
-                                            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-sm border transition-colors
-                                             ${hasReacted
-                                                ? "bg-[#5865F2]/20 border-[#5865F2] text-white"
-                                                : "bg-[#2f3136] border-[#40444b] text-[#b9bbbe] hover:border-[#72767d]"
-                                            }`}
-                                        >
-                                          {r.emoji}
-                                          <span className="text-xs font-medium">{r.userIds.length}</span>
-                                        </button>
+                                        />
                                     );
                                   })}
                                 </div>
@@ -750,6 +749,24 @@ export default function ChatPanel() {
               autoComplete="off"
             />
             <div className="absolute right-3 top-2 flex items-center gap-2">
+              <div className="relative">
+                <Button
+                    variant="ghost" size="icon"
+                    className="h-8 w-8 text-[#b9bbbe] hover:text-[#dcddde] hover:bg-transparent"
+                    onClick={() => setShowEmojiInput(v => !v)}
+                >
+                  <SmilePlus className="w-5 h-5" />
+                </Button>
+                {showEmojiInput && (
+                    <ReactionButton
+                        onSelectEmoji={(emoji) => {
+                          setText(prev => prev + emoji);
+                          setShowEmojiInput(false);
+                        }}
+                        onClose={() => setShowEmojiInput(false)}
+                    />
+                )}
+              </div>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-[#b9bbbe] hover:text-[#dcddde] hover:bg-transparent">

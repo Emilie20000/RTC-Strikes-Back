@@ -25,21 +25,23 @@ export default function ReactionButton({ onSelectEmoji, onClose }: Props) {
     return (
         <div
             ref={pickerRef}
-            className="absolute bottom-10 right-0 z-50 shadow-xl rounded-lg overflow-hidden"
-            style={{ width: 350, maxHeight: 400 }}
+            className="absolute z-50"
+            style={{ bottom: 'calc(100% + 8px)', right: 0 }}  // ← s'ouvre vers le haut
         >
             <Picker
                 data={data}
                 theme="dark"
-                onEmojiSelect={(emoji) => {
+                onEmojiSelect={(emoji: any) => {
                     onSelectEmoji(emoji.native);
                     onClose();
                 }}
-                emojiSize={20}
+                emojiSize={22}
+                emojiButtonSize={36}
                 previewPosition="none"
                 navPosition="bottom"
-                searchPosition="bottom"
-                perLine={8}
+                searchPosition="top"
+                perLine={9}
+                maxFrequentRows={1}
             />
         </div>
     );
