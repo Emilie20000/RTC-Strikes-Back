@@ -63,6 +63,7 @@ export type ChatMessage = {
   author: string;
   authorId?: string;
   content: string;
+  reactions?: { emoji: string; userIds: string[] }[];
   createdAt: number; // timestamp ms
 };
 
@@ -97,7 +98,7 @@ type AppState = {
 
   messagesByChannel: Record<string, ChatMessage[]>;
   setMessagesForChannel: (channelId: string, msgs: ChatMessage[]) => void;
-  addMessage: (msg: ChatMessage) => void;
+  addMessage: (msg: { id: string; channelId: any; author: any; content: any; createdAt: any }) => void;
 
   currentUser: User | null;
   setCurrentUser: (u: User | null) => void;

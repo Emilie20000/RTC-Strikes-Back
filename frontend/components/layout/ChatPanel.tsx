@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { enUS, fr } from "date-fns/locale";
 import GifPicker from "@/components/ui/GifPicker";
+import ReactionTooltip from '@/components/ui/ReactionTooltip';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Image as ImageIcon,
@@ -25,7 +26,9 @@ import {
   X,
   Check,
   Users,
+  SmilePlus
 } from "lucide-react";
+import ReactionButton from "@/components/ui/ReactionButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -169,6 +172,32 @@ export default function ChatPanel() {
     } catch (e) {
       console.error("Failed to update message", e);
       toast.error(t("toastEditError"));
+
+    }
+  };
+
+  const handleToggleReaction = async (msgId: string, emoji: string) => {
+    const msg = msgs.find(m => m.id === msgId);
+    const reaction = msg?.reactions?.find(r => r.emoji === emoji);
+    const hasReacted = reaction?.userIds.includes(currentUser?.id ?? "");
+
+    const messageIdInt = parseInt(msgId, 10);
+
+    try {
+      if (hasReacted) {
+        await api(`/api/messages/reaction`, {
+          method: "DELETE",
+          body: JSON.stringify({ message_id: messageIdInt, emoji }),
+        });
+      } else {
+        await api(`/api/messages/reaction`, {
+          method: "POST",
+          body: JSON.stringify({ message_id: messageIdInt, emoji }),
+        });
+      }
+    } catch (e) {
+      toast.error("Impossible de modifier la réaction");
+
     }
   };
 
@@ -193,6 +222,10 @@ export default function ChatPanel() {
     }
     return false;
   });
+
+  const [showEmojiInput, setShowEmojiInput] = useState(false);
+
+  const [reactionPickerOpenForMsg, setReactionPickerOpenForMsg] = useState<string | null>(null);
 
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -224,9 +257,45 @@ export default function ChatPanel() {
       setIsConnected(false);
     });
 
+    function onReactionAdded(data: { messageId: number; userId: string; emoji: string }) {
+      if (!activeChannelIdRef.current) return;
+      const currentMsgs = useAppStore.getState().messagesByChannel[activeChannelIdRef.current] ?? [];
+      const newMsgs = currentMsgs.map((m) => {
+        if (m.id !== String(data.messageId)) return m;
+        const reactions = [...(m.reactions ?? [])];
+        const idx = reactions.findIndex((r) => r.emoji === data.emoji);
+        if (idx === -1) {
+          reactions.push({ emoji: data.emoji, userIds: [data.userId] });
+        } else if (!reactions[idx].userIds.includes(data.userId)) {
+          reactions[idx] = { ...reactions[idx], userIds: [...reactions[idx].userIds, data.userId] };
+        }
+        return { ...m, reactions };
+      });
+      setMessagesForChannel(activeChannelIdRef.current, newMsgs);
+    }
+
+    function onReactionRemoved(data: { messageId: number; userId: string; emoji: string }) {
+      if (!activeChannelIdRef.current) return;
+      const currentMsgs = useAppStore.getState().messagesByChannel[activeChannelIdRef.current] ?? [];
+      const newMsgs = currentMsgs.map((m) => {
+        if (m.id !== String(data.messageId)) return m;
+        const reactions = (m.reactions ?? [])
+            .map(r => r.emoji !== data.emoji ? r : {
+              ...r,
+              userIds: r.userIds.filter(id => id !== data.userId)
+            })
+            .filter(r => r.userIds.length > 0);
+        return { ...m, reactions };
+      });
+      setMessagesForChannel(activeChannelIdRef.current, newMsgs);
+    }
+
+    socket.on("reaction_removed", onReactionRemoved);
+    socket.on("reaction_added", onReactionAdded);
+
     function onMessage(data: any) {
       console.log("📩 Message received:", data);
-      const newMsg: ChatMessage = {
+      const newMsg: { id: string; channelId: any; author: any; content: any; createdAt: any } = {
         id: String(data.id),
         channelId: data.channelId,
         author: data.author,
@@ -288,6 +357,8 @@ export default function ChatPanel() {
       socket.off("stop_typing", onStopTyping);
       socket.off("message_deleted", onMessageDeleted);
       socket.off("message_updated", onMessageUpdated);
+      socket.off("reaction_added", onReactionAdded);
+      socket.off("reaction_removed", onReactionRemoved);
       socket.disconnect();
     };
   }, []);
@@ -487,18 +558,40 @@ export default function ChatPanel() {
                         >
                           {/* Actions Toolbar (Hover) */}
                           <div className="absolute right-4 -top-2 bg-[#36393f] shadow-sm border border-[#2f3136] rounded-md p-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            {/* Bouton réaction */}
+                            <div className="relative">
+                              <button
+                                  className="p-1 hover:bg-[#40444b] rounded text-[#b9bbbe] hover:text-[#dcddde]"
+                                  title="Réagir"
+                                  onClick={() => setReactionPickerOpenForMsg(
+                                      reactionPickerOpenForMsg === m.id ? null : m.id
+                                  )}
+                              >
+                                <SmilePlus className="w-4 h-4" />
+                              </button>
+                              {reactionPickerOpenForMsg === m.id && (
+                                  <ReactionButton
+                                      onSelectEmoji={(emoji) => {
+                                          handleToggleReaction(m.id, emoji);
+                                        setReactionPickerOpenForMsg(null);
+                                      }}
+                                      onClose={() => setReactionPickerOpenForMsg(null)}
+                                  />
+                              )}
+                            </div>
+
                             <button className="p-1 hover:bg-[#40444b] rounded text-[#b9bbbe] hover:text-[#dcddde]" onClick={() => handleCopyMessage(m.content)} title="Copier">
                               <Copy className="w-4 h-4" />
                             </button>
                             {isMe && (
-                              <button className="p-1 hover:bg-[#40444b] rounded text-[#b9bbbe] hover:text-[#dcddde]" onClick={() => handleStartEdit(m)} title="Modifier">
-                                <Pencil className="w-4 h-4" />
-                              </button>
+                                <button className="p-1 hover:bg-[#40444b] rounded text-[#b9bbbe] hover:text-[#dcddde]" onClick={() => handleStartEdit(m)} title="Modifier">
+                                  <Pencil className="w-4 h-4" />
+                                </button>
                             )}
                             {canDelete && (
-                              <button className="p-1 hover:bg-[#40444b] rounded text-[#ED4245] hover:text-[#ED4245]" onClick={() => handleDeleteMessage(m.id)} title="Supprimer">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                                <button className="p-1 hover:bg-[#40444b] rounded text-[#ED4245] hover:text-[#ED4245]" onClick={() => handleDeleteMessage(m.id)} title="Supprimer">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                             )}
                           </div>
 
@@ -574,6 +667,23 @@ export default function ChatPanel() {
                                 </>
                               )}
                             </div>
+                            {m.reactions && m.reactions.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {m.reactions.map((r) => {
+                                    const hasReacted = r.userIds.includes(currentUser?.id ?? "");
+                                    return (
+                                        <ReactionTooltip
+                                            key={r.emoji}
+                                            reaction={r}
+                                            members={currentServerMembers}
+                                            currentUserId={currentUser?.id}
+                                            hasReacted={hasReacted}
+                                            onClick={() => handleToggleReaction(m.id, r.emoji)}
+                                        />
+                                    );
+                                  })}
+                                </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -640,6 +750,24 @@ export default function ChatPanel() {
               autoComplete="off"
             />
             <div className="absolute right-3 top-2 flex items-center gap-2">
+              <div className="relative">
+                <Button
+                    variant="ghost" size="icon"
+                    className="h-8 w-8 text-[#b9bbbe] hover:text-[#dcddde] hover:bg-transparent"
+                    onClick={() => setShowEmojiInput(v => !v)}
+                >
+                  <SmilePlus className="w-5 h-5" />
+                </Button>
+                {showEmojiInput && (
+                    <ReactionButton
+                        onSelectEmoji={(emoji) => {
+                          setText(prev => prev + emoji);
+                          setShowEmojiInput(false);
+                        }}
+                        onClose={() => setShowEmojiInput(false)}
+                    />
+                )}
+              </div>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-[#b9bbbe] hover:text-[#dcddde] hover:bg-transparent">

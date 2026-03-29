@@ -10,6 +10,8 @@ use sqlx::{PgPool, Row};
 use redis::AsyncCommands;
 use dashmap::DashMap;
 use crate::VoiceState;
+use crate::services::message::{AddReactionSchema, add_reaction};
+
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -91,6 +93,16 @@ pub struct SignalPayload {
     pub signal: serde_json::Value,
     pub sender_id: String,
 }
+
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReactionPayload {
+    pub message_id: i32,
+    pub user_id: String,
+    pub emoji: String,
+}
+
 
 pub async fn on_connect(socket: SocketRef) {
     println!("Socket connected: {}", socket.id);
@@ -223,6 +235,76 @@ pub async fn on_connect(socket: SocketRef) {
             let _ = socket.to(data.channel_id.clone()).emit("message", &msg).await;
         }
     });
+
+    socket.on(
+        "add_reaction",
+        |socket: SocketRef,
+         Data::<ReactionPayload>(data),
+         State::<PgPool>(pool)| async move {
+
+            let user_id = match Uuid::parse_str(&data.user_id) {
+                Ok(id) => id,
+                Err(_) => return,
+            };
+
+            let schema = AddReactionSchema {
+                message_id: data.message_id,
+                user_id,
+                emoji: data.emoji.clone(),
+            };
+
+            let channel_id = match add_reaction(&pool, schema).await {
+                Ok(id) => id,
+                Err(_) => return,
+            };
+
+            let _ = socket
+                .to(channel_id)
+                .emit("reaction_added", &data)
+                .await;
+
+            let _ = socket.emit("reaction_added", &data);
+        },
+    );
+
+    socket.on(
+        "remove_reaction",
+        |socket: SocketRef,
+         Data::<ReactionPayload>(data),
+         State::<PgPool>(pool)| async move {
+
+            let user_id = match Uuid::parse_str(&data.user_id) {
+                Ok(id) => id,
+                Err(_) => return,
+            };
+
+            let _ = sqlx::query(
+                "DELETE FROM message_reactions
+             WHERE message_id = $1 AND user_id = $2 AND emoji = $3"
+            )
+                .bind(data.message_id)
+                .bind(user_id)
+                .bind(&data.emoji)
+                .execute(&pool)
+                .await;
+
+            let channel_id: Result<String, _> = sqlx::query_scalar(
+                "SELECT channel_id FROM messages WHERE id = $1"
+            )
+                .bind(data.message_id)
+                .fetch_one(&pool)
+                .await;
+
+            if let Ok(channel_id) = channel_id {
+                let _ = socket
+                    .to(channel_id.clone())
+                    .emit("reaction_removed", &data)
+                    .await;
+
+                let _ = socket.emit("reaction_removed", &data);
+            }
+        },
+    );
 
     socket.on("disconnect", |socket: SocketRef, State::<Arc<DashMap<String, VoiceState>>>(voice_users)| async move {
         let socket_id = socket.id.to_string();
