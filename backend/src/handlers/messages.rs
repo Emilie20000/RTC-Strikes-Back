@@ -23,11 +23,14 @@ use crate::services::message::AddReactionSchema;
 use crate::services::message;
 use sqlx::Row;
 use crate::models::message::ReactionGroup;
+use redis::AsyncCommands;
+
 
 #[derive(Deserialize)]
 pub struct UpdateMessageSchema {
     pub content: String,
 }
+
 
 #[derive(Deserialize)]
 pub struct AddReactionRequest {
@@ -35,7 +38,6 @@ pub struct AddReactionRequest {
     pub emoji: String,
 }
 
-use redis::AsyncCommands;
 
 // Update a message
 pub async fn update_message(
@@ -148,6 +150,7 @@ pub async fn get_messages(
         )
     })?;
 
+
     let message_ids: Vec<i32> = messages.iter().map(|m| m.id).collect();
 
     if !message_ids.is_empty() {
@@ -186,6 +189,7 @@ pub async fn get_messages(
             msg.reactions = groups;
         }
     }
+
 
     // Cache results for 1 hour
     if let Ok(mut conn) = state.redis_client.get_multiplexed_tokio_connection().await {
@@ -276,6 +280,7 @@ pub async fn delete_message(
                 Json(json!({"error": format!("Failed to delete message: {}", e)})),
             )
         })?;
+
 
     if let Ok(mut conn) = state.redis_client.get_multiplexed_tokio_connection().await {
         let cache_key = format!("messages:{}", channel_id);

@@ -172,6 +172,7 @@ export default function ChatPanel() {
     } catch (e) {
       console.error("Failed to update message", e);
       toast.error(t("toastEditError"));
+
     }
   };
 
@@ -196,6 +197,7 @@ export default function ChatPanel() {
       }
     } catch (e) {
       toast.error("Impossible de modifier la réaction");
+
     }
   };
 

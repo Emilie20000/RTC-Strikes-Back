@@ -12,6 +12,7 @@ use dashmap::DashMap;
 use crate::VoiceState;
 use crate::services::message::{AddReactionSchema, add_reaction};
 
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TypingPayload {
@@ -93,6 +94,7 @@ pub struct SignalPayload {
     pub sender_id: String,
 }
 
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ReactionPayload {
@@ -100,6 +102,7 @@ pub struct ReactionPayload {
     pub user_id: String,
     pub emoji: String,
 }
+
 
 pub async fn on_connect(socket: SocketRef) {
     println!("Socket connected: {}", socket.id);
