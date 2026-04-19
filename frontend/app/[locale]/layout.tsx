@@ -2,6 +2,7 @@ import {setRequestLocale, getMessages} from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
 import { Toaster } from "@/components/ui/sonner";
 import { SocketManager } from "@/providers/SocketManager";
+import { TrophyUnlockNotification } from "@/components/user/TrophyUnlockNotification";
 
 export function generateStaticParams() {
   return [{locale: 'en'}, {locale: 'fr'}];
@@ -23,6 +24,7 @@ export default async function LocaleLayout({
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <SocketManager />
+          <TrophyUnlockNotification />
           {children}
           <Toaster position="bottom-right" theme="dark" />
         </NextIntlClientProvider>

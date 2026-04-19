@@ -175,7 +175,8 @@
       "tabs": {
         "account": "Mon compte",
         "profile": "Profil",
-        "language": "Langue"
+        "language": "Langue",
+        "trophees": "Trophees"
       },
       "account": {
         "title": "Mon compte",
@@ -205,6 +206,26 @@
         "description": "Choisissez la langue de l'application.",
         "label": "Langue",
         "options": "Français / English"
+      },
+      "trophees": {
+        "title": "Trophees",
+        "description": "Collectionne des recompenses en utilisant l'application.",
+        "completion": "Completion",
+        "searchPlaceholder": "Rechercher un trophee...",
+        "empty": "Aucun trophee ne correspond aux filtres.",
+        "secretTitle": "Trophee secret",
+        "fallbackTitle": "Trophee",
+        "inProgress": "En cours",
+        "unlockedOn": "Debloque le {date}",
+        "loadError": "Impossible de charger tes trophees",
+        "filters": {
+          "all": "Tout",
+          "social": "Social",
+          "profil": "Profil",
+          "unlocked": "Debloques",
+          "inProgress": "En cours",
+          "notObtained": "Non obtenus"
+        }
       },
       "saveBar": {
         "unsaved": "Attention — vous avez des modifications non enregistrées !",

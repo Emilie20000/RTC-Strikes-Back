@@ -55,6 +55,10 @@ pub async fn create_server(
                 Json(json!({"error": format!("Failed to create server: {}", e)})),
             )
         })?;
+
+    if let Ok(sync) = crate::services::trophee::sync_user_trophees(&state.pool, auth_user.user_id).await {
+        crate::services::trophee::notify_unlocked(&state.io, auth_user.user_id, &sync.newly_unlocked).await;
+    }
     
     Ok((StatusCode::CREATED, Json(server)))
 }
@@ -187,6 +191,10 @@ pub async fn join_server(
                 }
             }
         })?;
+
+    if let Ok(sync) = crate::services::trophee::sync_user_trophees(&state.pool, auth_user.user_id).await {
+        crate::services::trophee::notify_unlocked(&state.io, auth_user.user_id, &sync.newly_unlocked).await;
+    }
     
     let arrivals_channel = sqlx::query_as::<_, crate::models::channel::Channel>(
         "SELECT * FROM channels WHERE server_id = $1 AND name LIKE '%arrivées' LIMIT 1"

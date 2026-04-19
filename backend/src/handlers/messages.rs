@@ -318,6 +318,10 @@ pub async fn add_reaction_handler(
 
     let _ = state.io.to(channel_id).emit("reaction_added", &ws_payload).await;
 
+    if let Ok(sync) = crate::services::trophee::sync_user_trophees(&state.pool, auth_user.user_id).await {
+        crate::services::trophee::notify_unlocked(&state.io, auth_user.user_id, &sync.newly_unlocked).await;
+    }
+
     Ok(Json(serde_json::json!({ "status": "ok" })))
 }
 

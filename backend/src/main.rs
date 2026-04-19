@@ -85,6 +85,10 @@ async fn main() {
     }
 
     let pool = pool.expect("Failed to create pool after multiple retries");
+
+    if let Err(e) = services::trophee::ensure_schema(&pool).await {
+        println!("Failed to ensure trophy schema: {}", e);
+    }
     
     match sqlx::query("SELECT 1").execute(&pool).await {
         Ok(_) => println!("Successfully connected to PostgreSQL!"),
@@ -149,6 +153,7 @@ async fn main() {
         .nest("/api/channels", routes::channel::channel_routes(state.clone()))
         .nest("/api/messages", routes::messages::message_routes(state.clone()))
         .nest("/api/users", routes::user::user_routes(state.clone()))
+        .nest("/api", routes::trophee::trophee_routes(state.clone()))
         .with_state(state.clone())
         .fallback(handle_404)
         .layer(socket_layer)
@@ -196,6 +201,7 @@ async fn main() {
     println!("   POST /api/auth/signup");
     println!("   POST /api/auth/login");
     println!("   GET  /api/auth/me (requires auth)");
+    println!("   GET  /api/trophees (requires auth)");
     println!("   POST /api/servers (create server)");
     println!("   GET  /api/servers (get my servers)");
     println!("   POST /api/servers/join (join server)");
