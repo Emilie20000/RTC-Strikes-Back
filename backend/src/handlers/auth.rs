@@ -1,5 +1,6 @@
 use axum::{extract::State, http::StatusCode, Extension, Json};
 use serde_json::json;
+use sqlx::Error as SqlxError;
 use std::sync::Arc;
 
 use crate::{
@@ -9,12 +10,31 @@ use crate::{
     AppState,
 };
 
+fn map_signup_insert_error(e: SqlxError) -> (StatusCode, Json<serde_json::Value>) {
+    if let SqlxError::Database(db_err) = &e {
+        if db_err.code().as_deref() == Some("23505") {
+            let message = match db_err.constraint() {
+                Some("users_username_key") => "Username already exists",
+                Some("users_email_key") => "User with this email already exists",
+                _ => "User already exists",
+            };
+
+            return (StatusCode::CONFLICT, Json(json!({ "error": message })));
+        }
+    }
+
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(json!({ "error": "Failed to create user" })),
+    )
+}
+
 /// Handler for user signup
 pub async fn signup(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<CreateUser>,
 ) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
-    // Check if user already exists
+    // Check if user already exists by email
     let existing_user = sqlx::query("SELECT id FROM users WHERE email = $1")
         .bind(&payload.email)
         .fetch_optional(&state.pool)
@@ -30,6 +50,25 @@ pub async fn signup(
         return Err((
             StatusCode::CONFLICT,
             Json(json!({"error": "User with this email already exists"})),
+        ));
+    }
+
+    // Check if username is already taken
+    let existing_username = sqlx::query("SELECT id FROM users WHERE username = $1")
+        .bind(&payload.username)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Database error"})),
+            )
+        })?;
+
+    if existing_username.is_some() {
+        return Err((
+            StatusCode::CONFLICT,
+            Json(json!({"error": "Username already exists"})),
         ));
     }
 
@@ -55,12 +94,11 @@ pub async fn signup(
     .bind(&password_hash)
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": format!("Failed to create user: {}", e)})),
-        )
-    })?;
+    .map_err(map_signup_insert_error)?;
+
+    if let Ok(sync) = crate::services::trophee::sync_user_trophees(&state.pool, user.id).await {
+        crate::services::trophee::notify_unlocked(&state.io, user.id, &sync.newly_unlocked).await;
+    }
 
     // Generate token
     let token = generate_token(user.id).map_err(|_| {

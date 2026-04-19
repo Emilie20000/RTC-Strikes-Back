@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "identifier": "eu.epitech.rtc",
   "build": {
-    "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:3001",
+    "beforeDevCommand": "PORT=3000 npm run dev",
+    "devUrl": "http://localhost:3000",
     "beforeBuildCommand": "IS_TAURI=true npm run build",
     "frontendDist": "../out"
   },

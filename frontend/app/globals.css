@@ -170,3 +170,52 @@
     color: white;
   }
 }
+
+.trophy-toast {
+  animation: trophy-pop 220ms ease-out;
+}
+
+.trophy-shine {
+  background: linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, 0.16) 50%, transparent 80%);
+  transform: translateX(-140%) skewX(-20deg);
+  animation: trophy-shine 4s linear infinite;
+}
+
+.trophy-progress {
+  width: 100%;
+  animation: trophy-progress 5.5s linear forwards;
+}
+
+@keyframes trophy-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.97);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes trophy-shine {
+  0% {
+    transform: translateX(-140%) skewX(-20deg);
+  }
+  45% {
+    transform: translateX(220%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-20deg);
+  }
+}
+
+@keyframes trophy-progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}

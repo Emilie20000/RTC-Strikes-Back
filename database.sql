@@ -96,4 +96,11 @@ CREATE TABLE message_reactions (
     PRIMARY KEY (message_id, user_id, emoji)
 );
 
+CREATE TABLE user_trophies (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    trophy_id VARCHAR(100) NOT NULL,
+    unlocked_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (user_id, trophy_id)
+);
+
 CREATE INDEX idx_reactions_message ON message_reactions(message_id);

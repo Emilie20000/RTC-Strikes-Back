@@ -175,7 +175,8 @@
       "tabs": {
         "account": "My Account",
         "profile": "Profile",
-        "language": "Language"
+        "language": "Language",
+        "trophees": "Trophies"
       },
       "account": {
         "title": "My Account",
@@ -205,6 +206,26 @@
         "description": "Choose the application language.",
         "label": "Language",
         "options": "Français / English"
+      },
+      "trophees": {
+        "title": "Trophies",
+        "description": "Collect rewards while using the application.",
+        "completion": "Completion",
+        "searchPlaceholder": "Search a trophy...",
+        "empty": "No trophies match the current filters.",
+        "secretTitle": "Secret trophy",
+        "fallbackTitle": "Trophy",
+        "inProgress": "In progress",
+        "unlockedOn": "Unlocked on {date}",
+        "loadError": "Unable to load your trophies",
+        "filters": {
+          "all": "All",
+          "social": "Social",
+          "profil": "Profile",
+          "unlocked": "Unlocked",
+          "inProgress": "In progress",
+          "notObtained": "Not obtained"
+        }
       },
       "saveBar": {
         "unsaved": "Warning — you have unsaved changes!",

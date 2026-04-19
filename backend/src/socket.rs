@@ -5,6 +5,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use crate::models::message::ChatMessage;
 use crate::models::channel::Channel;
+use crate::services::trophee as trophee_service;
 use uuid::Uuid;
 use sqlx::{PgPool, Row};
 use redis::AsyncCommands;
@@ -233,6 +234,19 @@ pub async fn on_connect(socket: SocketRef) {
             }
             let _ = socket.emit("message", &msg);
             let _ = socket.to(data.channel_id.clone()).emit("message", &msg).await;
+
+            if let Some(author_id) = data.author_id {
+                if let Ok(sync) = trophee_service::sync_user_trophees(&pool, author_id).await {
+                    if !sync.newly_unlocked.is_empty() {
+                        let room = format!("user:{}", author_id);
+                        for trophy in &sync.newly_unlocked {
+                            let _ = socket.to(room.clone()).emit("trophee_unlocked", trophy).await;
+                        }
+                        let payload = serde_json::json!({ "userId": author_id.to_string() });
+                        let _ = socket.to(room).emit("trophees_updated", &payload).await;
+                    }
+                }
+            }
         }
     });
 
@@ -264,6 +278,17 @@ pub async fn on_connect(socket: SocketRef) {
                 .await;
 
             let _ = socket.emit("reaction_added", &data);
+
+            if let Ok(sync) = trophee_service::sync_user_trophees(&pool, user_id).await {
+                if !sync.newly_unlocked.is_empty() {
+                    let room = format!("user:{}", user_id);
+                    for trophy in &sync.newly_unlocked {
+                        let _ = socket.to(room.clone()).emit("trophee_unlocked", trophy).await;
+                    }
+                    let payload = serde_json::json!({ "userId": user_id.to_string() });
+                    let _ = socket.to(room).emit("trophees_updated", &payload).await;
+                }
+            }
         },
     );
 

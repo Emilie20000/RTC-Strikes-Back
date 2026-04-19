@@ -20,13 +20,14 @@ import { useRouter } from "next/navigation";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { TropheesTab } from "@/components/user/TropheesTab";
 
 interface UserSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type Tab = "account" | "profile" | "language";
+type Tab = "account" | "profile" | "language" | "trophees";
 
 export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogProps) {
   const t = useTranslations("app.userSettings");
@@ -114,6 +115,13 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                 onClick={() => setActiveTab("language")}
               >
                 {t("tabs.language")}
+              </Button>
+              <Button
+                variant="ghost"
+                className={`w-full justify-start px-2.5 h-8 font-medium rounded-sm ${activeTab === "trophees" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
+                onClick={() => setActiveTab("trophees")}
+              >
+                {t("tabs.trophees")}
               </Button>
             </div>
           </div>
@@ -309,6 +317,8 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                 </div>
               </div>
             )}
+
+            {activeTab === "trophees" && <TropheesTab />}
           </div>
             
           {hasChanges && (

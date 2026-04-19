@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 MODE=$1
 
 if [ "$MODE" == "--prod" ]; then
@@ -10,7 +12,7 @@ if [ "$MODE" == "--prod" ]; then
     
     echo "Lancement du Build Tauri..."
     cd frontend
-    npm install
+    npm install --legacy-peer-deps
     IS_TAURI=true npm run tauri build
     
     APP_IMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" | head -n 1)
@@ -28,14 +30,28 @@ if [ "$MODE" == "--prod" ]; then
 elif [ "$MODE" == "--dev" ]; then
     echo "🛠️ Mode DEVELOPMENT"
     echo "Nettoyage des services Docker..."
-    docker compose down
+    docker compose down --remove-orphans
     
     echo "Lancement des services Backend (Dev)..."
-    docker compose up --build -d backend pgadmin postgres redis frontend-dev
+    docker compose up --build -d backend pgadmin postgres redis
+
+    echo "Vérification de la disponibilité du backend..."
+    for _ in {1..30}; do
+        if curl -sf "http://localhost:8080/api/hello" >/dev/null; then
+            echo "✅ Backend disponible sur http://localhost:8080"
+            break
+        fi
+        sleep 1
+    done
+
+    if ! curl -sf "http://localhost:8080/api/hello" >/dev/null; then
+        echo "❌ Backend indisponible. Vérifie Docker (daemon, réseau, iptables), puis relance le script."
+        exit 1
+    fi
     
     echo "Lancement de Tauri en mode Dev..."
     cd frontend
-    npm install
+    npm install --legacy-peer-deps
     npm run tauri dev
 
 else
