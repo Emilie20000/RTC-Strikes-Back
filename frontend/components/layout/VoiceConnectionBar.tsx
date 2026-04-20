@@ -25,23 +25,25 @@ export function VoiceConnectionBar() {
   };
 
   return (
-    <div className="bg-[#232428] border-b border-[#202225] p-2 px-3 flex flex-col gap-1 select-none">
-      <div className="flex items-center justify-between text-[#3ba55c] transition-colors hover:text-[#43b581]">
-        <div className="flex items-center gap-1.5 overflow-hidden">
-          <Volume2 className="w-4 h-4 flex-shrink-0" />
+    <div className="bg-[#0a0a0a] border-b border-white/5 p-3 flex flex-col gap-1 select-none relative">
+      <div className="flex items-center justify-between text-[#3ba55c]">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="w-8 h-8 flex items-center justify-center bg-[#3ba55c]/10 border border-[#3ba55c]/20">
+            <Volume2 className="w-4 h-4 flex-shrink-0" />
+          </div>
           <div className="flex flex-col min-w-0">
-             <span className="text-[11px] font-bold leading-tight uppercase truncate">
+             <span className="text-[10px] font-black uppercase tracking-[0.2em] leading-tight truncate">
                 {t("voiceConnected")}
              </span>
-             <span className="text-[11px] text-[#b9bbbe] font-medium leading-tight truncate">
+             <span className="text-[9px] text-white/30 font-mono uppercase tracking-widest leading-tight truncate mt-0.5">
                 {channel?.name || t("voiceChannel")} / {server?.name || t("server")}
              </span>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
              <button
                 onClick={handleGoToChannel}
-                className="p-1 px-1.5 rounded hover:bg-[#393c43] text-[#b9bbbe] hover:text-white transition-colors"
+                className="w-8 h-8 flex items-center justify-center border border-white/5 hover:bg-white/5 text-white/30 hover:text-white transition-all"
                 title={t("info")}
              >
                 <Info className="w-4 h-4" />

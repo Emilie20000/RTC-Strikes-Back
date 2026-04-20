@@ -23,10 +23,10 @@ export function HomeSidebar() {
   }, [setChannels]);
 
   return (
-    <div className="flex flex-col h-full bg-[#2f3136] w-full flex-shrink-0">
-      <div className="h-12 border-b border-[#202225] flex items-center px-4 font-semibold shadow-sm bg-[#2f3136] text-white">
+    <div className="flex flex-col h-full bg-[#0a0a0a] w-full flex-shrink-0">
+      <div className="h-16 border-b border-white/5 flex items-center px-6 bg-transparent text-white">
         <div className="flex items-center justify-between w-full">
-          <span className="truncate font-bold">{t("title")}</span>
+          <span className="truncate font-black text-xs uppercase tracking-[0.2em]">{t("title")}</span>
         </div>
       </div>
 
@@ -37,19 +37,19 @@ export function HomeSidebar() {
               <div key={c.id} className="group relative flex items-center w-full">
                 <button
                   className={`
-                    w-full flex items-center px-2 py-[6px] mx-0 rounded-md transition-all duration-200 group-hover:bg-[#34373c]
-                    ${c.id === activeChannelId ? "bg-[#393c43] text-white shadow-sm" : "text-[#8e9297] hover:text-[#dcddde]"}
-                    hover:scale-[1.01] active:translate-y-[1px]
+                    w-full flex items-center px-4 py-3 transition-all border-l-2
+                    ${c.id === activeChannelId ? "bg-white/5 border-primary text-white" : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02]"}
+                    active:translate-x-0.5
                   `}
                   onClick={() => setActiveChannelId(c.id)}
                 >
-                  <Avatar className="w-8 h-8 mr-3">
+                  <Avatar className="w-9 h-9 mr-4 rounded-none border border-white/10">
                     <AvatarImage src={c.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name || c.id}`} />
-                    <AvatarFallback className="bg-[#5865f2] text-white text-[10px]">
+                    <AvatarFallback className="bg-white/5 text-white/40 text-[10px] font-black uppercase rounded-none">
                       {c.name?.slice(0, 2).toUpperCase() || "DM"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="font-medium truncate">{c.name || t("privateConversation")}</span>
+                  <span className="font-black text-[10px] uppercase tracking-widest truncate">{c.name || t("privateConversation")}</span>
                 </button>
               </div>
             ))}

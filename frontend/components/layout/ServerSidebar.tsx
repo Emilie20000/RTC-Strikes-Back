@@ -97,49 +97,50 @@ export default function ServerSidebar() {
   };
 
   return (
-    <aside className="h-full w-full flex flex-col items-center py-3 gap-3 border-r-0 bg-[#202225] z-30 shadow-none scrollbar-hide">
+    <aside className="h-full w-[72px] flex flex-col items-center py-4 gap-4 bg-[#050505] border-r border-white/5 z-30 relative selection:bg-primary selection:text-white">
+      
       <TooltipProvider delayDuration={0}>
         {/* Home Button */}
         <div className="relative group flex items-center justify-center w-full">
           <div
-            className={`absolute left-0 w-1 bg-white rounded-r-full transition-all duration-200 
-              ${!activeServerId ? "h-8 opacity-100" : "h-2 opacity-0 group-hover:opacity-50 group-hover:h-5"}`}
+            className={`absolute left-0 w-[2px] bg-primary transition-all duration-300
+              ${!activeServerId ? "h-6 opacity-100" : "h-0 opacity-0 group-hover:h-3 group-hover:opacity-50"}`}
           />
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={() => setActiveServerId(null)}
-                className={`group relative flex items-center justify-center w-12 h-12 transition-all duration-300 ease-out overflow-hidden
+                className={`group relative flex items-center justify-center w-12 h-12 transition-all duration-300 border border-white/5
                 ${!activeServerId
-                    ? "rounded-[16px] bg-[#5865F2] text-white"
-                    : "rounded-[24px] hover:rounded-[16px] bg-[#36393f] hover:bg-[#5865F2] text-white"
+                    ? "bg-primary text-white shadow-[4px_4px_0px_0px_rgba(255,0,0,0.2)]"
+                    : "bg-white/5 text-white/50 hover:text-white hover:bg-white/10"
                   }
-                  active:translate-y-[1px]
+                  active:scale-95
                 `}
               >
-                <div className="font-bold">RT</div>
+                <span className="text-xs font-black tracking-tighter">RTC</span>
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="bg-black text-white border-0 font-semibold px-3 py-2 rounded-md shadow-xl" sideOffset={15}>
+            <TooltipContent side="right" className="bg-white text-black border-none font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-none" sideOffset={15}>
               <p>{t("home")}</p>
             </TooltipContent>
           </Tooltip>
         </div>
 
-        <Separator className="w-8 mx-auto bg-[#36393f] h-[2px] rounded-full" />
+        <div className="w-8 h-[1px] bg-white/10" />
 
-        <ScrollArea className="flex-1 w-full px-0 scrollbar-none">
-          <div className="flex flex-col items-center gap-2 pb-4">
+        <ScrollArea className="flex-1 w-full px-0">
+          <div className="flex flex-col items-center gap-3 pb-4">
             {servers.map((s) => {
               const isActive = s.id === activeServerId;
               return (
                 <div key={s.id} className="relative group flex items-center justify-center w-full">
-                  {/* Pill Indicator */}
+                  {/* Sharp Indicator */}
                   <div
-                    className={`absolute left-0 w-1 bg-white rounded-r-full transition-all duration-200 origin-left
+                    className={`absolute left-0 w-[2px] bg-primary transition-all duration-300
                       ${isActive
-                        ? "h-10 opacity-100 scale-100"
-                        : "h-2 opacity-0 group-hover:opacity-100 group-hover:h-5 scale-0 group-hover:scale-100"}`}
+                        ? "h-8 opacity-100"
+                        : "h-0 opacity-0 group-hover:h-4 group-hover:opacity-100"}`}
                   />
 
                   <Tooltip>
@@ -148,24 +149,24 @@ export default function ServerSidebar() {
                         onClick={() => setActiveServerId(s.id)}
                         className={`
                           relative flex items-center justify-center w-12 h-12 
-                          transition-all duration-300 ease-out overflow-hidden group-hover:shadow-md
+                          transition-all duration-300 border border-white/5
                           ${isActive
-                            ? "rounded-[16px] bg-[#5865F2] text-white"
-                            : "rounded-[24px] hover:rounded-[16px] bg-[#36393f] hover:bg-[#5865F2] text-white"
+                            ? "bg-white text-black shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]"
+                            : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
                           }
-                          active:translate-y-[1px]
+                          active:scale-95 overflow-hidden
                         `}
                       >
                         {s.icon_url ? (
-                          <img src={getFileUrl(s.icon_url)} alt={s.name} className="w-full h-full object-cover" />
+                          <img src={getFileUrl(s.icon_url)} alt={s.name} className="w-full h-full object-cover transition-all" />
                         ) : (
-                          <span className="text-sm font-medium transition-transform duration-200 group-hover:scale-105">
-                            {s.name.slice(0, 2).toUpperCase()}
+                          <span className="text-[10px] font-black tracking-widest uppercase">
+                            {s.name.slice(0, 2)}
                           </span>
                         )}
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="bg-black text-white border-0 font-semibold px-3 py-2 rounded-md shadow-xl" sideOffset={15}>
+                    <TooltipContent side="right" className="bg-white text-black border-none font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-none" sideOffset={15}>
                       <p>{s.name}</p>
                     </TooltipContent>
                   </Tooltip>
@@ -179,43 +180,44 @@ export default function ServerSidebar() {
                 <TooltipTrigger asChild>
                   <DialogTrigger asChild>
                     <button
-                      aria-label={t("createServer")}
-                      title={t("createServer")}
-                      className="group flex items-center justify-center w-12 h-12 rounded-[24px] hover:rounded-[16px] transition-all duration-200 bg-[#36393f] hover:bg-[#3ba55c] text-[#3ba55c] hover:text-white overflow-hidden mt-1"
+                      className="group flex items-center justify-center w-12 h-12 border border-dashed border-white/20 bg-transparent hover:border-primary hover:text-primary transition-all active:scale-95 mt-1"
                     >
-                      <Plus className="w-6 h-6 transition-transform duration-200 group-hover:rotate-90" />
+                      <Plus className="w-5 h-5 transition-transform duration-500 group-hover:rotate-90" />
                     </button>
                   </DialogTrigger>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="bg-black text-white border-0 font-semibold px-3 py-2 rounded-md shadow-xl" sideOffset={15}>
+                <TooltipContent side="right" className="bg-white text-black border-none font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-none" sideOffset={15}>
                   <p>{t("createServer")}</p>
                 </TooltipContent>
               </Tooltip>
 
-              <DialogContent className="bg-[#36393f] text-[#dcddde] border-none">
-                <DialogHeader>
-                  <DialogTitle className="text-white text-center font-bold text-2xl">{t("createDialog.title")}</DialogTitle>
-                  <DialogDescription className="text-[#b9bbbe] text-center">
+              <DialogContent className="bg-[#0a0a0a] border border-white/10 rounded-none shadow-2xl p-8">
+                <DialogHeader className="space-y-4">
+                  <div className="flex h-12 w-12 items-center justify-center border border-primary/20 bg-primary/5 mx-auto">
+                    <Plus className="h-6 w-6 text-primary" />
+                  </div>
+                  <DialogTitle className="text-white text-center font-black text-2xl uppercase tracking-tighter">{t("createDialog.title")}</DialogTitle>
+                  <DialogDescription className="text-white/40 text-center text-xs">
                     {t("createDialog.description")}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name" className="text-[#b9bbbe] text-xs font-bold uppercase">{t("createDialog.serverNameLabel")}</Label>
+                <div className="grid gap-6 py-8">
+                  <div className="grid gap-3">
+                    <Label htmlFor="name" className="text-primary text-[10px] font-black uppercase tracking-[0.2em]">{t("createDialog.serverNameLabel")}</Label>
                     <Input
                       id="name"
-                      placeholder={t("createDialog.serverNamePlaceholder")}
+                      placeholder="NODE_IDENTIFIER"
                       value={newServerName}
                       onChange={(e) => setNewServerName(e.target.value)}
-                      className="bg-[#202225] border-none text-white focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="bg-white/5 border-white/10 text-white rounded-none h-12 px-4 focus-visible:ring-primary/20"
                     />
                   </div>
                 </div>
-                <DialogFooter className="bg-[#2f3136] -m-6 mt-0 p-4 flex justify-between">
-                  <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-[#dcddde] hover:underline">
+                <DialogFooter className="flex gap-4 sm:justify-between pt-4 border-t border-white/5">
+                  <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-white/40 hover:text-white rounded-none hover:bg-transparent uppercase text-[10px] font-black tracking-widest">
                     {t("createDialog.back")}
                   </Button>
-                  <Button onClick={handleCreateServer} disabled={loading || !newServerName.trim()} className="bg-[#5865F2] hover:bg-[#4752c4] text-white">
+                  <Button onClick={handleCreateServer} disabled={loading || !newServerName.trim()} className="bg-primary text-white hover:bg-red-500 rounded-none h-12 px-8 font-black uppercase tracking-widest text-[10px]">
                     {loading ? t("createDialog.creating") : t("createDialog.create")}
                   </Button>
                 </DialogFooter>
@@ -228,43 +230,44 @@ export default function ServerSidebar() {
                 <TooltipTrigger asChild>
                   <DialogTrigger asChild>
                     <button
-                      aria-label={t("joinServer")}
-                      title={t("joinServer")}
-                      className="group flex items-center justify-center w-12 h-12 rounded-[24px] hover:rounded-[16px] transition-all duration-200 bg-[#36393f] hover:bg-[#3ba55c] text-[#3ba55c] hover:text-white overflow-hidden"
+                      className="group flex items-center justify-center w-12 h-12 border border-white/5 bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-95"
                     >
-                      <Compass className="w-6 h-6 transition-transform duration-200 group-hover:rotate-45" />
+                      <Compass className="w-5 h-5 transition-transform duration-700 group-hover:rotate-[360deg]" />
                     </button>
                   </DialogTrigger>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="bg-black text-white border-0 font-semibold px-3 py-2 rounded-md shadow-xl" sideOffset={15}>
+                <TooltipContent side="right" className="bg-white text-black border-none font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-none" sideOffset={15}>
                   <p>{t("joinServer")}</p>
                 </TooltipContent>
               </Tooltip>
 
-              <DialogContent className="bg-[#36393f] text-[#dcddde] border-none">
-                <DialogHeader>
-                  <DialogTitle className="text-white text-center font-bold text-2xl">{t("joinDialog.title")}</DialogTitle>
-                  <DialogDescription className="text-[#b9bbbe] text-center">
+              <DialogContent className="bg-[#0a0a0a] border border-white/10 rounded-none shadow-2xl p-8">
+                <DialogHeader className="space-y-4">
+                  <div className="flex h-12 w-12 items-center justify-center border border-primary/20 bg-primary/5 mx-auto">
+                    <Compass className="h-6 w-6 text-primary" />
+                  </div>
+                  <DialogTitle className="text-white text-center font-black text-2xl uppercase tracking-tighter">{t("joinDialog.title")}</DialogTitle>
+                  <DialogDescription className="text-white/40 text-center text-xs">
                     {t("joinDialog.description")}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="invite" className="text-[#b9bbbe] text-xs font-bold uppercase">{t("joinDialog.inviteCodeLabel")}</Label>
+                <div className="grid gap-6 py-8">
+                  <div className="grid gap-3">
+                    <Label htmlFor="invite" className="text-primary text-[10px] font-black uppercase tracking-[0.2em]">{t("joinDialog.inviteCodeLabel")}</Label>
                     <Input
                       id="invite"
                       placeholder={t("joinDialog.inviteCodePlaceholder")}
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value)}
-                      className="bg-[#202225] border-none text-white focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="bg-white/5 border-white/10 text-white rounded-none h-12 px-4 focus-visible:ring-primary/20 font-mono"
                     />
                   </div>
                 </div>
-                <DialogFooter className="bg-[#2f3136] -m-6 mt-0 p-4 flex justify-between">
-                  <Button variant="ghost" onClick={() => setIsJoinOpen(false)} className="text-[#dcddde] hover:underline">
+                <DialogFooter className="flex gap-4 sm:justify-between pt-4 border-t border-white/5">
+                  <Button variant="ghost" onClick={() => setIsJoinOpen(false)} className="text-white/40 hover:text-white rounded-none hover:bg-transparent uppercase text-[10px] font-black tracking-widest">
                     {t("joinDialog.cancel")}
                   </Button>
-                  <Button onClick={handleJoinServer} disabled={joinLoading || !inviteCode.trim()} className="bg-[#5865F2] hover:bg-[#4752c4] text-white">
+                  <Button onClick={handleJoinServer} disabled={joinLoading || !inviteCode.trim()} className="bg-primary text-white hover:bg-red-500 rounded-none h-12 px-8 font-black uppercase tracking-widest text-[10px]">
                     {joinLoading ? t("joinDialog.joining") : t("joinDialog.join")}
                   </Button>
                 </DialogFooter>

@@ -9,9 +9,9 @@ import { VoiceConnectionBar } from "@/components/layout/VoiceConnectionBar";
 
 export default function AppPageContent() {
   return (
-    <div className="h-screen w-screen grid grid-cols-[72px_280px_1fr] bg-[#36393f] overflow-hidden">
+    <div className="h-screen w-screen grid grid-cols-[72px_240px_1fr] bg-[#050505] overflow-hidden selection:bg-primary selection:text-white">
       <ServerSidebar />
-      <div className="flex flex-col h-full bg-[#2f3136] overflow-hidden">
+      <div className="flex flex-col h-full bg-[#0a0a0a] overflow-hidden border-r border-white/5">
         <div className="flex-1 overflow-hidden">
           <ChannelSidebar />
         </div>
