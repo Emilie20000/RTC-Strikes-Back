@@ -295,7 +295,7 @@ export default function ChatPanel() {
 
     function onMessage(data: any) {
       console.log("📩 Message received:", data);
-      const newMsg: { id: string; channelId: any; author: any; content: any; createdAt: any } = {
+      const newMsg: ChatMessage = {
         id: String(data.id),
         channelId: data.channelId,
         author: data.author,

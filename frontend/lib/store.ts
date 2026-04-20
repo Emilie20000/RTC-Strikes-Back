@@ -98,7 +98,7 @@ type AppState = {
 
   messagesByChannel: Record<string, ChatMessage[]>;
   setMessagesForChannel: (channelId: string, msgs: ChatMessage[]) => void;
-  addMessage: (msg: { id: string; channelId: any; author: any; content: any; createdAt: any }) => void;
+  addMessage: (msg: ChatMessage) => void;
 
   currentUser: User | null;
   setCurrentUser: (u: User | null) => void;
