@@ -94,11 +94,11 @@ export function UserBar() {
           <DropdownMenuTrigger asChild>
             <div className="group relative flex items-center hover:bg-white/5 p-2 transition-all cursor-pointer mr-auto min-w-0 border border-transparent hover:border-white/5">
               <div className="relative mr-3 flex-shrink-0">
-                <Avatar className="w-9 h-9 rounded-none border border-white/10">
+                <Avatar className="w-9 h-9 rounded-full border border-white/10">
                   <AvatarImage src={getFileUrl(currentUser?.avatar_url) || undefined} className="transition-all" />
-                  <AvatarFallback className="bg-white/5 text-white/40 text-[10px] font-black rounded-none uppercase">{currentUser?.username?.slice(0, 2)}</AvatarFallback>
+                  <AvatarFallback className="bg-white/5 text-white/40 text-[10px] font-black rounded-full uppercase">{currentUser?.username?.slice(0, 2)}</AvatarFallback>
                 </Avatar>
-                <div className={`absolute -bottom-1 -right-1 w-3 h-3 border border-[#0a0a0a] 
+                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 border border-[#0a0a0a] 
                     ${userStatus === "Online" ? "bg-[#3ba55c]" : userStatus === "Busy" ? "bg-red-800" : userStatus === "Away" ? "bg-yellow-600" : "bg-white/20"}`}
                 />
               </div>

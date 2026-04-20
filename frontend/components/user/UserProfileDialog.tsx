@@ -26,51 +26,46 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent hideDefaultClose className="max-w-md p-0 overflow-hidden bg-[#232428] text-[#dcddde] border-none shadow-2xl">
+      <DialogContent hideDefaultClose className="max-w-md p-0 overflow-hidden bg-[#0a0a0a] text-white/50 border border-white/10 rounded-none shadow-2xl">
         <DialogTitle className="sr-only">{t("title", {username: member.username})}</DialogTitle>
         <DialogDescription className="sr-only">{t("description", {username: member.username})}</DialogDescription>
         <div className="relative">
-            <div className="h-28 bg-[#5865f2] w-full" />
+            <div className="h-32 bg-gradient-to-r from-primary/20 to-transparent w-full border-b border-white/5" />
             
-            <div className="px-4 pb-6 relative">
-                <div className="flex justify-between items-end -mt-14 mb-4">
+            <div className="px-8 pb-8 relative">
+                <div className="flex justify-between items-end -mt-12 mb-6">
                     <div className="relative">
-                        <Avatar className="w-24 h-24 border-[6px] border-[#232428] bg-[#232428] shadow-xl">
+                        <Avatar className="w-24 h-24 border-4 border-[#0a0a0a] bg-[#0a0a0a] rounded-full shadow-2xl">
                             <AvatarImage src={getFileUrl(member.avatar_url)} />
-                            <AvatarFallback className="text-2xl font-bold bg-[#5865F2] text-white">
-                              {member.username.slice(0, 2).toUpperCase()}
+                            <AvatarFallback className="text-2xl font-black bg-white/5 text-white/40 uppercase rounded-full">
+                              {member.username.slice(0, 2)}
                             </AvatarFallback>
                         </Avatar>
-                        <div className="absolute bottom-1 right-1 w-6 h-6 bg-[#3ba55c] rounded-full border-[4px] border-[#232428]" title={t("online")}></div>
+                        <div className="absolute bottom-1 right-1 w-6 h-6 bg-[#3ba55c] border-4 border-[#0a0a0a] rounded-full" title={t("online")}></div>
                     </div>
                 </div>
 
-                <div className="bg-[#111214] rounded-lg p-4 space-y-4 shadow-inner">
-                    <div className="flex items-center justify-between">
+                <div className="bg-white/[0.02] border border-white/5 p-8 space-y-6">
+                    <div className="flex items-start justify-between">
                         <div>
-                            <h2 className="text-xl font-bold text-white leading-tight">{member.username}</h2>
-                            <div className="text-xs text-[#b9bbbe] font-medium mt-0.5">#{member.user_id.slice(0, 4)}</div>
+                            <h2 className="text-2xl font-black text-white uppercase tracking-tighter leading-tight">{member.username}</h2>
+                            <div className="text-[10px] text-white/20 font-mono uppercase tracking-widest mt-1">SYS_UID_{member.user_id.slice(0, 8)}</div>
                         </div>
                         <div className="flex gap-2">
                             {member.role === "OWNER" && (
-                                <Badge variant="secondary" className="bg-[#f0b232]/10 text-[#f0b232] border-none h-6 px-1.5 text-[10px] font-bold">
+                                <Badge variant="secondary" className="bg-primary/10 text-primary border border-primary/20 rounded-none h-6 px-2 text-[9px] font-black uppercase tracking-widest">
                                     <ShieldCheck className="w-3 h-3 mr-1" /> {t("owner")}
-                                </Badge>
-                            )}
-                            {member.role === "ADMIN" && (
-                                <Badge variant="secondary" className="bg-[#5865f2]/10 text-[#5865f2] border-none h-6 px-1.5 text-[10px] font-bold">
-                                    <ShieldAlert className="w-3 h-3 mr-1" /> ADMIN
                                 </Badge>
                             )}
                         </div>
                     </div>
 
-                    <Separator className="bg-[#4f545c]/20" />
+                    <Separator className="bg-white/5" />
 
-                    <div className="space-y-3">
-                        <div className="text-[10px] font-bold text-white uppercase tracking-wider">{t("memberSince")}</div>
-                         <div className="flex items-center gap-2 text-sm text-[#dcddde]">
-                            <Calendar className="w-4 h-4 text-[#b9bbbe]" />
+                    <div className="space-y-4">
+                        <div className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">{t("memberSince")}</div>
+                         <div className="flex items-center gap-3 text-xs text-white/60 font-mono uppercase tracking-widest">
+                            <Calendar className="w-4 h-4 text-white/20" />
                             <span>
                                 {new Date(member.joined_at).toLocaleDateString(undefined, {
                                     year: 'numeric',
@@ -81,9 +76,9 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
                         </div>
                     </div>
 
-                    <Separator className="bg-[#4f545c]/20" />
+                    <Separator className="bg-white/5" />
 
-                    <div className="pt-2">
+                    <div className="pt-4">
                         <button 
                             onClick={async () => {
                                 try {
@@ -102,7 +97,7 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
                                     console.error("Failed to start DM", e);
                                 }
                             }}
-                            className="w-full bg-[#5865f2] hover:bg-[#4752c4] text-white text-sm font-bold py-2 rounded transition-colors"
+                            className="w-full bg-white text-black hover:bg-white/80 text-[10px] font-black uppercase tracking-[0.2em] py-4 rounded-none transition-all active:translate-y-0.5"
                         >
                             {t("sendMessage")}
                         </button>
@@ -114,9 +109,9 @@ export function UserProfileDialog({ open, onOpenChange, member }: UserProfileDia
               aria-label={t("close")}
               title={t("close")}
               onClick={() => onOpenChange(false)}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
+              className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center border border-white/10 text-white/40 hover:bg-white/5 hover:text-white hover:border-white transition-all"
             >
-              <span className="text-lg font-bold leading-none">×</span>
+              <span className="text-xl font-black leading-none">X</span>
             </button>
         </div>
       </DialogContent>

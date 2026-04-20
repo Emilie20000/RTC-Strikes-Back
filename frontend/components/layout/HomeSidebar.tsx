@@ -43,9 +43,9 @@ export function HomeSidebar() {
                   `}
                   onClick={() => setActiveChannelId(c.id)}
                 >
-                  <Avatar className="w-9 h-9 mr-4 rounded-none border border-white/10">
+                  <Avatar className="w-9 h-9 mr-4 rounded-full border border-white/10">
                     <AvatarImage src={c.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name || c.id}`} />
-                    <AvatarFallback className="bg-white/5 text-white/40 text-[10px] font-black uppercase rounded-none">
+                    <AvatarFallback className="bg-white/5 text-white/40 text-[10px] font-black uppercase rounded-full">
                       {c.name?.slice(0, 2).toUpperCase() || "DM"}
                     </AvatarFallback>
                   </Avatar>

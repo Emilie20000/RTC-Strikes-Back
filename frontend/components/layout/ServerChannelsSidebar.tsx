@@ -486,11 +486,11 @@ export function ServerChannelsSidebar() {
                           const isSpeaking = speakingUsers[u.userId];
                           return (
                             <div key={u.userId} className="flex items-center gap-3 text-white/50 group/user p-1 transition-colors">
-                              <Avatar className={`w-5 h-5 rounded-none border transition-all ${isSpeaking ? "border-primary" : "border-white/10"}`}>
+                              <Avatar className={`w-8 h-8 rounded-full border-2 transition-all duration-300 ${isSpeaking ? "border-primary shadow-[0_0_12px_rgba(237,66,69,0.6)] scale-105" : "border-white/10"}`}>
                                 <AvatarImage src={getFileUrl(u.avatarUrl)} />
-                                <AvatarFallback className="text-[8px] bg-white/5 text-white/40 font-black rounded-none">{u.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                <AvatarFallback className="text-[10px] bg-white/5 text-white/40 font-black rounded-full">{u.username.slice(0, 2).toUpperCase()}</AvatarFallback>
                               </Avatar>
-                              <span className={`text-[10px] font-black uppercase tracking-tighter truncate max-w-[120px] transition-colors ${isSpeaking ? "text-white" : ""}`}>{u.username}</span>
+                              <span className={`text-xs font-black uppercase tracking-widest truncate max-w-[120px] transition-all ${isSpeaking ? "text-white translate-x-1" : "text-white/50"}`}>{u.username}</span>
                               {u.muted && <MicOff className="w-2.5 h-2.5 ml-auto text-primary" />}
                             </div>
                           )

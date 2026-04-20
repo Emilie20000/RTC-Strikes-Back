@@ -88,37 +88,37 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent hideDefaultClose className="max-w-4xl max-h-[85vh] h-full md:h-[700px] flex p-0 gap-0 overflow-hidden bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
+      <DialogContent hideDefaultClose className="max-w-4xl max-h-[85vh] h-full md:h-[700px] flex p-0 gap-0 overflow-hidden bg-[#050505] text-white/50 border border-white/10 rounded-none shadow-2xl">
         <DialogTitle className="sr-only">{t("sidebar.title")}</DialogTitle>
         <DialogDescription className="sr-only">{t("tabs.account")}</DialogDescription>
-        <div className="w-[240px] md:w-[280px] bg-[#2f3136] flex flex-col p-0 hidden md:flex">
-          <div className="p-6 pb-2 pt-10">
-            <h2 className="text-[11px] font-bold text-[#8e9297] uppercase tracking-wider mb-2 px-2.5">{t("sidebar.title")}</h2>
-            <div className="space-y-0.5">
+        <div className="w-[240px] md:w-[280px] bg-[#0a0a0a] flex flex-col p-0 hidden md:flex border-r border-white/5">
+          <div className="p-6 pb-2 pt-10 px-8">
+            <h2 className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-6">{t("sidebar.title")}</h2>
+            <div className="space-y-1">
               <Button
                 variant="ghost"
-                className={`w-full justify-start px-2.5 h-8 font-medium rounded-sm ${activeTab === "account" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
+                className={`w-full justify-start px-4 h-10 text-[10px] font-black uppercase tracking-widest rounded-none border-l-2 transition-all ${activeTab === "account" ? "bg-white/5 border-primary text-white" : "border-transparent text-white/40 hover:bg-white/[0.02] hover:text-white"}`}
                 onClick={() => setActiveTab("account")}
               >
                 {t("tabs.account")}
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start px-2.5 h-8 font-medium rounded-sm ${activeTab === "profile" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
+                className={`w-full justify-start px-4 h-10 text-[10px] font-black uppercase tracking-widest rounded-none border-l-2 transition-all ${activeTab === "profile" ? "bg-white/5 border-primary text-white" : "border-transparent text-white/40 hover:bg-white/[0.02] hover:text-white"}`}
                 onClick={() => setActiveTab("profile")}
               >
                 {t("tabs.profile")}
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start px-2.5 h-8 font-medium rounded-sm ${activeTab === "language" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
+                className={`w-full justify-start px-4 h-10 text-[10px] font-black uppercase tracking-widest rounded-none border-l-2 transition-all ${activeTab === "language" ? "bg-white/5 border-primary text-white" : "border-transparent text-white/40 hover:bg-white/[0.02] hover:text-white"}`}
                 onClick={() => setActiveTab("language")}
               >
                 {t("tabs.language")}
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start px-2.5 h-8 font-medium rounded-sm ${activeTab === "trophees" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`}
+                className={`w-full justify-start px-4 h-10 text-[10px] font-black uppercase tracking-widest rounded-none border-l-2 transition-all ${activeTab === "trophees" ? "bg-white/5 border-primary text-white" : "border-transparent text-white/40 hover:bg-white/[0.02] hover:text-white"}`}
                 onClick={() => setActiveTab("trophees")}
               >
                 {t("tabs.trophees")}
@@ -126,67 +126,67 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
             </div>
           </div>
           
-          <Separator className="mx-4 w-auto my-4 bg-[#4f545c]/20" />
+          <Separator className="mx-8 w-auto my-6 bg-white/5" />
           
-          <div className="p-2 px-6 mt-auto mb-4">
+          <div className="p-2 px-8 mt-auto mb-8">
             <Button
               variant="ghost"
-              className="w-full justify-start px-2.5 h-8 font-medium text-[#ed4245] hover:bg-[#ed4245]/10 hover:text-[#ed4245] rounded-sm"
+              className="w-full justify-start px-4 h-10 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 hover:text-primary rounded-none border border-primary/20"
               onClick={handleLogout}
             >
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut className="w-4 h-4 mr-3" />
               {t("sidebar.logout")}
             </Button>
-            <div className="mt-4 px-2.5 text-[10px] text-[#8e9297] font-medium uppercase">
-              T-JSF-600-LIL_10 v0.1.0
+            <div className="mt-6 px-4 text-[9px] text-white/20 font-mono uppercase tracking-widest">
+              SYS_REV_0.1.0_BETA
             </div>
           </div>
         </div>
 
-        <div className="flex-1 bg-[#36393f] flex flex-col min-w-0 overflow-y-auto relative p-6 md:p-10">
+        <div className="flex-1 bg-[#050505] flex flex-col min-w-0 overflow-y-auto relative p-8 md:p-16">
           <div className="max-w-3xl w-full">
             {activeTab === "account" && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                 <h1 className="text-xl font-bold text-white mb-6">{t("account.title")}</h1>
+              <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                 <h1 className="text-2xl font-black text-white uppercase tracking-tighter">{t("account.title")}</h1>
                  
-                 <div className="bg-[#2f3136] rounded-lg overflow-hidden border-none shadow-lg">
-                    <div className="h-24 bg-[#5865F2] relative">
+                 <div className="bg-[#0a0a0a] border border-white/10 rounded-none overflow-hidden">
+                    <div className="h-32 bg-gradient-to-r from-primary/20 to-transparent relative border-b border-white/5">
                     </div>
-                    <div className="px-4 pb-4 relative">
-                        <div className="flex justify-between items-end -mt-8 mb-4">
+                    <div className="px-8 pb-8 relative">
+                        <div className="flex justify-between items-end -mt-12 mb-6">
                             <div className="relative">
-                                <Avatar className="w-20 h-20 border-[6px] border-[#2f3136] bg-[#2f3136] shadow-xl">
+                                <Avatar className="w-24 h-24 border-4 border-[#0a0a0a] bg-[#0a0a0a] rounded-full">
                                     <AvatarImage src={getFileUrl(currentUser?.avatar_url)} />
-                                    <AvatarFallback className="text-xl font-bold bg-[#5865F2] text-white">
-                                      {currentUser?.username?.slice(0, 2).toUpperCase()}
+                                    <AvatarFallback className="text-xl font-black bg-white/5 text-white/40 uppercase rounded-full">
+                                      {currentUser?.username?.slice(0, 2)}
                                     </AvatarFallback>
                                 </Avatar>
-                                <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#3ba55c] rounded-full border-[4px] border-[#2f3136]" title={t("account.statusOnline")}></div>
+                                <div className="absolute bottom-1 right-1 w-6 h-6 bg-[#3ba55c] border-4 border-[#0a0a0a] rounded-full" title={t("account.statusOnline")}></div>
                             </div>
                             <Button 
-                              className="bg-[#5865F2] hover:bg-[#4752c4] text-white h-8 text-sm px-4"
+                              className="bg-white text-black hover:bg-white/80 rounded-none h-10 px-6 font-black uppercase text-[10px] tracking-widest"
                               onClick={() => setActiveTab("profile")}
                             >
                               {t("account.editProfile")}
                             </Button>
                         </div>
                         
-                        <div className="mb-4">
-                            <div className="text-xl font-bold text-white">{currentUser?.username}</div>
-                            <div className="text-sm text-[#b9bbbe]">{currentUser?.email || t("account.noEmail")}</div>
+                        <div className="mb-8">
+                            <div className="text-3xl font-black text-white uppercase tracking-tighter">{currentUser?.username}</div>
+                            <div className="text-xs font-mono text-white/30 uppercase tracking-widest mt-1">SYS_UID_{currentUser?.id?.slice(0, 16)}</div>
                         </div>
                     </div>
                     
-                    <div className="bg-[#232428] p-4 m-4 rounded-lg space-y-4">
+                    <div className="bg-white/[0.02] p-8 space-y-6 border-t border-white/5">
                         <div className="flex justify-between items-center group">
                             <div>
-                                <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-0.5">{t("account.displayName")}</div>
-                                <div className="text-sm font-medium text-white">{currentUser?.username}</div>
+                                <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">{t("account.displayName")}</div>
+                                <div className="text-sm font-bold text-white uppercase">{currentUser?.username}</div>
                             </div>
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="bg-[#4f545c] hover:bg-[#686d73] text-white h-8 w-16"
+                              className="border border-white/10 text-white hover:bg-white/10 rounded-none h-8 px-4 font-black text-[9px] uppercase tracking-widest"
                               onClick={() => setActiveTab("profile")}
                             >
                               {t("account.edit")}
@@ -194,41 +194,41 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                         </div>
                         <div className="flex justify-between items-center">
                             <div>
-                                <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-0.5">{t("account.email")}</div>
-                                <div className="text-sm font-medium text-white">{currentUser?.email || t("account.notProvided")}</div>
+                                <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">{t("account.email")}</div>
+                                <div className="text-sm font-bold text-white uppercase">{currentUser?.email || t("account.notProvided")}</div>
                             </div>
                         </div>
                     </div>
                  </div>
                  
-                 <Separator className="bg-[#4f545c]/20" />
-
-                 <div className="space-y-3">
-                    <h2 className="text-[#b9bbbe] font-bold text-xs uppercase tracking-wider">{t("account.securityTitle")}</h2>
-                    <Button variant="outline" className="border-[#4f545c] text-white hover:bg-[#4f545c]/20 h-8">{t("account.changePassword")}</Button>
+                 <div className="space-y-6 pt-6">
+                    <h2 className="text-white/20 font-black text-[10px] uppercase tracking-[0.3em]">{t("account.securityTitle")}</h2>
+                    <Button variant="ghost" className="border border-white/10 text-white hover:bg-white/5 h-12 rounded-none px-8 font-black uppercase text-[10px] tracking-widest transition-all hover:border-primary/50">{t("account.changePassword")}</Button>
                  </div>
               </div>
             )}
 
             {activeTab === "profile" && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <h1 className="text-xl font-bold text-white mb-2">{t("profile.title")}</h1>
-                    <p className="text-[#b9bbbe] text-sm mb-6">{t("profile.description")}</p>
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div>
+                      <h1 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">{t("profile.title")}</h1>
+                      <p className="text-white/30 text-[10px] uppercase tracking-widest">{t("profile.description")}</p>
+                    </div>
                     
-                    <div className="flex flex-col lg:flex-row gap-8">
-                        <div className="flex-1 space-y-6">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-[#b9bbbe] uppercase">{t("profile.displayName")}</Label>
+                    <div className="flex flex-col lg:flex-row gap-12">
+                        <div className="flex-1 space-y-8">
+                            <div className="grid gap-4">
+                                <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{t("profile.displayName")}</Label>
                                 <Input 
                                     value={username} 
                                     onChange={(e) => setUsername(e.target.value)} 
-                                    className="bg-[#202225] border-none text-white h-10 focus-visible:ring-1 focus-visible:ring-[#5865F2]"
+                                    className="bg-white/5 border-white/10 text-white h-12 rounded-none px-4 font-bold text-sm focus-visible:ring-primary/20"
                                 />
                             </div>
-                            <Separator className="bg-[#4f545c]/20" />
-                            <div className="space-y-3">
-                              <Label htmlFor="avatar-upload-profile" className="text-[10px] font-bold text-[#b9bbbe] uppercase">{t("profile.avatar")}</Label>
-                                <div className="flex gap-3">
+                            <Separator className="bg-white/5" />
+                            <div className="grid gap-4">
+                              <Label htmlFor="avatar-upload-profile" className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{t("profile.avatar")}</Label>
+                                <div className="flex gap-4">
                                     <input 
                                         type="file" 
                                         accept="image/*" 
@@ -257,15 +257,15 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                                         }}
                                     />
                                     <Button 
-                                      className="bg-[#5865F2] hover:bg-[#4752c4] text-white flex-1" 
+                                      className="bg-white text-black hover:bg-white/80 rounded-none h-12 flex-1 font-black uppercase text-[10px] tracking-widest" 
                                       onClick={() => document.getElementById("avatar-upload-profile")?.click()}
                                     >
-                                        <Camera className="w-4 h-4 mr-2" />
+                                        <Camera className="w-4 h-4 mr-3" />
                                         {t("profile.changeAvatar")}
                                     </Button>
                                     <Button 
                                       variant="ghost" 
-                                      className="text-white hover:bg-[#4f545c]/20"
+                                      className="text-white/40 hover:text-white hover:bg-white/5 rounded-none h-12 px-6 font-black uppercase text-[10px] tracking-widest"
                                       onClick={() => setAvatarUrl("")}
                                     >
                                       {t("profile.remove")}
@@ -274,23 +274,23 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                             </div>
                         </div>
 
-                        <div className="w-full lg:w-[300px]">
-                            <Label className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-2 block">{t("profile.preview")}</Label>
-                            <div className="bg-[#18191c] rounded-lg overflow-hidden shadow-2xl border-none transform transition-all hover:scale-[1.01]">
-                                <div className="h-16 bg-[#5865F2]/40 relative"></div>
-                                <div className="p-4 pt-10 relative">
-                                    <div className="absolute -top-10 left-4">
-                                        <Avatar className="w-20 h-20 border-[6px] border-[#18191c] bg-[#18191c] shadow-lg">
+                        <div className="w-full lg:w-[320px] space-y-4">
+                            <Label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-4 block">{t("profile.preview")}</Label>
+                            <div className="bg-[#0a0a0a] border border-white/10 rounded-none overflow-hidden shadow-2xl">
+                                <div className="h-20 bg-gradient-to-r from-primary/20 to-transparent border-b border-white/5 relative"></div>
+                                <div className="p-6 pt-12 relative">
+                                    <div className="absolute -top-12 left-6">
+                                        <Avatar className="w-24 h-24 border-4 border-[#0a0a0a] bg-[#0a0a0a] rounded-full">
                                             <AvatarImage src={getFileUrl(avatarUrl)} />
-                                            <AvatarFallback className="bg-[#5865F2] text-white font-bold text-xl">
-                                              {(username || "U").slice(0, 2).toUpperCase()}
+                                            <AvatarFallback className="bg-white/5 text-white/40 font-black text-xl uppercase rounded-full">
+                                              {(username || "U").slice(0, 2)}
                                             </AvatarFallback>
                                         </Avatar>
-                                        <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#3ba55c] rounded-full border-[4px] border-[#18191c]"></div>
+                                        <div className="absolute bottom-1 right-1 w-6 h-6 bg-[#3ba55c] border-4 border-[#0a0a0a] rounded-full"></div>
                                     </div>
-                                    <div className="bg-[#232428] rounded-md p-4 mt-2">
-                                        <div className="font-bold text-lg text-white leading-tight">{username || t("profile.userFallback")}</div>
-                                        <div className="text-[#b9bbbe] text-xs mt-1 border-t border-[#4f545c]/20 pt-2">
+                                    <div className="bg-white/[0.02] border border-white/5 p-6">
+                                        <div className="font-black text-xl text-white uppercase tracking-tighter leading-tight">{username || t("profile.userFallback")}</div>
+                                        <div className="text-white/20 text-[9px] uppercase tracking-widest mt-4 border-t border-white/5 pt-4 font-mono">
                                           {t("profile.customizing")}
                                         </div>
                                     </div>
@@ -302,15 +302,17 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
             )}
 
             {activeTab === "language" && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <h1 className="text-xl font-bold text-white mb-2">{t("language.title")}</h1>
-                <p className="text-[#b9bbbe] text-sm mb-6">{t("language.description")}</p>
+              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div>
+                  <h1 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">{t("language.title")}</h1>
+                  <p className="text-white/30 text-[10px] uppercase tracking-widest">{t("language.description")}</p>
+                </div>
 
-                <div className="bg-[#2f3136] rounded-lg p-4 shadow-lg">
+                <div className="bg-[#0a0a0a] border border-white/10 rounded-none p-8">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-[10px] font-bold text-[#b9bbbe] uppercase mb-1">{t("language.label")}</div>
-                      <div className="text-sm font-medium text-white">{t("language.options")}</div>
+                      <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">{t("language.label")}</div>
+                      <div className="text-sm font-bold text-white uppercase">{t("language.options")}</div>
                     </div>
                     <LanguageSwitcher />
                   </div>
@@ -322,13 +324,13 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
           </div>
             
           {hasChanges && (
-            <div className="absolute bottom-4 left-4 right-4 bg-[#18191c] border-none shadow-2xl flex justify-between items-center animate-in slide-in-from-bottom-4 fade-in duration-300 p-3 rounded-lg z-50">
-              <div className="text-sm font-medium px-2 text-[#dcddde]">{t("saveBar.unsaved")}</div>
+            <div className="absolute bottom-8 left-8 right-8 bg-[#0a0a0a] border border-primary/50 shadow-2xl flex justify-between items-center animate-in slide-in-from-bottom-8 fade-in duration-500 p-4 rounded-none z-50">
+              <div className="text-[10px] font-black uppercase tracking-widest px-4 text-white">{t("saveBar.unsaved")}</div>
                 <div className="flex gap-4 items-center">
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="text-white hover:underline hover:bg-transparent"
+                      className="text-white/40 hover:text-white hover:bg-transparent font-black uppercase text-[10px] tracking-widest"
                       onClick={() => {
                         setUsername(currentUser?.username || "");
                         setAvatarUrl(currentUser?.avatar_url || "");
@@ -340,24 +342,24 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                       size="sm" 
                       onClick={handleSave} 
                       disabled={loading} 
-                      className="bg-[#3ba55c] hover:bg-[#2d7d46] text-white px-4 font-bold"
+                      className="bg-primary hover:bg-red-500 text-white px-8 h-10 font-black uppercase text-[10px] tracking-widest rounded-none"
                     >
-                      {loading ? t("saveBar.saving") : t("saveBar.save")}
+                      {loading ? "SAVING..." : t("saveBar.save")}
                     </Button>
                 </div>
             </div>
           )}
 
-          <div className="absolute right-6 top-6 flex flex-col items-center gap-1 group">
+          <div className="absolute right-12 top-12 flex flex-col items-center gap-2 group">
             <Button 
               variant="ghost" 
               size="icon" 
-              className="w-9 h-9 border-2 rounded-full border-[#72767d] text-[#72767d] hover:bg-[#72767d]/20 hover:text-white group-hover:border-white transition-all" 
+              className="w-10 h-10 border border-white/20 rounded-none text-white/40 hover:bg-white/5 hover:text-white group-hover:border-white transition-all" 
               onClick={() => onOpenChange(false)}
             >
-              <div className="text-sm font-bold">✕</div>
+              <div className="text-lg font-black tracking-tighter">X</div>
             </Button>
-            <div className="text-[10px] text-[#72767d] font-bold group-hover:text-white transition-all uppercase tracking-tighter">{t("escape")}</div>
+            <div className="text-[9px] text-white/20 font-black group-hover:text-white transition-all uppercase tracking-[0.2em]">{t("escape")}</div>
           </div>
         </div>
       </DialogContent>

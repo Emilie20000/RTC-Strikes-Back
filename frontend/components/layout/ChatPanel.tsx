@@ -595,7 +595,7 @@ export default function ChatPanel() {
                           </div>
 
                           {!isSequence ? (
-                            <Avatar className="w-10 h-10 mr-4 flex-shrink-0 rounded-none border border-white/10">
+                            <Avatar className="w-10 h-10 mr-4 flex-shrink-0 rounded-full border border-white/10">
                               <AvatarImage src={
                                 (m.authorId === currentUser?.id 
                                   ? currentUser?.avatar_url 
@@ -604,7 +604,7 @@ export default function ChatPanel() {
                                       : (m.authorId ? currentServerMembers.find(sm => sm.user_id === m.authorId)?.avatar_url : memberMap[m.author]?.avatar_url))) 
                                 || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.author}`
                               } className="transition-all" />
-                              <AvatarFallback className="bg-white/5 text-white/40 font-black text-[10px] uppercase rounded-none">{(m.authorId ? currentServerMembers.find(sm => sm.user_id === m.authorId)?.username : m.author)?.slice(0, 2)}</AvatarFallback>
+                              <AvatarFallback className="bg-white/5 text-white/40 font-black text-[10px] uppercase rounded-full">{(m.authorId ? currentServerMembers.find(sm => sm.user_id === m.authorId)?.username : m.author)?.slice(0, 2)}</AvatarFallback>
                             </Avatar>
                           ) : (
                             <div className="w-10 mr-4 text-[9px] font-mono text-white/10 opacity-0 group-hover:opacity-100 text-right select-none pt-1.5">
@@ -703,9 +703,9 @@ export default function ChatPanel() {
             ) : (
               <div className="flex flex-col items-center justify-center h-full min-h-[60vh] p-8 text-center space-y-8">
                 <div className="w-32 h-32 border border-white/5 p-4 bg-white/[0.02]">
-                   <Avatar className="w-full h-full rounded-none">
+                   <Avatar className="w-full h-full rounded-full">
                     <AvatarImage src={currentUser?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username}`} />
-                    <AvatarFallback className="bg-white/5 text-white/20 text-3xl font-black uppercase rounded-none">
+                    <AvatarFallback className="bg-white/5 text-white/20 text-3xl font-black uppercase rounded-full">
                       {currentUser?.username?.slice(0, 2)}
                     </AvatarFallback>
                   </Avatar>

@@ -253,13 +253,13 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
                           className="flex items-center gap-3 px-2 py-2 group transition-all cursor-pointer relative border border-transparent hover:border-white/5 hover:bg-white/[0.02]"
                         >
                           <div className="relative shrink-0">
-                            <Avatar className="h-9 w-9 rounded-none border border-white/10" onClick={() => setSelectedMember(member)}>
+                            <Avatar className="h-9 w-9 rounded-full border border-white/10" onClick={() => setSelectedMember(member)}>
                               <AvatarImage src={getFileUrl(member.avatar_url)} className="transition-all" />
-                              <AvatarFallback className="bg-white/5 text-white/40 text-[10px] font-black uppercase rounded-none">
+                              <AvatarFallback className="bg-white/5 text-white/40 text-[10px] font-black uppercase rounded-full">
                                 {member.username.slice(0, 2)}
                               </AvatarFallback>
                             </Avatar>
-                            <div className={`absolute -bottom-1 -right-1 w-2.5 h-2.5 border border-[#0a0a0a] 
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 border border-[#0a0a0a] 
                                 ${member.status === "Online" ? "bg-[#3ba55c]" : member.status === "Busy" ? "bg-red-800" : member.status === "Away" ? "bg-yellow-600" : "bg-white/20"}`}
                             />
                           </div>
