@@ -124,7 +124,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   channels: [],
   setChannels: (channels) => set({ channels }),
-  addChannel: (channel) => set((state) => ({ channels: [...state.channels, channel] })),
+  addChannel: (channel) => set((state) => {
+    if (state.channels.find(c => c.id === channel.id)) return state;
+    return { channels: [...state.channels, channel] };
+  }),
   removeChannel: (channelId) => set((state) => ({
     channels: state.channels.filter((c) => c.id !== channelId),
   })),

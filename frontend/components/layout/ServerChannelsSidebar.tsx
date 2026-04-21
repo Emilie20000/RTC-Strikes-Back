@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { api } from "@/lib/http";
 import { useAppStore, type Channel, type VoiceState } from "@/lib/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@/lib/http";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
@@ -95,6 +95,7 @@ export function ServerChannelsSidebar() {
 
   useEffect(() => {
     if (activeServerId) {
+      // Fetch channels
       api<Channel[]>(`/api/channels/server/${activeServerId}`)
         .then((data) => {
           setChannels(data);
@@ -105,6 +106,13 @@ export function ServerChannelsSidebar() {
           }
         })
         .catch((e) => console.error("Failed to fetch channels", e));
+
+      // Fetch members (ensures avatars are available in chat)
+      api<any[]>(`/api/servers/${activeServerId}/members`)
+        .then((data) => {
+          useAppStore.getState().setServerMembers(activeServerId, data);
+        })
+        .catch((e) => console.error("Failed to fetch members on server entry", e));
     }
   }, [activeServerId, setChannels, setActiveChannelId, activeChannelId]);
 
@@ -113,6 +121,13 @@ export function ServerChannelsSidebar() {
 
     const serverRoom = `server:${activeServerId}`;
     socket.emit("join", serverRoom);
+
+    const onConnect = () => {
+      console.log("Socket reconnected, re-joining server room:", serverRoom);
+      socket.emit("join", serverRoom);
+    };
+
+    socket.on("connect", onConnect);
 
     function onChannelCreated(data: { channel: Channel; serverId: string }) {
       if (data.serverId === activeServerId) {
@@ -205,6 +220,7 @@ export function ServerChannelsSidebar() {
       socket.off("voice_states", onVoiceStates);
       socket.off("voice_state_update", onVoiceStateUpdate);
       socket.off("voice_user_left", onVoiceUserLeft);
+      socket.off("connect", onConnect);
       socket.emit("leave", serverRoom);
     };
   }, [activeServerId, currentUser?.id, addChannel, removeChannel, setActiveChannelId, removeServer, setActiveServerId, setChannels, setVoiceStates, updateVoiceState, removeVoiceState]);

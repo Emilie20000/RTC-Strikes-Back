@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { api } from "@/lib/http";
 import { useAppStore, type ChatMessage } from "@/lib/store";
+import { getFileUrl } from "@/lib/utils";
 import { socket } from "@/lib/socket";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,7 +27,9 @@ import {
   X,
   Check,
   Users,
-  SmilePlus
+  SmilePlus,
+  ShieldCheck,
+  ShieldAlert
 } from "lucide-react";
 import ReactionButton from "@/components/ui/ReactionButton";
 import {
@@ -127,6 +130,10 @@ export default function ChatPanel() {
     () => servers.find((s) => s.id === activeChannel?.serverId),
     [servers, activeChannel]
   );
+
+  const isOwner = currentUser?.id === currentServer?.owner_id;
+  const isSystemChannel = activeChannel?.name?.includes("arrivées") || activeChannel?.name?.includes("départs");
+  const canChat = !isSystemChannel || isOwner;
 
   const msgs: ChatMessage[] = activeChannelId
     ? messagesByChannel[activeChannelId] ?? []
@@ -595,15 +602,22 @@ export default function ChatPanel() {
                           </div>
 
                           {!isSequence ? (
-                            <Avatar className="w-10 h-10 mr-4 flex-shrink-0 rounded-full border border-white/10">
-                              <AvatarImage src={
-                                (m.authorId === currentUser?.id 
-                                  ? currentUser?.avatar_url 
-                                  : (activeChannel?.kind === "DM" 
-                                      ? activeChannel.avatarUrl 
-                                      : (m.authorId ? currentServerMembers.find(sm => sm.user_id === m.authorId)?.avatar_url : memberMap[m.author]?.avatar_url))) 
-                                || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.author}`
-                              } className="transition-all" />
+                            <Avatar className={`w-10 h-10 mr-4 flex-shrink-0 rounded-full border ${m.author === 'Système' ? 'border-primary/50 bg-primary/10' : 'border-white/10'}`}>
+                              {m.author === 'Système' ? (
+                                <div className="w-full h-full flex items-center justify-center text-primary">
+                                  <ShieldCheck className="w-5 h-5" />
+                                </div>
+                              ) : (
+                                <AvatarImage src={
+                                  getFileUrl(
+                                    m.authorId === currentUser?.id 
+                                      ? currentUser?.avatar_url 
+                                      : (activeChannel?.kind === "DM" 
+                                          ? activeChannel.avatarUrl 
+                                          : (m.authorId ? currentServerMembers.find(sm => sm.user_id === m.authorId)?.avatar_url : memberMap[m.author]?.avatar_url))
+                                  ) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.author}`
+                                } className="transition-all" />
+                              )}
                               <AvatarFallback className="bg-white/5 text-white/40 font-black text-[10px] uppercase rounded-full">{(m.authorId ? currentServerMembers.find(sm => sm.user_id === m.authorId)?.username : m.author)?.slice(0, 2)}</AvatarFallback>
                             </Avatar>
                           ) : (
@@ -615,11 +629,14 @@ export default function ChatPanel() {
                           <div className="flex flex-col flex-1 min-w-0">
                             {!isSequence && (
                               <div className="flex items-center gap-3 mb-1">
-                                <span className="text-[11px] font-black text-white uppercase tracking-wider hover:text-primary cursor-pointer transition-colors">
+                                <span className={`text-[11px] font-black uppercase tracking-wider transition-colors flex items-center gap-2 ${m.author === 'Système' ? 'text-primary' : 'text-white hover:text-primary cursor-pointer'}`}>
                                   {m.authorId 
                                     ? (m.authorId === currentUser?.id ? currentUser.username : currentServerMembers.find(sm => sm.user_id === m.authorId)?.username || m.author)
                                     : m.author
                                   }
+                                  {m.author === 'Système' && (
+                                    <span className="bg-primary text-black text-[8px] px-1 py-0.5 rounded-sm font-black tracking-tighter">SYSTEM</span>
+                                  )}
                                 </span>
                                 <span className="text-[9px] font-mono text-white/20 uppercase tracking-widest">
                                   [{formatTimeOnly(m.createdAt)}]
@@ -696,9 +713,6 @@ export default function ChatPanel() {
                   </div>
                 )}
 
-                <div className="px-8 mt-4">
-                  <TypingIndicator users={Array.from(typingUsers.values())} />
-                </div>
               </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full min-h-[60vh] p-8 text-center space-y-8">
@@ -720,7 +734,16 @@ export default function ChatPanel() {
         </ScrollArea>
 
         <div className="px-8 pb-8 pt-4 bg-transparent flex-shrink-0 relative z-20">
-          <div className="relative group">
+          <div className="mb-2 ml-1 h-6">
+            <TypingIndicator users={Array.from(typingUsers.values())} />
+          </div>
+          {!canChat ? (
+            <div className="flex items-center justify-center p-4 bg-white/5 border border-white/10 rounded-none italic text-white/30 text-xs uppercase tracking-widest font-mono">
+              <ShieldAlert className="w-4 h-4 mr-3 text-primary/50" />
+              {t("onlyOwnerCanWrite")}
+            </div>
+          ) : (
+            <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-focus-within:opacity-100 transition-all blur-sm" />
             <div className="relative bg-[#0a0a0a] border border-white/10 flex items-center px-6 h-14">
               <div className="flex-shrink-0 mr-4">
@@ -778,7 +801,7 @@ export default function ChatPanel() {
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {activeChannel && activeChannel.serverId && showMembersSidebar && (
@@ -787,6 +810,7 @@ export default function ChatPanel() {
           onClose={() => setShowMembersSidebar(false)}
         />
       )}
+      </div>
     </div>
   );
 }
