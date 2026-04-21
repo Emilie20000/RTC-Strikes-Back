@@ -516,7 +516,7 @@ export default function ChatPanel() {
                 {activeChannel && (
                   <div className="flex items-center gap-2 mt-0.5">
                     <div className={`w-1 h-1 ${isConnected ? "bg-[#3ba55c]" : "bg-white/20"}`} />
-                    <span className="text-[8px] font-mono text-white/30 uppercase tracking-widest">
+                    <span className="text-[8px] font-mono text-white/90 uppercase tracking-widest">
                       {activeChannel.kind === "VOICE" ? t("voiceChannel") : activeChannel.kind === "DM" ? t("directMessage") : t("textChannel")}
                     </span>
                   </div>
@@ -529,7 +529,7 @@ export default function ChatPanel() {
             <div className="flex items-center gap-4">
               {activeChannel && (
                 <Users
-                  className={`w-4 h-4 cursor-pointer transition-colors ${showMembersSidebar ? "text-primary" : "text-white/30 hover:text-white"}`}
+                  className={`w-4 h-4 cursor-pointer transition-colors ${showMembersSidebar ? "text-primary" : "text-white/90 hover:text-white"}`}
                   onClick={() => setShowMembersSidebar(!showMembersSidebar)}
                 />
               )}
@@ -556,7 +556,7 @@ export default function ChatPanel() {
                             <div className="absolute inset-x-8 flex items-center">
                               <div className="w-full border-t border-white/5"></div>
                             </div>
-                            <div className="relative bg-[#050505] px-4 text-[9px] font-black uppercase tracking-[0.3em] text-white/20">
+                            <div className="relative bg-[#050505] px-4 text-[9px] font-black uppercase tracking-[0.3em] text-white/80">
                               {formatDateDivider(m.createdAt, locale)}
                             </div>
                           </div>
@@ -568,7 +568,7 @@ export default function ChatPanel() {
                           <div className="absolute right-8 -top-3 bg-[#0a0a0a] border border-white/10 p-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-30 shadow-2xl">
                             <div className="relative">
                               <button
-                                  className="p-1.5 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                                  className="p-1.5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
                                   onClick={() => setReactionPickerOpenForMsg(reactionPickerOpenForMsg === m.id ? null : m.id)}
                               >
                                 <SmilePlus className="w-3.5 h-3.5" />
@@ -586,16 +586,16 @@ export default function ChatPanel() {
                               )}
                             </div>
 
-                            <button className="p-1.5 hover:bg-white/10 text-white/40 hover:text-white" onClick={() => handleCopyMessage(m.content)}>
+                            <button className="p-1.5 hover:bg-white/10 text-white/70 hover:text-white" onClick={() => handleCopyMessage(m.content)}>
                               <Copy className="w-3.5 h-3.5" />
                             </button>
                             {isMe && (
-                                <button className="p-1.5 hover:bg-white/10 text-white/40 hover:text-white" onClick={() => handleStartEdit(m)}>
+                                <button className="p-1.5 hover:bg-white/10 text-white/70 hover:text-white" onClick={() => handleStartEdit(m)}>
                                   <Pencil className="w-3.5 h-3.5" />
                                 </button>
                             )}
                             {canDelete && (
-                                <button className="p-1.5 hover:bg-primary/20 text-white/40 hover:text-primary" onClick={() => handleDeleteMessage(m.id)}>
+                                <button className="p-1.5 hover:bg-primary/20 text-white/70 hover:text-primary" onClick={() => handleDeleteMessage(m.id)}>
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                             )}
@@ -618,10 +618,10 @@ export default function ChatPanel() {
                                   ) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.author}`
                                 } className="transition-all" />
                               )}
-                              <AvatarFallback className="bg-white/5 text-white/40 font-black text-[10px] uppercase rounded-full">{(m.authorId ? currentServerMembers.find(sm => sm.user_id === m.authorId)?.username : m.author)?.slice(0, 2)}</AvatarFallback>
+                              <AvatarFallback className="bg-white/5 text-white/70 font-black text-[10px] uppercase rounded-full">{(m.authorId ? currentServerMembers.find(sm => sm.user_id === m.authorId)?.username : m.author)?.slice(0, 2)}</AvatarFallback>
                             </Avatar>
                           ) : (
-                            <div className="w-10 mr-4 text-[9px] font-mono text-white/10 opacity-0 group-hover:opacity-100 text-right select-none pt-1.5">
+                            <div className="w-10 mr-4 text-[9px] font-mono text-white/90 opacity-0 group-hover:opacity-100 text-right select-none pt-1.5">
                               {formatTimeOnly(m.createdAt)}
                             </div>
                           )}
@@ -638,7 +638,7 @@ export default function ChatPanel() {
                                     <span className="bg-primary text-black text-[8px] px-1 py-0.5 rounded-sm font-black tracking-tighter">SYSTEM</span>
                                   )}
                                 </span>
-                                <span className="text-[9px] font-mono text-white/20 uppercase tracking-widest">
+                                <span className="text-[9px] font-mono text-white/80 uppercase tracking-widest">
                                   [{formatTimeOnly(m.createdAt)}]
                                 </span>
                               </div>
@@ -660,7 +660,7 @@ export default function ChatPanel() {
                                       }
                                     }}
                                   />
-                                  <div className="text-[9px] font-mono text-white/20 mt-4 uppercase tracking-widest">
+                                  <div className="text-[9px] font-mono text-white/80 mt-4 uppercase tracking-widest">
                                     ESC to <span className="text-primary cursor-pointer" onClick={handleCancelEdit}>Abort</span> • ENTER to <span className="text-primary cursor-pointer" onClick={() => handleUpdateMessage(m.id)}>Commit</span>
                                   </div>
                                 </div>
@@ -688,7 +688,7 @@ export default function ChatPanel() {
                                   {m.reactions.map((r) => {
                                     const hasReacted = r.userIds.includes(currentUser?.id ?? "");
                                     return (
-                                        <div key={r.emoji} className={`flex items-center gap-1.5 px-2 py-1 border transition-all cursor-pointer ${hasReacted ? "bg-primary/10 border-primary text-primary" : "bg-white/5 border-white/5 text-white/40 hover:border-white/20"}`} onClick={() => handleToggleReaction(m.id, r.emoji)}>
+                                        <div key={r.emoji} className={`flex items-center gap-1.5 px-2 py-1 border transition-all cursor-pointer ${hasReacted ? "bg-primary/10 border-primary text-primary" : "bg-white/5 border-white/5 text-white/70 hover:border-white/20"}`} onClick={() => handleToggleReaction(m.id, r.emoji)}>
                                           <span className="text-xs">{r.emoji}</span>
                                           <span className="text-[10px] font-black">{r.userIds.length}</span>
                                         </div>
@@ -702,7 +702,7 @@ export default function ChatPanel() {
                     );
                   })
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-32 text-white/20 gap-6">
+                  <div className="flex flex-col items-center justify-center py-32 text-white/80 gap-6">
                     <div className="w-20 h-20 border border-white/5 bg-white/[0.02] flex items-center justify-center">
                       <Hash className="w-8 h-8 text-primary/50" />
                     </div>
@@ -719,14 +719,14 @@ export default function ChatPanel() {
                 <div className="w-32 h-32 border border-white/5 p-4 bg-white/[0.02]">
                    <Avatar className="w-full h-full rounded-full">
                     <AvatarImage src={currentUser?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username}`} />
-                    <AvatarFallback className="bg-white/5 text-white/20 text-3xl font-black uppercase rounded-full">
+                    <AvatarFallback className="bg-white/5 text-white/80 text-3xl font-black uppercase rounded-full">
                       {currentUser?.username?.slice(0, 2)}
                     </AvatarFallback>
                   </Avatar>
                 </div>
                 <div className="space-y-3">
                   <h3 className="text-sm font-black text-white uppercase tracking-[0.5em]">{t("readyToChat")}</h3>
-                  <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{t("selectLeftChannel")}</p>
+                  <p className="text-[10px] font-mono text-white/80 uppercase tracking-widest">{t("selectLeftChannel")}</p>
                 </div>
               </div>
             )}
@@ -738,7 +738,7 @@ export default function ChatPanel() {
             <TypingIndicator users={Array.from(typingUsers.values())} />
           </div>
           {!canChat ? (
-            <div className="flex items-center justify-center p-4 bg-white/5 border border-white/10 rounded-none italic text-white/30 text-xs uppercase tracking-widest font-mono">
+            <div className="flex items-center justify-center p-4 bg-white/5 border border-white/10 rounded-none italic text-white/90 text-xs uppercase tracking-widest font-mono">
               <ShieldAlert className="w-4 h-4 mr-3 text-primary/50" />
               {t("onlyOwnerCanWrite")}
             </div>
@@ -769,7 +769,7 @@ export default function ChatPanel() {
                 <div className="relative">
                   <Button
                       variant="ghost" size="icon"
-                      className="h-8 w-8 text-white/20 hover:text-white hover:bg-transparent"
+                      className="h-8 w-8 text-white/80 hover:text-white hover:bg-transparent"
                       onClick={() => setShowEmojiInput(v => !v)}
                   >
                     <SmilePlus className="w-4 h-4" />
@@ -788,7 +788,7 @@ export default function ChatPanel() {
                 </div>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white/20 hover:text-white hover:bg-transparent">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white/80 hover:text-white hover:bg-transparent">
                       <ImageIcon className="w-4 h-4" />
                     </Button>
                   </PopoverTrigger>

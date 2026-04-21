@@ -113,7 +113,7 @@ export default function ServerSidebar() {
                 className={`group relative flex items-center justify-center w-12 h-12 transition-all duration-300 border border-white/5
                 ${!activeServerId
                     ? "bg-primary text-white shadow-[4px_4px_0px_0px_rgba(255,0,0,0.2)]"
-                    : "bg-white/5 text-white/50 hover:text-white hover:bg-white/10"
+                    : "bg-white/5 text-white/80 hover:text-white hover:bg-white/10"
                   }
                   active:scale-95
                 `}
@@ -152,7 +152,7 @@ export default function ServerSidebar() {
                           transition-all duration-300 border border-white/5
                           ${isActive
                             ? "bg-white text-black shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]"
-                            : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
+                            : "bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
                           }
                           active:scale-95 overflow-hidden
                         `}
@@ -197,7 +197,7 @@ export default function ServerSidebar() {
                     <Plus className="h-6 w-6 text-primary" />
                   </div>
                   <DialogTitle className="text-white text-center font-black text-2xl uppercase tracking-tighter">{t("createDialog.title")}</DialogTitle>
-                  <DialogDescription className="text-white/40 text-center text-xs">
+                  <DialogDescription className="text-white/70 text-center text-xs">
                     {t("createDialog.description")}
                   </DialogDescription>
                 </DialogHeader>
@@ -214,7 +214,7 @@ export default function ServerSidebar() {
                   </div>
                 </div>
                 <DialogFooter className="flex gap-4 sm:justify-between pt-4 border-t border-white/5">
-                  <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-white/40 hover:text-white rounded-none hover:bg-transparent uppercase text-[10px] font-black tracking-widest">
+                  <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-white/70 hover:text-white rounded-none hover:bg-transparent uppercase text-[10px] font-black tracking-widest">
                     {t("createDialog.back")}
                   </Button>
                   <Button onClick={handleCreateServer} disabled={loading || !newServerName.trim()} className="bg-primary text-white hover:bg-red-500 rounded-none h-12 px-8 font-black uppercase tracking-widest text-[10px]">
@@ -230,7 +230,7 @@ export default function ServerSidebar() {
                 <TooltipTrigger asChild>
                   <DialogTrigger asChild>
                     <button
-                      className="group flex items-center justify-center w-12 h-12 border border-white/5 bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-95"
+                      className="group flex items-center justify-center w-12 h-12 border border-white/5 bg-white/5 text-white/70 hover:text-white hover:bg-white/10 transition-all active:scale-95"
                     >
                       <Compass className="w-5 h-5 transition-transform duration-700 group-hover:rotate-[360deg]" />
                     </button>
@@ -247,7 +247,7 @@ export default function ServerSidebar() {
                     <Compass className="h-6 w-6 text-primary" />
                   </div>
                   <DialogTitle className="text-white text-center font-black text-2xl uppercase tracking-tighter">{t("joinDialog.title")}</DialogTitle>
-                  <DialogDescription className="text-white/40 text-center text-xs">
+                  <DialogDescription className="text-white/70 text-center text-xs">
                     {t("joinDialog.description")}
                   </DialogDescription>
                 </DialogHeader>
@@ -264,7 +264,7 @@ export default function ServerSidebar() {
                   </div>
                 </div>
                 <DialogFooter className="flex gap-4 sm:justify-between pt-4 border-t border-white/5">
-                  <Button variant="ghost" onClick={() => setIsJoinOpen(false)} className="text-white/40 hover:text-white rounded-none hover:bg-transparent uppercase text-[10px] font-black tracking-widest">
+                  <Button variant="ghost" onClick={() => setIsJoinOpen(false)} className="text-white/70 hover:text-white rounded-none hover:bg-transparent uppercase text-[10px] font-black tracking-widest">
                     {t("joinDialog.cancel")}
                   </Button>
                   <Button onClick={handleJoinServer} disabled={joinLoading || !inviteCode.trim()} className="bg-primary text-white hover:bg-red-500 rounded-none h-12 px-8 font-black uppercase tracking-widest text-[10px]">

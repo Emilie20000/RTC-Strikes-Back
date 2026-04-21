@@ -357,7 +357,7 @@ export function ServerChannelsSidebar() {
               <ChevronDown className="w-4 h-4 ml-auto opacity-40 group-hover:opacity-100 transition-opacity" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 bg-[#0a0a0a] border border-white/10 text-white/50 p-2 shadow-2xl rounded-none">
+          <DropdownMenuContent className="w-56 bg-[#0a0a0a] border border-white/10 text-white/80 p-2 shadow-2xl rounded-none">
             <DropdownMenuLabel className="text-[9px] font-black uppercase text-primary tracking-[0.2em] px-2 py-1.5">
               {activeServer ? activeServer.name : t("menu")}
             </DropdownMenuLabel>
@@ -400,7 +400,7 @@ export function ServerChannelsSidebar() {
         <div className="space-y-8">
           <div>
             <div className="flex items-center justify-between mb-4 px-1">
-              <button className="flex items-center text-[10px] font-black uppercase text-white/40 hover:text-white transition-colors tracking-[0.2em]">
+              <button className="flex items-center text-[10px] font-black uppercase text-white/70 hover:text-white transition-colors tracking-[0.2em]">
                 {t("textChannels")}
               </button>
               {canManageServer && (
@@ -410,7 +410,7 @@ export function ServerChannelsSidebar() {
                       <TooltipTrigger asChild>
                         <DialogTrigger asChild>
                           <button
-                            className="text-white/20 hover:text-primary transition-colors"
+                            className="text-white/80 hover:text-primary transition-colors"
                           >
                             <Plus className="w-3.5 h-3.5" />
                           </button>
@@ -429,11 +429,11 @@ export function ServerChannelsSidebar() {
                       <div className="grid gap-3">
                         <Label className="text-primary text-[9px] font-black uppercase tracking-[0.2em]">{t("channelType")}</Label>
                         <div className="flex gap-3">
-                          <div onClick={() => setChannelType("TEXT")} className={`flex-1 flex items-center p-4 border transition-all cursor-pointer ${channelType === "TEXT" ? "bg-white text-black border-white" : "bg-transparent text-white/40 border-white/5 hover:border-white/20"}`}>
+                          <div onClick={() => setChannelType("TEXT")} className={`flex-1 flex items-center p-4 border transition-all cursor-pointer ${channelType === "TEXT" ? "bg-white text-black border-white" : "bg-transparent text-white/70 border-white/5 hover:border-white/20"}`}>
                             <Hash className="w-5 h-5 mr-3" />
                             <div className="font-black text-[10px] uppercase tracking-widest">{t("textType")}</div>
                           </div>
-                          <div onClick={() => setChannelType("VOICE")} className={`flex-1 flex items-center p-4 border transition-all cursor-pointer ${channelType === "VOICE" ? "bg-white text-black border-white" : "bg-transparent text-white/40 border-white/5 hover:border-white/20"}`}>
+                          <div onClick={() => setChannelType("VOICE")} className={`flex-1 flex items-center p-4 border transition-all cursor-pointer ${channelType === "VOICE" ? "bg-white text-black border-white" : "bg-transparent text-white/70 border-white/5 hover:border-white/20"}`}>
                             <Volume2 className="w-5 h-5 mr-3" />
                             <div className="font-black text-[10px] uppercase tracking-widest">{t("voiceType")}</div>
                           </div>
@@ -447,7 +447,7 @@ export function ServerChannelsSidebar() {
                       </div>
                     </div>
                     <DialogFooter className="pt-6 border-t border-white/5 flex items-center justify-between sm:justify-between">
-                      <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-white/40 hover:text-white rounded-none hover:bg-transparent text-[10px] font-black uppercase tracking-widest">{t("cancel")}</Button>
+                      <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-white/70 hover:text-white rounded-none hover:bg-transparent text-[10px] font-black uppercase tracking-widest">{t("cancel")}</Button>
                       <Button onClick={handleCreateChannel} disabled={loading || !newChannelName.trim()} className="bg-primary text-white hover:bg-red-500 rounded-none h-12 px-8 font-black uppercase tracking-widest text-[10px]">{loading ? t("creating") : t("createChannelAction")}</Button>
                     </DialogFooter>
                   </DialogContent>
@@ -457,13 +457,13 @@ export function ServerChannelsSidebar() {
             <div className="space-y-1">
               {textChannels.map((c) => (
                 <div key={c.id} className="group relative flex items-center w-full">
-                  <button className={`w-full flex items-center px-3 py-2 transition-all border-l-2 ${c.id === activeChannelId ? "bg-white/5 border-primary text-white" : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02]"} active:translate-x-0.5`} onClick={() => setActiveChannelId(c.id)}>
+                  <button className={`w-full flex items-center px-3 py-2 transition-all border-l-2 ${c.id === activeChannelId ? "bg-white/5 border-primary text-white" : "border-transparent text-white/70 hover:text-white hover:bg-white/[0.02]"} active:translate-x-0.5`} onClick={() => setActiveChannelId(c.id)}>
                     <span className="font-mono text-[11px] mr-2 opacity-30">/</span>
                     <span className="font-bold text-[11px] uppercase tracking-wider truncate">{c.name}</span>
                   </button>
                   {isOwner && (
                     <div className="absolute right-2 opacity-0 group-hover:opacity-100 flex items-center gap-2">
-                      <Trash2 className="w-3.5 h-3.5 text-white/20 hover:text-primary cursor-pointer transition-colors" onClick={(e) => handleDeleteChannel(e, c.id)} />
+                      <Trash2 className="w-3.5 h-3.5 text-white/80 hover:text-primary cursor-pointer transition-colors" onClick={(e) => handleDeleteChannel(e, c.id)} />
                     </div>
                   )}
                 </div>
@@ -473,10 +473,10 @@ export function ServerChannelsSidebar() {
 
           <div>
             <div className="flex items-center justify-between mb-4 px-1">
-              <span className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em]">{t("voiceChannels")}</span>
+              <span className="text-[10px] font-black uppercase text-white/70 tracking-[0.2em]">{t("voiceChannels")}</span>
               {canManageServer && (
                 <button 
-                  className="text-white/20 hover:text-primary transition-colors"
+                  className="text-white/80 hover:text-primary transition-colors"
                   onClick={() => {
                     setChannelType("VOICE");
                     setIsCreateOpen(true);
@@ -492,7 +492,7 @@ export function ServerChannelsSidebar() {
                 const isActive = c.id === activeVoiceChannelId;
                 return (
                   <div key={c.id}>
-                    <button className={`w-full flex items-center px-3 py-2 transition-all border-l-2 ${c.id === activeChannelId ? "bg-white/5 border-primary text-white" : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02]"} active:translate-x-0.5`} onClick={() => handleJoinVoiceChannel(c.id)}>
+                    <button className={`w-full flex items-center px-3 py-2 transition-all border-l-2 ${c.id === activeChannelId ? "bg-white/5 border-primary text-white" : "border-transparent text-white/70 hover:text-white hover:bg-white/[0.02]"} active:translate-x-0.5`} onClick={() => handleJoinVoiceChannel(c.id)}>
                       <Volume2 className={`w-3.5 h-3.5 mr-2 ${isActive ? "text-primary" : "opacity-30"}`} />
                       <span className="font-bold text-[11px] uppercase tracking-wider truncate">{c.name}</span>
                     </button>
@@ -501,12 +501,12 @@ export function ServerChannelsSidebar() {
                         {channelUsers.map(u => {
                           const isSpeaking = speakingUsers[u.userId];
                           return (
-                            <div key={u.userId} className="flex items-center gap-3 text-white/50 group/user p-1 transition-colors">
+                            <div key={u.userId} className="flex items-center gap-3 text-white/80 group/user p-1 transition-colors">
                               <Avatar className={`w-8 h-8 rounded-full border-2 transition-all duration-300 ${isSpeaking ? "border-primary shadow-[0_0_12px_rgba(237,66,69,0.6)] scale-105" : "border-white/10"}`}>
                                 <AvatarImage src={getFileUrl(u.avatarUrl)} />
-                                <AvatarFallback className="text-[10px] bg-white/5 text-white/40 font-black rounded-full">{u.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                <AvatarFallback className="text-[10px] bg-white/5 text-white/70 font-black rounded-full">{u.username.slice(0, 2).toUpperCase()}</AvatarFallback>
                               </Avatar>
-                              <span className={`text-xs font-black uppercase tracking-widest truncate max-w-[120px] transition-all ${isSpeaking ? "text-white translate-x-1" : "text-white/50"}`}>{u.username}</span>
+                              <span className={`text-xs font-black uppercase tracking-widest truncate max-w-[120px] transition-all ${isSpeaking ? "text-white translate-x-1" : "text-white/80"}`}>{u.username}</span>
                               {u.muted && <MicOff className="w-2.5 h-2.5 ml-auto text-primary" />}
                             </div>
                           )
@@ -525,14 +525,14 @@ export function ServerChannelsSidebar() {
 
       {/* Settings Dialog (Noir Redesign) */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent hideDefaultClose className="max-w-4xl h-[700px] flex p-0 gap-0 overflow-hidden bg-[#050505] text-white/50 border border-white/10 rounded-none shadow-2xl">
+        <DialogContent hideDefaultClose className="max-w-4xl h-[700px] flex p-0 gap-0 overflow-hidden bg-[#050505] text-white/80 border border-white/10 rounded-none shadow-2xl">
           <DialogTitle className="sr-only">{t("serverSettingsFor", {server: activeServer?.name || ""})}</DialogTitle>
           <DialogDescription className="sr-only">{t("serverSettingsDesc")}</DialogDescription>
           <div className="w-60 bg-[#0a0a0a] border-r border-white/5 flex flex-col pt-12 px-4 gap-2">
             <div className="text-[9px] font-black text-primary uppercase tracking-[0.3em] mb-4">{t("menu")}</div>
-            <Button variant="ghost" className={`justify-start w-full h-10 px-3 font-black text-[10px] uppercase tracking-widest rounded-none ${settingsTab === "general" ? "bg-white text-black" : "text-white/40 hover:bg-white/5 hover:text-white"}`} onClick={() => setSettingsTab("general")}>{t("overview")}</Button>
-            <Button variant="ghost" className={`justify-start w-full h-10 px-3 font-black text-[10px] uppercase tracking-widest rounded-none ${settingsTab === "members" ? "bg-white text-black" : "text-white/40 hover:bg-white/5 hover:text-white"}`} onClick={() => setSettingsTab("members")}>{t("members")}</Button>
-            {canManageServer && <Button variant="ghost" className={`justify-start w-full h-10 px-3 font-black text-[10px] uppercase tracking-widest rounded-none ${settingsTab === "bans" ? "bg-white text-black" : "text-white/40 hover:bg-white/5 hover:text-white"}`} onClick={() => setSettingsTab("bans")}>{t("bans")}</Button>}
+            <Button variant="ghost" className={`justify-start w-full h-10 px-3 font-black text-[10px] uppercase tracking-widest rounded-none ${settingsTab === "general" ? "bg-white text-black" : "text-white/70 hover:bg-white/5 hover:text-white"}`} onClick={() => setSettingsTab("general")}>{t("overview")}</Button>
+            <Button variant="ghost" className={`justify-start w-full h-10 px-3 font-black text-[10px] uppercase tracking-widest rounded-none ${settingsTab === "members" ? "bg-white text-black" : "text-white/70 hover:bg-white/5 hover:text-white"}`} onClick={() => setSettingsTab("members")}>{t("members")}</Button>
+            {canManageServer && <Button variant="ghost" className={`justify-start w-full h-10 px-3 font-black text-[10px] uppercase tracking-widest rounded-none ${settingsTab === "bans" ? "bg-white text-black" : "text-white/70 hover:bg-white/5 hover:text-white"}`} onClick={() => setSettingsTab("bans")}>{t("bans")}</Button>}
             {activeServer && currentUser && activeServer.owner_id === currentUser.id && (
               <Button variant="ghost" className="justify-start w-full h-10 px-3 font-black text-[10px] uppercase tracking-widest rounded-none text-primary hover:bg-primary hover:text-white mt-auto mb-8" onClick={() => setSettingsTab("danger")}>{t("deleteServer")}</Button>
             )}
@@ -559,12 +559,12 @@ export function ServerChannelsSidebar() {
             {settingsTab === "danger" && activeServer && (
               <div className="border border-primary/50 p-8 bg-primary/5">
                 <h4 className="font-black text-white uppercase tracking-widest text-sm">{t("deleteServer")}</h4>
-                <p className="text-white/40 text-xs mt-2 uppercase tracking-wide">This action is irreversible. All data will be purged from the network.</p>
+                <p className="text-white/70 text-xs mt-2 uppercase tracking-wide">This action is irreversible. All data will be purged from the network.</p>
                 <Button variant="destructive" className="mt-8 bg-primary hover:bg-red-500 rounded-none h-12 px-8 font-black uppercase text-[10px] tracking-widest" onClick={handleDeleteServer} disabled={deleteLoading}>{t("delete")}</Button>
               </div>
             )}
             <div className="absolute right-8 top-8">
-              <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(false)} className="text-white/20 hover:text-white">
+              <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(false)} className="text-white/80 hover:text-white">
                 <X className="w-6 h-6" />
               </Button>
             </div>

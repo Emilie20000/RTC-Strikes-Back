@@ -208,11 +208,11 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
       <div className="fixed inset-0 lg:relative lg:right-0 lg:top-0 lg:bottom-0 flex flex-col h-full bg-[#0a0a0a] w-60 z-50 border-l border-white/5 relative selection:bg-primary selection:text-white">
         
         <div className="h-16 flex items-center justify-between px-6 font-black bg-transparent border-b border-white/5 select-none">
-          <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">{t("title", {count: members.length})}</span>
+          <span className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em]">{t("title", {count: members.length})}</span>
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden h-8 w-8 text-white/40 hover:text-white"
+            className="lg:hidden h-8 w-8 text-white/70 hover:text-white"
             onClick={onClose}
           >
             <X className="h-4 w-4" />
@@ -255,7 +255,7 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
                           <div className="relative shrink-0">
                             <Avatar className="h-9 w-9 rounded-full border border-white/10" onClick={() => setSelectedMember(member)}>
                               <AvatarImage src={getFileUrl(member.avatar_url)} className="transition-all" />
-                              <AvatarFallback className="bg-white/5 text-white/40 text-[10px] font-black uppercase rounded-full">
+                              <AvatarFallback className="bg-white/5 text-white/70 text-[10px] font-black uppercase rounded-full">
                                 {member.username.slice(0, 2)}
                               </AvatarFallback>
                             </Avatar>
@@ -265,16 +265,16 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
                           </div>
 
                           <div className="flex-1 min-w-0 flex flex-col justify-center">
-                            <div className="text-[10px] font-black uppercase tracking-tighter truncate flex items-center gap-2 text-white/60 group-hover:text-white transition-colors">
+                            <div className="text-[10px] font-black uppercase tracking-tighter truncate flex items-center gap-2 text-white/90 group-hover:text-white transition-colors">
                               {member.username}
                               {member.role === "OWNER" && (
                                 <ShieldCheck className="w-3 h-3 text-primary" />
                               )}
                               {member.role === "ADMIN" && (
-                                <ShieldCheck className="w-3 h-3 text-white/40" />
+                                <ShieldCheck className="w-3 h-3 text-white/70" />
                               )}
                             </div>
-                            <div className="text-[8px] font-mono text-white/20 truncate uppercase tracking-widest mt-0.5">
+                            <div className="text-[8px] font-mono text-white/80 truncate uppercase tracking-widest mt-0.5">
                               {member.status}
                             </div>
                           </div>
@@ -283,11 +283,11 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
                             <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-white/20 hover:text-white hover:bg-transparent">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:text-white hover:bg-transparent">
                                     <MoreVertical className="h-3.5 w-3.5" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="bg-[#0a0a0a] border border-white/10 text-white/50 p-2 shadow-2xl rounded-none w-48">
+                                <DropdownMenuContent align="end" className="bg-[#0a0a0a] border border-white/10 text-white/80 p-2 shadow-2xl rounded-none w-48">
                                   <DropdownMenuLabel className="text-[9px] font-black uppercase text-primary tracking-[0.2em] px-2 py-1.5">Administrative</DropdownMenuLabel>
                                   <DropdownMenuSeparator className="bg-white/5" />
                                   {isOwner && member.role !== "OWNER" && (

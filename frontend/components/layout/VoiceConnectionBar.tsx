@@ -35,7 +35,7 @@ export function VoiceConnectionBar() {
              <span className="text-[10px] font-black uppercase tracking-[0.2em] leading-tight truncate">
                 {t("voiceConnected")}
              </span>
-             <span className="text-[9px] text-white/30 font-mono uppercase tracking-widest leading-tight truncate mt-0.5">
+             <span className="text-[9px] text-white/90 font-mono uppercase tracking-widest leading-tight truncate mt-0.5">
                 {channel?.name || t("voiceChannel")} / {server?.name || t("server")}
              </span>
           </div>
@@ -43,7 +43,7 @@ export function VoiceConnectionBar() {
         <div className="flex items-center gap-2">
              <button
                 onClick={handleGoToChannel}
-                className="w-8 h-8 flex items-center justify-center border border-white/5 hover:bg-white/5 text-white/30 hover:text-white transition-all"
+                className="w-8 h-8 flex items-center justify-center border border-white/5 hover:bg-white/5 text-white/90 hover:text-white transition-all"
                 title={t("info")}
              >
                 <Info className="w-4 h-4" />

@@ -96,7 +96,7 @@ export function UserBar() {
               <div className="relative mr-3 flex-shrink-0">
                 <Avatar className="w-9 h-9 rounded-full border border-white/10">
                   <AvatarImage src={getFileUrl(currentUser?.avatar_url) || undefined} className="transition-all" />
-                  <AvatarFallback className="bg-white/5 text-white/40 text-[10px] font-black rounded-full uppercase">{currentUser?.username?.slice(0, 2)}</AvatarFallback>
+                  <AvatarFallback className="bg-white/5 text-white/70 text-[10px] font-black rounded-full uppercase">{currentUser?.username?.slice(0, 2)}</AvatarFallback>
                 </Avatar>
                 <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 border border-[#0a0a0a] 
                     ${userStatus === "Online" ? "bg-[#3ba55c]" : userStatus === "Busy" ? "bg-red-800" : userStatus === "Away" ? "bg-yellow-600" : "bg-white/20"}`}
@@ -104,17 +104,17 @@ export function UserBar() {
               </div>
               <div className="text-sm truncate">
                 <div className="font-black text-white text-[10px] uppercase tracking-tighter leading-tight truncate">{currentUser?.username}</div>
-                <div className="text-[9px] font-mono text-white/30 leading-tight truncate uppercase mt-0.5">ID: {currentUser?.id?.slice(0, 8)}</div>
+                <div className="text-[9px] font-mono text-white/90 leading-tight truncate uppercase mt-0.5">ID: {currentUser?.id?.slice(0, 8)}</div>
               </div>
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-64 bg-[#0a0a0a] border border-white/10 text-white/50 p-2 shadow-2xl mb-2 ml-2 rounded-none" side="top" align="start">
+          <DropdownMenuContent className="w-64 bg-[#0a0a0a] border border-white/10 text-white/80 p-2 shadow-2xl mb-2 ml-2 rounded-none" side="top" align="start">
             <div className="px-2 py-3 mb-1 bg-white/5 border border-white/5">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <Avatar className="w-12 h-12 rounded-none border border-white/10">
                     <AvatarImage src={getFileUrl(currentUser?.avatar_url) || undefined} />
-                    <AvatarFallback className="bg-white/5 text-white/40 text-xs font-black uppercase rounded-none">{currentUser?.username?.slice(0, 2)}</AvatarFallback>
+                    <AvatarFallback className="bg-white/5 text-white/70 text-xs font-black uppercase rounded-none">{currentUser?.username?.slice(0, 2)}</AvatarFallback>
                   </Avatar>
                   <div className={`absolute -bottom-1 -right-1 w-4 h-4 border border-[#0a0a0a] 
                     ${userStatus === "Online" ? "bg-[#3ba55c]" : userStatus === "Busy" ? "bg-red-800" : userStatus === "Away" ? "bg-yellow-600" : "bg-white/20"}`}
@@ -122,7 +122,7 @@ export function UserBar() {
                 </div>
                 <div className="min-w-0">
                   <div className="text-white font-black text-xs uppercase tracking-widest truncate">{currentUser?.username}</div>
-                  <div className="text-white/30 font-mono text-[9px] truncate mt-1">SYS_UID_{currentUser?.id?.slice(0, 12)}</div>
+                  <div className="text-white/90 font-mono text-[9px] truncate mt-1">SYS_UID_{currentUser?.id?.slice(0, 12)}</div>
                 </div>
               </div>
             </div>
@@ -149,7 +149,7 @@ export function UserBar() {
 
         <div className="flex items-center gap-1">
           <button
-            className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/40 hover:text-white transition-all active:scale-90"
+            className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/70 hover:text-white transition-all active:scale-90"
             onClick={toggleMute}
           >
             {voiceStates[currentUser?.id || '']?.muted ? (
@@ -159,13 +159,13 @@ export function UserBar() {
             )}
           </button>
           <button
-            className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/40 hover:text-white transition-all active:scale-90"
+            className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/70 hover:text-white transition-all active:scale-90"
             onClick={handleDisconnect}
           >
             <PhoneOff className="w-4 h-4" />
           </button>
           <button
-            className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/40 hover:text-white transition-all active:scale-90"
+            className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/70 hover:text-white transition-all active:scale-90"
             onClick={() => setIsUserSettingsOpen(true)}
           >
             <Settings className="w-4 h-4" />
