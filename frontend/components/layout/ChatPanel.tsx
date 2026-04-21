@@ -803,14 +803,14 @@ export default function ChatPanel() {
           </div>
         )}
       </div>
-
-      {activeChannel && activeChannel.serverId && showMembersSidebar && (
-        <MembersSidebar
-          serverId={activeChannel.serverId}
-          onClose={() => setShowMembersSidebar(false)}
-        />
-      )}
-      </div>
     </div>
+
+    {activeChannel && activeChannel.serverId && showMembersSidebar && (
+      <MembersSidebar
+        serverId={activeChannel.serverId}
+        onClose={() => setShowMembersSidebar(false)}
+      />
+    )}
+  </div>
   );
 }
