@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 
 interface MembersSidebarProps {
@@ -200,25 +201,26 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+        className="fixed inset-0 bg-black/80 z-40 lg:hidden backdrop-blur-sm"
         onClick={onClose}
       />
 
-      <div className="fixed inset-0 lg:relative lg:right-0 lg:top-0 lg:bottom-0 flex flex-col h-full bg-[#2f3136] w-60 z-50">
-        <div className="h-12 flex items-center justify-between px-4 font-bold shadow-sm bg-[#2f3136] border-b border-[#202225] select-none">
-          <span className="text-xs font-bold text-[#8e9297] uppercase tracking-wide">{t("title", {count: members.length})}</span>
+      <div className="fixed inset-0 lg:relative lg:right-0 lg:top-0 lg:bottom-0 flex flex-col h-full bg-[#0a0a0a] w-60 z-50 border-l border-white/5 relative selection:bg-primary selection:text-white">
+        
+        <div className="h-16 flex items-center justify-between px-6 font-black bg-transparent border-b border-white/5 select-none">
+          <span className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em]">{t("title", {count: members.length})}</span>
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden h-8 w-8 text-[#b9bbbe]"
+            className="lg:hidden h-8 w-8 text-white/70 hover:text-white"
             onClick={onClose}
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <ScrollArea className="flex-1 px-3 py-3 scrollbar-none">
-          <div className="space-y-6">
+        <ScrollArea className="flex-1 px-4 py-6">
+          <div className="space-y-10">
             {Object.entries(groupedMembers).map(([status, statusMembers]) => {
               if (statusMembers.length === 0) return null;
 
@@ -232,94 +234,99 @@ export default function MembersSidebar({ serverId, onClose }: MembersSidebarProp
               const isCollapsed = collapsedSections.has(status);
 
               return (
-                <div key={status} className={status === "Offline" ? "opacity-50 hover:opacity-100 transition-opacity" : ""}>
+                <div key={status} className={status === "Offline" ? "opacity-30 hover:opacity-100 transition-opacity" : ""}>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start px-0 mb-1 h-4 text-xs font-bold uppercase text-[#8e9297] hover:text-[#dcddde] tracking-wide hover:bg-transparent"
+                    className="w-full justify-between px-0 mb-4 h-auto text-[9px] font-black uppercase text-primary tracking-[0.2em] hover:text-white hover:bg-transparent"
                     onClick={() => toggleSection(status)}
                   >
-                    {statusLabels[status].toUpperCase()} — {statusMembers.length}
+                    <span>{statusLabels[status].toUpperCase()}</span>
+                    <span className="font-mono opacity-40">[{statusMembers.length}]</span>
                   </Button>
 
                   {!isCollapsed && (
-                    <div className="space-y-[2px] mt-1">
+                    <div className="space-y-2">
                       {statusMembers.map((member) => (
                         <div
                           key={member.user_id}
-                          className="flex items-center gap-3 px-2 py-1.5 rounded-[4px] hover:bg-[#32353b] transition-all duration-200 group cursor-pointer relative"
+                          className="flex items-center gap-3 px-2 py-2 group transition-all cursor-pointer relative border border-transparent hover:border-white/5 hover:bg-white/[0.02]"
                         >
                           <div className="relative shrink-0">
-                            <Avatar className="h-8 w-8 cursor-pointer" onClick={() => setSelectedMember(member)}>
-                              <AvatarImage src={getFileUrl(member.avatar_url)} />
-                              <AvatarFallback className="bg-[#5865F2] text-white text-[10px] font-bold">
-                                {member.username.slice(0, 2).toUpperCase()}
+                            <Avatar className="h-9 w-9 rounded-full border border-white/10" onClick={() => setSelectedMember(member)}>
+                              <AvatarImage src={getFileUrl(member.avatar_url)} className="transition-all" />
+                              <AvatarFallback className="bg-white/5 text-white/70 text-[10px] font-black uppercase rounded-full">
+                                {member.username.slice(0, 2)}
                               </AvatarFallback>
                             </Avatar>
-                            <div className="absolute -bottom-0.5 -right-0.5 ring-[3px] ring-[#2f3136] rounded-full">
-                              <StatusIndicator status={member.status} size="sm" showTooltip={false} />
-                            </div>
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 border border-[#0a0a0a] 
+                                ${member.status === "Online" ? "bg-[#3ba55c]" : member.status === "Busy" ? "bg-red-800" : member.status === "Away" ? "bg-yellow-600" : "bg-white/20"}`}
+                            />
                           </div>
 
                           <div className="flex-1 min-w-0 flex flex-col justify-center">
-                            <div className="text-sm font-medium truncate flex items-center gap-1.5 text-[#dcddde] group-hover:text-white transition-colors">
+                            <div className="text-[10px] font-black uppercase tracking-tighter truncate flex items-center gap-2 text-white/90 group-hover:text-white transition-colors">
                               {member.username}
                               {member.role === "OWNER" && (
-                                <ShieldCheck className="w-3.5 h-3.5 text-[#FEE75C]" fill="currentColor" stroke="none" />
+                                <ShieldCheck className="w-3 h-3 text-primary" />
                               )}
                               {member.role === "ADMIN" && (
-                                <ShieldCheck className="w-3.5 h-3.5 text-[#5865F2]" />
+                                <ShieldCheck className="w-3 h-3 text-white/70" />
                               )}
                             </div>
-                            {/* <div className="text-xs text-[#b9bbbe] truncate">Joue à Visual Studio Code</div> */}
+                            <div className="text-[8px] font-mono text-white/80 truncate uppercase tracking-widest mt-0.5">
+                              {member.status}
+                            </div>
                           </div>
 
                           {canManage && member.user_id !== currentUser?.id && (
                             <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-[#b9bbbe] hover:text-white hover:bg-transparent">
-                                    <MoreVertical className="h-4 w-4" />
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:text-white hover:bg-transparent">
+                                    <MoreVertical className="h-3.5 w-3.5" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="bg-[#18191c] border-none text-[#b9bbbe]">
+                                <DropdownMenuContent align="end" className="bg-[#0a0a0a] border border-white/10 text-white/80 p-2 shadow-2xl rounded-none w-48">
+                                  <DropdownMenuLabel className="text-[9px] font-black uppercase text-primary tracking-[0.2em] px-2 py-1.5">Administrative</DropdownMenuLabel>
+                                  <DropdownMenuSeparator className="bg-white/5" />
                                   {isOwner && member.role !== "OWNER" && (
                                     <>
                                       {member.role !== "ADMIN" && (
-                                        <DropdownMenuItem className="focus:bg-[#5865F2] focus:text-white cursor-pointer" onClick={() => handleUpdateRole(member.user_id, "ADMIN")}>
-                                          <ShieldAlert className="mr-2 h-4 w-4" />
+                                        <DropdownMenuItem className="focus:bg-white focus:text-black cursor-pointer rounded-none text-[10px] font-bold uppercase tracking-widest py-2" onClick={() => handleUpdateRole(member.user_id, "ADMIN")}>
+                                          <ShieldAlert className="mr-2 h-3.5 w-3.5" />
                                           <span>{t("actions.makeAdmin")}</span>
                                         </DropdownMenuItem>
                                       )}
                                       {member.role === "ADMIN" && (
-                                        <DropdownMenuItem className="focus:bg-[#5865F2] focus:text-white cursor-pointer" onClick={() => handleUpdateRole(member.user_id, "MEMBER")}>
-                                          <ShieldCheck className="mr-2 h-4 w-4" />
+                                        <DropdownMenuItem className="focus:bg-white focus:text-black cursor-pointer rounded-none text-[10px] font-bold uppercase tracking-widest py-2" onClick={() => handleUpdateRole(member.user_id, "MEMBER")}>
+                                          <ShieldCheck className="mr-2 h-3.5 w-3.5" />
                                           <span>{t("actions.demoteMember")}</span>
                                         </DropdownMenuItem>
                                       )}
 
-                                      <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, "OWNER")} className="text-[#DA373C] focus:bg-[#DA373C] focus:text-white cursor-pointer">
-                                        <ShieldCheck className="mr-2 h-4 w-4" />
+                                      <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, "OWNER")} className="text-primary focus:bg-primary focus:text-white cursor-pointer rounded-none text-[10px] font-black uppercase tracking-widest py-2">
+                                        <ShieldCheck className="mr-2 h-3.5 w-3.5" />
                                         <span>{t("actions.makeOwner")}</span>
                                       </DropdownMenuItem>
-                                      <DropdownMenuSeparator className="bg-[#2f3136]" />
+                                      <DropdownMenuSeparator className="bg-white/5" />
                                     </>
                                   )}
 
                                   {member.role !== "OWNER" && (isOwner || (isAdmin && member.role !== "ADMIN")) && (
                                     <>
                                       <DropdownMenuItem
-                                        className="text-[#DA373C] focus:bg-[#DA373C] focus:text-white cursor-pointer"
+                                        className="text-primary focus:bg-primary focus:text-white cursor-pointer rounded-none text-[10px] font-bold uppercase tracking-widest py-2"
                                         onClick={() => handleKick(member.user_id)}
                                       >
-                                        <Ban className="mr-2 h-4 w-4" />
+                                        <Ban className="mr-2 h-3.5 w-3.5" />
                                         <span>{t("actions.kick")}</span>
                                       </DropdownMenuItem>
                                       <DropdownMenuItem
-                                        className="text-[#DA373C] focus:bg-[#DA373C] focus:text-white cursor-pointer"
+                                        className="text-primary focus:bg-primary focus:text-white cursor-pointer rounded-none text-[10px] font-bold uppercase tracking-widest py-2"
                                         onClick={() => handleBan(member.user_id)}
                                       >
-                                        <Ban className="mr-2 h-4 w-4" />
+                                        <Ban className="mr-2 h-3.5 w-3.5" />
                                         <span>{t("actions.ban")}</span>
                                       </DropdownMenuItem>
                                     </>

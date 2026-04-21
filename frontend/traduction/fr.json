@@ -13,7 +13,8 @@
       "poweredBy": "Propulsé par GIPHY"
     },
     "typingIndicator": {
-      "typing": "écrit..."
+      "typing": "écrit...",
+      "typingAndMore": "& {count} autres"
     }
   },
   "auth": {
@@ -99,7 +100,8 @@
       "readyToChat": "Prêt à discuter ?",
       "selectLeftChannel": "Sélectionnez un salon sur la gauche pour commencer la conversation.",
       "sendInChannel": "Envoyer un message dans #{channel}",
-      "selectChannelPlaceholder": "Sélectionnez un canal..."
+      "selectChannelPlaceholder": "Sélectionnez un canal...",
+      "onlyOwnerCanWrite": "Seul le propriétaire peut écrire dans ce salon."
     },
     "serverChannelsSidebar": {
       "toastChannelCreated": "Salon créé",

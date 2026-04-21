@@ -13,7 +13,8 @@
       "poweredBy": "Powered by GIPHY"
     },
     "typingIndicator": {
-      "typing": "is typing..."
+      "typing": "is typing...",
+      "typingAndMore": "& {count} others"
     }
   },
   "auth": {
@@ -99,7 +100,8 @@
       "readyToChat": "Ready to chat?",
       "selectLeftChannel": "Select a channel on the left to start chatting.",
       "sendInChannel": "Send a message in #{channel}",
-      "selectChannelPlaceholder": "Select a channel..."
+      "selectChannelPlaceholder": "Select a channel...",
+      "onlyOwnerCanWrite": "Only the server owner can write in this channel."
     },
     "serverChannelsSidebar": {
       "toastChannelCreated": "Channel created",

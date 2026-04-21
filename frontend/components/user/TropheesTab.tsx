@@ -90,29 +90,29 @@ export function TropheesTab() {
         <p className="text-[#b9bbbe] text-sm">{t("description")}</p>
       </div>
 
-      <div className="rounded-lg bg-[#2f3136] border border-[#1f2023] p-4 space-y-3">
+      <div className="bg-[#0a0a0a] border border-white/10 rounded-none p-6 space-y-4">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <div className="text-[10px] uppercase tracking-wider font-bold text-[#8e9297]">{t("completion")}</div>
-            <div className="text-white text-xl font-bold">
-              {unlockedCount} / {trophees.length || 0}
+            <div className="text-[9px] uppercase tracking-[0.2em] font-black text-primary">{t("completion")}</div>
+            <div className="text-white text-3xl font-black uppercase tracking-tighter mt-1">
+              {unlockedCount} <span className="text-white/20 text-xl">/</span> {trophees.length || 0}
             </div>
           </div>
-          <div className="text-sm text-[#b9bbbe]">{Math.round(totalProgress)}%</div>
+          <div className="text-xs font-mono text-white/30 uppercase tracking-widest">{Math.round(totalProgress)}%</div>
         </div>
-        <div className="h-2 bg-[#1e1f22] rounded-full overflow-hidden border border-[#2b2d31]">
-          <div className={`h-full bg-[#5865F2] transition-all duration-500 ${percentToWidthClass(totalProgress)}`} />
+        <div className="h-1 bg-white/5 rounded-none overflow-hidden">
+          <div className={`h-full bg-primary transition-all duration-700 ${percentToWidthClass(totalProgress)}`} />
         </div>
       </div>
 
       <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4e5058]" />
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
           <Input
             placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-[#1e1f22] border-[#2b2d31] focus:border-[#5865F2] h-10"
+            className="pl-12 bg-white/5 border-white/10 text-white h-12 rounded-none font-mono text-xs uppercase tracking-widest focus-visible:ring-primary/20"
           />
         </div>
 
@@ -144,11 +144,11 @@ export function TropheesTab() {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="rounded-xl p-4 border border-[#1e1f22] bg-[#111214] h-[120px] animate-pulse" />
+            <div key={index} className="rounded-none p-6 border border-white/5 bg-white/[0.02] h-[120px] animate-pulse" />
           ))}
         </div>
       ) : filteredTrophees.length === 0 ? (
-        <div className="bg-[#111214] rounded-xl p-12 border border-dashed border-[#2b2d31] text-center text-[#b5bac1]">
+        <div className="bg-white/[0.02] rounded-none p-16 border border-dashed border-white/10 text-center text-white/20 font-black uppercase text-[10px] tracking-widest">
           {t("empty")}
         </div>
       ) : (
@@ -164,42 +164,47 @@ export function TropheesTab() {
             return (
               <div
                 key={item.id}
-                className={`rounded-xl p-4 border transition-all ${
+                className={`rounded-none p-6 border transition-all duration-300 relative overflow-hidden group/card ${
                   isUnlocked
-                    ? "border-[#facc15]/20 bg-[#111214]"
-                    : "border-[#1e1f22] bg-[#0f1012]"
+                    ? "border-primary/30 bg-primary/[0.03] hover:border-primary"
+                    : "border-white/5 bg-white/[0.01] hover:border-white/20"
                 }`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-white font-semibold leading-tight">{title}</div>
-                    <div className="text-[#b5bac1] text-xs mt-1">{subtitle}</div>
+                {isUnlocked && (
+                  <div className="absolute top-0 right-0 w-12 h-12 bg-primary/10 flex items-center justify-center border-b border-l border-primary/20">
+                     <Trophy className="w-5 h-5 text-primary" />
                   </div>
-                  <div className={`rounded-lg p-2 ${isUnlocked ? "bg-[#facc15]/15" : "bg-[#2b2d31]"}`}>
-                    {isSecret ? (
-                      <Lock className="w-4 h-4 text-[#8e9297]" />
+                )}
+                
+                <div className="flex flex-col h-full justify-between">
+                  <div>
+                    <div className="text-white font-black uppercase tracking-tighter text-lg leading-tight group-hover/card:text-primary transition-colors">{title}</div>
+                    <div className="text-white/30 text-[9px] uppercase tracking-widest mt-2 font-mono leading-relaxed">{subtitle}</div>
+                  </div>
+
+                  <div className="mt-6">
+                    {isInProgress ? (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-end">
+                           <div className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">{t("inProgress")}</div>
+                           <div className="text-[9px] font-mono text-white/40">{item.current ?? 0} / {item.goal ?? 0}</div>
+                        </div>
+                        <div className="h-1 bg-white/5 rounded-none overflow-hidden">
+                          <div className={`h-full bg-primary ${percentToWidthClass(pct)}`} />
+                        </div>
+                      </div>
+                    ) : isUnlocked && item.unlocked_at ? (
+                      <div className="text-[9px] font-mono text-white/20 uppercase tracking-widest pt-2 border-t border-white/5">
+                        {t("unlockedOn", { date: formatDate(item.unlocked_at) })}
+                      </div>
                     ) : (
-                      <Trophy className={`w-4 h-4 ${isUnlocked ? "text-[#facc15]" : "text-[#8e9297]"}`} />
+                      <div className="flex items-center gap-2 text-white/10">
+                        <Lock className="w-3 h-3" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">{t("locked")}</span>
+                      </div>
                     )}
                   </div>
                 </div>
-
-                {isInProgress && (
-                  <div className="mt-3">
-                    <div className="h-1.5 bg-[#1e1f22] rounded-full overflow-hidden">
-                      <div className={`h-full bg-[#5865F2] ${percentToWidthClass(pct)}`} />
-                    </div>
-                    <div className="text-[11px] text-[#8e9297] mt-1">
-                      {item.current ?? 0} / {item.goal ?? 0}
-                    </div>
-                  </div>
-                )}
-
-                {isUnlocked && item.unlocked_at && (
-                  <div className="text-[11px] text-[#8e9297] mt-3">
-                    {t("unlockedOn", { date: formatDate(item.unlocked_at) })}
-                  </div>
-                )}
               </div>
             );
           })}
@@ -276,10 +281,10 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+      className={`px-4 py-2 border transition-all text-[9px] font-black uppercase tracking-[0.2em] rounded-none ${
         active
-          ? "bg-[#5865F2] text-white shadow-sm"
-          : "bg-[#1e1f22] text-[#b5bac1] hover:bg-[#2b2d31] hover:text-white border border-[#2b2d31]"
+          ? "bg-white text-black border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]"
+          : "bg-transparent text-white/40 border-white/10 hover:border-white/30 hover:text-white"
       }`}
     >
       {children}

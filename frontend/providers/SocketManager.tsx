@@ -59,5 +59,40 @@ export function SocketManager() {
     };
   }, [currentUser?.id, activeServerId, updateGlobalUser, updateMember, addTrophy]);
 
+  useEffect(() => {
+    const handleLeave = () => {
+      const state = useAppStore.getState();
+      if (state.activeVoiceChannelId && state.currentUser && state.voiceServerId) {
+        socket.emit("leave_voice", {
+          channelId: state.activeVoiceChannelId,
+          userId: state.currentUser.id,
+          serverId: state.voiceServerId,
+        });
+      }
+    };
+
+    window.addEventListener("beforeunload", handleLeave);
+
+    let unlisten: (() => void) | undefined;
+    const setupTauriListener = async () => {
+      try {
+        if (typeof window !== "undefined" && (window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) {
+          const { getCurrentWindow } = await import("@tauri-apps/api/window");
+          unlisten = await getCurrentWindow().onCloseRequested(() => {
+            handleLeave();
+          });
+        }
+      } catch (error) {
+        console.error("Failed to setup Tauri close listener:", error);
+      }
+    };
+    setupTauriListener();
+
+    return () => {
+      window.removeEventListener("beforeunload", handleLeave);
+      if (unlisten) unlisten();
+    };
+  }, []);
+
   return null;
 }

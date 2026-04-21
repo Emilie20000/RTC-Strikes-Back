@@ -4,12 +4,12 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from 'next-intl';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/http";
-import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { Loader2, Lock, Mail, MessageSquare, User, Sparkles, ArrowRight, Fingerprint } from "lucide-react";
 
 export default function SignupPageContent() {
   const t = useTranslations('auth.signup');
@@ -35,7 +35,6 @@ export default function SignupPageContent() {
         body: JSON.stringify({ username, email, password }),
       });
 
-      // Store session info
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
@@ -47,7 +46,6 @@ export default function SignupPageContent() {
       router.replace("/app");
     } catch (err: any) {
       console.error("Signup error:", err);
-      // Try to parse error message if it's a JSON string in the error object or just the message
       let msg = t('errorGeneric');
       try {
         if (err.message && err.message.startsWith("{")) {
@@ -65,69 +63,129 @@ export default function SignupPageContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-      <div className="fixed right-4 top-4 z-50">
-        <LanguageSwitcher />
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#050505] font-sans selection:bg-primary selection:text-white">
+      <div className="grain-overlay" />
+      
+      {/* Avant-garde Background Elements */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        {/* Giant Outlined Text */}
+        <div className="absolute -right-20 top-1/2 -translate-y-1/2 -rotate-90 lg:rotate-0 lg:bottom-[10%] lg:right-10 select-none pointer-events-none">
+          <h1 className="text-[20rem] lg:text-[35rem] font-black leading-none text-transparent stroke-white/5 stroke-2 [WebkitTextStroke:2px_rgba(255,255,255,0.05)]">
+            RTC
+          </h1>
+        </div>
+        
+        {/* Floating Accent Shapes */}
+        <div className="absolute top-[10%] left-[-5%] h-[50%] w-[50%] bg-primary/10 blur-[180px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[10%] h-[40%] w-[40%] bg-red-900/5 blur-[150px] rounded-full" />
       </div>
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl">{t('title')}</CardTitle>
-          <CardDescription className="text-center">{t('description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md border border-red-200">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="username">{t('usernameLabel')}</Label>
-              <Input
-                id="username"
-                type="text"
-                required
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                placeholder={t('usernamePlaceholder')}
-              />
+
+      <div className="relative z-10 w-full max-w-[1200px] grid lg:grid-cols-2 gap-20 p-8">
+        {/* Content Section */}
+        <div className="hidden lg:flex flex-col justify-center space-y-12">
+          <div className="space-y-6">
+            <div className="flex h-16 w-16 items-center justify-center border border-white/10 bg-white/5 backdrop-blur-md">
+              <MessageSquare className="h-8 w-8 text-primary" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">{t('emailLabel')}</Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder={t('emailPlaceholder')}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">{t('passwordLabel')}</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder={t('passwordPlaceholder')}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? t('submitLoading') : t('submit')}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
-            {t('haveAccount')}{" "}
-            <Link href="/login" className="text-primary hover:underline">
-              {t('loginLink')}
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
+            <h2 className="text-6xl font-bold tracking-tighter leading-tight">
+              DESIGNED FOR <br /> 
+              <span className="italic font-light text-primary">THE FUTURE.</span>
+            </h2>
+          </div>
+        </div>
+
+        {/* Form Section */}
+        <div className="flex items-center justify-center">
+          <div className="w-full max-w-[440px] relative group">
+            {/* Animated border glow */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/50 to-red-900/50 blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+            
+            <Card className="relative border-white/10 bg-black/60 backdrop-blur-3xl rounded-none border-b-primary border-b-2">
+              <CardContent className="pt-16 px-10 pb-12">
+                <div className="mb-12 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Fingerprint className="h-5 w-5 text-primary" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Registration Terminal</span>
+                  </div>
+                  <h3 className="text-4xl font-bold tracking-tight">Create Identity</h3>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-8">
+                  {error && (
+                    <div className="p-4 text-xs font-mono border-l-2 border-primary bg-primary/5 text-primary animate-in fade-in slide-in-from-left-2">
+                      &gt; ERROR: {error}
+                    </div>
+                  )}
+                  
+                  <div className="space-y-3">
+                    <Label htmlFor="username" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+                      Display Name
+                    </Label>
+                    <Input
+                      id="username"
+                      type="text"
+                      required
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                      placeholder="username"
+                      className="h-14 bg-transparent border-white/10 focus:border-primary/50 focus:ring-0 transition-all rounded-none text-base font-light placeholder:text-white/10"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+                      Electronic Mail
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      placeholder="example@mail.com"
+                      className="h-14 bg-transparent border-white/10 focus:border-primary/50 focus:ring-0 transition-all rounded-none text-base font-light placeholder:text-white/10"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+                      Secure Passkey
+                    </Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="*****"
+                      className="h-14 bg-transparent border-white/10 focus:border-primary/50 focus:ring-0 transition-all rounded-none text-base font-light placeholder:text-white/10"
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full h-16 text-xs font-black uppercase tracking-[0.3em] bg-white text-black hover:bg-primary hover:text-white transition-all rounded-none shadow-[10px_10px_0px_0px_rgba(255,255,255,0.05)] active:translate-x-1 active:translate-y-1 active:shadow-none" disabled={loading}>
+                    {loading ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <span>Register Node</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-8 pt-0 pb-12 px-10">
+                <p className="text-[10px] text-muted-foreground text-center font-medium tracking-wide">
+                  Already authenticated?{" "}
+                  <Link href="/login" className="text-white hover:text-primary transition-colors font-black border-b border-white/20 hover:border-primary pb-0.5">
+                    INITIATE ACCESS
+                  </Link>
+                </p>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
