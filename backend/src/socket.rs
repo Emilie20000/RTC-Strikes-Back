@@ -104,6 +104,12 @@ pub struct ReactionPayload {
     pub emoji: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenSharePayload {
+    pub user_id: String,
+    pub channel_id: String,
+}
 
 pub async fn on_connect(socket: SocketRef) {
     println!("Socket connected: {}", socket.id);
@@ -248,6 +254,26 @@ pub async fn on_connect(socket: SocketRef) {
                 }
             }
         }
+    });
+
+    socket.on("screen_share_started", |socket: SocketRef, Data::<ScreenSharePayload>(data)| async move {
+        let channel_room = format!("voice:{}", data.channel_id);
+        let _ = socket.to(channel_room).emit("peer_screen_share_started", &data).await;
+    });
+
+    socket.on("screen_share_stopped", |socket: SocketRef, Data::<ScreenSharePayload>(data)| async move {
+        let channel_room = format!("voice:{}", data.channel_id);
+        let _ = socket.to(channel_room).emit("peer_screen_share_stopped", &data).await;
+    });
+
+    socket.on("camera_video_started", |socket: SocketRef, Data::<ScreenSharePayload>(data)| async move {
+        let channel_room = format!("voice:{}", data.channel_id);
+        let _ = socket.to(channel_room).emit("peer_camera_video_started", &data).await;
+    });
+
+    socket.on("camera_video_stopped", |socket: SocketRef, Data::<ScreenSharePayload>(data)| async move {
+        let channel_room = format!("voice:{}", data.channel_id);
+        let _ = socket.to(channel_room).emit("peer_camera_video_stopped", &data).await;
     });
 
     socket.on(
