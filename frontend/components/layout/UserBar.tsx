@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Settings, Mic, MicOff, PhoneOff } from "lucide-react";
+import { Settings, Mic, MicOff, PhoneOff, Bell, BellOff } from "lucide-react";
+import { requestNotificationPermission, sendNotification } from "@/lib/notifications";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,10 +27,16 @@ export function UserBar() {
   const voiceServerId = useAppStore((s) => s.voiceServerId);
   const activeVoiceChannelId = useAppStore((s) => s.activeVoiceChannelId);
   const voiceStates = useAppStore((s) => s.voiceStates);
-  const { setActiveVoiceChannelId } = useAppStore();
+  const { setActiveVoiceChannelId, setCurrentUser, notificationsEnabled, setNotificationsEnabled } = useAppStore();
 
-  const [userStatus, setUserStatus] = useState<"Online" | "Away" | "Busy" | "Offline">("Online");
+  const userStatus = currentUser?.status || "Online";
   const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationsEnabled(Notification.permission === 'granted');
+    }
+  }, []);
 
   // Fetch user's current status on mount
   useEffect(() => {
@@ -38,7 +45,7 @@ export function UserBar() {
       try {
         const user = await api<any>("/api/auth/me");
         if (user.status) {
-          setUserStatus(user.status);
+          setCurrentUser({ ...currentUser, status: user.status } as any);
         }
       } catch (e) {
         console.error("Failed to fetch user status", e);
@@ -53,7 +60,7 @@ export function UserBar() {
         method: "PATCH",
         body: JSON.stringify({ status: newStatus }),
       });
-      setUserStatus(newStatus);
+      setCurrentUser({ ...currentUser, status: newStatus } as any);
     } catch (e) {
       console.error("Failed to update status", e);
       toast.error(t("toastStatusError"));
@@ -84,6 +91,17 @@ export function UserBar() {
     });
 
     setActiveVoiceChannelId(null);
+  };
+
+  const handleToggleNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    setNotificationsEnabled(granted);
+    if (granted) {
+      toast.success(t("notificationsEnabled") || "Notifications activées");
+      sendNotification("Notifications activées", "Vous recevrez une notification quand on vous mentionne.");
+    } else {
+      toast.error(t("notificationsDisabled") || "Notifications refusées ou désactivées");
+    }
   };
 
   return (
@@ -156,6 +174,17 @@ export function UserBar() {
               <MicOff className="w-4 h-4 text-primary" />
             ) : (
               <Mic className="w-4 h-4" />
+            )}
+          </button>
+          <button
+            className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/70 hover:text-white transition-all active:scale-90"
+            onClick={handleToggleNotifications}
+            title={notificationsEnabled ? "Désactiver les notifications (via navigateur)" : "Activer les notifications"}
+          >
+            {notificationsEnabled ? (
+              <Bell className="w-4 h-4 text-primary" />
+            ) : (
+              <BellOff className="w-4 h-4" />
             )}
           </button>
           <button

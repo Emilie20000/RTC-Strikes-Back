@@ -31,6 +31,8 @@ export default function ServerSidebar() {
   const addServer = useAppStore((s) => s.addServer);
   const activeServerId = useAppStore((s) => s.activeServerId);
   const setActiveServerId = useAppStore((s) => s.setActiveServerId);
+  const unreadCounts = useAppStore((s) => s.unreadCounts);
+  const channels = useAppStore((s) => s.channels);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newServerName, setNewServerName] = useState("");
@@ -119,6 +121,17 @@ export default function ServerSidebar() {
                 `}
               >
                 <span className="text-xs font-black tracking-tighter">RTC</span>
+                {(() => {
+                  const dmCount = Object.keys(unreadCounts).reduce((acc, id) => {
+                    const c = channels.find(c => c.id === id);
+                    return (c && c.kind === "DM") ? acc + unreadCounts[id] : acc;
+                  }, 0);
+                  return dmCount > 0 ? (
+                    <div className="absolute -top-1 -right-1 bg-primary text-white text-[9px] font-black px-1 py-0.5 rounded-none min-w-[16px] text-center border border-[#050505] shadow-lg">
+                      {dmCount}
+                    </div>
+                  ) : null;
+                })()}
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="bg-white text-black border-none font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-none" sideOffset={15}>
@@ -164,6 +177,17 @@ export default function ServerSidebar() {
                             {s.name.slice(0, 2)}
                           </span>
                         )}
+                        {(() => {
+                          const serverCount = Object.keys(unreadCounts).reduce((acc, id) => {
+                            const c = channels.find(c => c.id === id);
+                            return (c && c.serverId === s.id) ? acc + unreadCounts[id] : acc;
+                          }, 0);
+                          return serverCount > 0 ? (
+                            <div className="absolute -top-1 -right-1 bg-primary text-white text-[9px] font-black px-1 py-0.5 rounded-none min-w-[16px] text-center border border-[#050505] shadow-lg">
+                              {serverCount}
+                            </div>
+                          ) : null;
+                        })()}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="right" className="bg-white text-black border-none font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-none" sideOffset={15}>

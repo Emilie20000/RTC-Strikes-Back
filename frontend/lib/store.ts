@@ -6,6 +6,7 @@ export type User = {
   email: string;
   avatar_url?: string;
   langue?: "fr" | "en";
+  status?: "Online" | "Away" | "Busy" | "Offline";
 };
 
 export type ServerMember = {
@@ -108,6 +109,13 @@ type AppState = {
   updateMemberStatus: (serverId: string, userId: string, status: ServerMember["status"]) => void;
   updateMember: (serverId: string, user: User) => void;
   updateGlobalUser: (user: User) => void;
+
+  unreadCounts: Record<string, number>;
+  incrementUnread: (channelId: string) => void;
+  clearUnread: (channelId: string) => void;
+
+  notificationsEnabled: boolean;
+  setNotificationsEnabled: (enabled: boolean) => void;
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -123,7 +131,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ activeServerId, activeChannelId: null }),
 
   channels: [],
-  setChannels: (channels) => set({ channels }),
+  setChannels: (newChannels) => set((state) => {
+    const merged = [...state.channels];
+    newChannels.forEach(nc => {
+      if (!merged.find(c => c.id === nc.id)) {
+        merged.push(nc);
+      }
+    });
+    return { channels: merged };
+  }),
   addChannel: (channel) => set((state) => {
     if (state.channels.find(c => c.id === channel.id)) return state;
     return { channels: [...state.channels, channel] };
@@ -243,4 +259,21 @@ export const useAppStore = create<AppState>((set, get) => ({
         currentUser: newCurrentUser,
       };
     }),
+
+  unreadCounts: {},
+  incrementUnread: (channelId) => set((state) => ({
+    unreadCounts: {
+      ...state.unreadCounts,
+      [channelId]: (state.unreadCounts[channelId] || 0) + 1
+    }
+  })),
+  clearUnread: (channelId) => set((state) => ({
+    unreadCounts: {
+      ...state.unreadCounts,
+      [channelId]: 0
+    }
+  })),
+
+  notificationsEnabled: false,
+  setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
 }));
