@@ -8,13 +8,24 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn send_desktop_notification(title: String, body: String) {
-    // Diagnostic : On appelle directement l'outil système qui fonctionne chez toi
     use std::process::Command;
-    let _ = Command::new("notify-send")
-        .arg(&title)
-        .arg(&body)
-        .spawn();
-    println!("Diagnostic: notify-send command executed for {} - {}", title, body);
+
+    #[cfg(target_os = "linux")]
+    {
+        let _ = Command::new("notify-send")
+            .arg(&title)
+            .arg(&body)
+            .spawn();
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let script = format!("display notification \"{}\" with title \"{}\"", body, title);
+        let _ = Command::new("osascript")
+            .arg("-e")
+            .arg(&script)
+            .spawn();
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
