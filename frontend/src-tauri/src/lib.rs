@@ -6,6 +6,17 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+#[tauri::command]
+fn send_desktop_notification(title: String, body: String) {
+    // Diagnostic : On appelle directement l'outil système qui fonctionne chez toi
+    use std::process::Command;
+    let _ = Command::new("notify-send")
+        .arg(&title)
+        .arg(&body)
+        .spawn();
+    println!("Diagnostic: notify-send command executed for {} - {}", title, body);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -25,6 +36,10 @@ pub fn run() {
                                 request.allow();
                                 return true;
                             }
+                            if let Some(_req) = request.downcast_ref::<webkit2gtk::NotificationPermissionRequest>() {
+                                request.allow();
+                                return true;
+                            }
                             false
                         });
                     });
@@ -32,7 +47,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![greet, send_desktop_notification])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

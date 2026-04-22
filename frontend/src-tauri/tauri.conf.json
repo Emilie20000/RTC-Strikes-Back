@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "desktop",
+  "productName": "AntigravityChat",
   "version": "0.1.0",
   "identifier": "eu.epitech.rtc",
   "build": {
@@ -20,6 +20,9 @@
     "security": {
       "csp": null
     }
+  },
+  "plugins": {
+    "notification": null
   },
   "bundle": {
     "active": true,

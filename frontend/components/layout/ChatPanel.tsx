@@ -274,9 +274,6 @@ export default function ChatPanel() {
     const parts = text.split("@");
     const lastPart = parts.pop();
     const newText = parts.join("@") + `@${member.username} `;
-    // Internally we want to store the ID but for display we show the name
-    // Actually, to make it simple and Discord-like, we'll keep the name in the input
-    // and convert to <@id> only when sending.
     setText(newText);
     setShowMentionList(false);
     setMentionSearch("");
@@ -285,14 +282,11 @@ export default function ChatPanel() {
   const renderContentWithMentions = (content: string) => {
     if (!content) return null;
 
-    // Regex for <@uuid>
     const mentionRegex = /<@([a-f0-9-]{36})>/g;
     const parts = content.split(mentionRegex);
 
-    // The split with capturing group returns: [textBefore, uuid, textAfter, uuid, ...]
     return parts.map((part, i) => {
       if (i % 2 === 1) {
-        // This is a UUID
         const member = currentServerMembers.find(m => m.user_id === part);
         const username = member ? member.username : "utilisateur-inconnu";
         return (
@@ -317,7 +311,7 @@ export default function ChatPanel() {
   useEffect(() => {
     socket.connect();
 
-    socket.on("connect", () => {
+    const onConnect = () => {
       console.log("Socket connected:", socket.id);
       setIsConnected(true);
       if (activeChannelIdRef.current) {
@@ -333,29 +327,31 @@ export default function ChatPanel() {
           }
         } catch (e) {}
       }
-    });
+    };
 
-    socket.on("notification", (data: any) => {
-      // Increment unread count globally
+    const onNotification = (data: any) => {
       if (data.channelId) {
         useAppStore.getState().incrementUnread(data.channelId);
       }
 
-      // Check if window is focused
-      if (document.hasFocus()) return;
+      if (document.hasFocus()) {
+        console.log("Skipping notification: window is focused");
+        return;
+      }
 
-      // Respect user status (Don't notify if Busy)
-      const currentUser = useAppStore.getState().currentUser;
+      const state = useAppStore.getState();
+      const currentUser = state.currentUser;
+      const notificationsEnabled = state.notificationsEnabled;
+
+      if (!notificationsEnabled) return;
       if (currentUser?.status === "Busy") return;
 
-      let body = data.content;
-      // Replace mentions <@uuid> with @username if possible
+      let bodyContent = data.content;
       const channels = useAppStore.getState().channels;
       const activeChan = channels.find(c => c.id === data.channelId);
       const serverId = activeChan?.serverId;
       let members: any[] = serverId ? useAppStore.getState().serverMembers[serverId] : [];
       
-      // If DM, add self and recipient to resolve names
       if (!serverId && activeChan?.kind === "DM") {
         members = [
           { user_id: currentUser?.id, username: currentUser?.username || "Moi" },
@@ -363,28 +359,29 @@ export default function ChatPanel() {
         ];
       }
       
-      body = body.replace(/<@([a-f0-9-]{36})>/g, (match: string, uuid: string) => {
+      bodyContent = bodyContent.replace(/<@([a-f0-9-]{36})>/g, (match: string, uuid: string) => {
           const m = members?.find(m => m.user_id === uuid);
           return m ? `@${m.username}` : "@mention";
       });
 
-      sendNotification(
-        `De ${data.author} ${data.isDm ? "" : `dans #${data.channelName || "un salon"}`}`,
-        body.length > 80 ? `${body.substring(0, 80)}...` : body
-      );
-    });
+      const title = `De ${data.author} ${data.isDm ? "" : `dans #${data.channelName || "un salon"}`}`;
+      const finalBody = bodyContent.length > 80 ? `${bodyContent.substring(0, 80)}...` : bodyContent;
 
-    socket.on("disconnect", () => {
+      console.log("Triggering desktop notification:", title, finalBody);
+      sendNotification(title, finalBody);
+    };
+
+    const onDisconnect = () => {
       console.log("Socket disconnected");
       setIsConnected(false);
-    });
+    };
 
-    socket.on("connect_error", (err: any) => {
+    const onConnectError = (err: any) => {
       console.error("Socket connection error:", err);
       setIsConnected(false);
-    });
+    };
 
-    function onReactionAdded(data: { messageId: number; userId: string; emoji: string }) {
+    const onReactionAdded = (data: { messageId: number; userId: string; emoji: string }) => {
       if (!activeChannelIdRef.current) return;
       const currentMsgs = useAppStore.getState().messagesByChannel[activeChannelIdRef.current] ?? [];
       const newMsgs = currentMsgs.map((m) => {
@@ -399,9 +396,9 @@ export default function ChatPanel() {
         return { ...m, reactions };
       });
       setMessagesForChannel(activeChannelIdRef.current, newMsgs);
-    }
+    };
 
-    function onReactionRemoved(data: { messageId: number; userId: string; emoji: string }) {
+    const onReactionRemoved = (data: { messageId: number; userId: string; emoji: string }) => {
       if (!activeChannelIdRef.current) return;
       const currentMsgs = useAppStore.getState().messagesByChannel[activeChannelIdRef.current] ?? [];
       const newMsgs = currentMsgs.map((m) => {
@@ -415,12 +412,9 @@ export default function ChatPanel() {
         return { ...m, reactions };
       });
       setMessagesForChannel(activeChannelIdRef.current, newMsgs);
-    }
+    };
 
-    socket.on("reaction_removed", onReactionRemoved);
-    socket.on("reaction_added", onReactionAdded);
-
-    function onMessage(data: any) {
+    const onMessage = (data: any) => {
       console.log("📩 Message received:", data);
       const newMsg: ChatMessage = {
         id: String(data.id),
@@ -431,36 +425,36 @@ export default function ChatPanel() {
         createdAt: data.createdAt,
       };
       addMessage(newMsg);
-    }
+    };
 
-    function onTyping(data: { channelId: string; author: string; userId: string; avatarUrl?: string }) {
+    const onTyping = (data: { channelId: string; author: string; userId: string; avatarUrl?: string }) => {
       if (data.channelId !== activeChannelIdRef.current) return;
       setTypingUsers((prev) => {
         const next = new Map(prev);
         next.set(data.userId, { username: data.author, avatarUrl: data.avatarUrl });
         return next;
       });
-    }
+    };
 
-    function onStopTyping(data: { channelId: string; author: string; userId: string }) {
+    const onStopTyping = (data: { channelId: string; author: string; userId: string }) => {
       if (data.channelId !== activeChannelIdRef.current) return;
       setTypingUsers((prev) => {
         const next = new Map(prev);
         next.delete(data.userId);
         return next;
       });
-    }
+    };
 
-    function onMessageDeleted(data: { channelId: string; messageId: number }) {
+    const onMessageDeleted = (data: { channelId: string; messageId: number }) => {
       console.log("🗑️ Message deleted:", data);
       if (data.channelId === activeChannelIdRef.current) {
         const currentMsgs = useAppStore.getState().messagesByChannel[data.channelId] ?? [];
         const newMsgs = currentMsgs.filter((m) => m.id !== String(data.messageId));
         setMessagesForChannel(data.channelId, newMsgs);
       }
-    }
+    };
 
-    function onMessageUpdated(data: any) {
+    const onMessageUpdated = (data: any) => {
       console.log("✏️ Message updated:", data);
       const channelId = data.channelId || data.channel_id;
       if (channelId === activeChannelIdRef.current) {
@@ -470,8 +464,14 @@ export default function ChatPanel() {
         );
         setMessagesForChannel(channelId, newMsgs);
       }
-    }
+    };
 
+    socket.on("connect", onConnect);
+    socket.on("notification", onNotification);
+    socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onConnectError);
+    socket.on("reaction_added", onReactionAdded);
+    socket.on("reaction_removed", onReactionRemoved);
     socket.on("message", onMessage);
     socket.on("typing", onTyping);
     socket.on("stop_typing", onStopTyping);
@@ -479,21 +479,23 @@ export default function ChatPanel() {
     socket.on("message_updated", onMessageUpdated);
 
     return () => {
+      socket.off("connect", onConnect);
+      socket.off("notification", onNotification);
+      socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onConnectError);
+      socket.off("reaction_added", onReactionAdded);
+      socket.off("reaction_removed", onReactionRemoved);
       socket.off("message", onMessage);
       socket.off("typing", onTyping);
       socket.off("stop_typing", onStopTyping);
       socket.off("message_deleted", onMessageDeleted);
       socket.off("message_updated", onMessageUpdated);
-      socket.off("reaction_added", onReactionAdded);
-      socket.off("reaction_removed", onReactionRemoved);
-      socket.disconnect();
     };
-  }, []);
+  }, [currentUser, addMessage, setMessagesForChannel]);
 
   useEffect(() => {
     if (!activeChannelId) return;
 
-    // Clear unread count when joining channel
     useAppStore.getState().clearUnread(activeChannelId);
 
     setTypingUsers(new Map());
@@ -541,10 +543,8 @@ export default function ChatPanel() {
       }
     };
 
-    // Initial scroll
     scrollToBottom();
 
-    // Use ResizeObserver to detect content changes (including images loading)
     const observer = new ResizeObserver(() => {
       scrollToBottom();
     });
@@ -592,7 +592,6 @@ export default function ChatPanel() {
       });
     }, 1500);
 
-    // Mention detection
     const cursorPosition = e.target.selectionStart || 0;
     const textBeforeCursor = e.target.value.substring(0, cursorPosition);
     const words = textBeforeCursor.split(/\s/);
@@ -612,11 +611,9 @@ export default function ChatPanel() {
     const content = text.trim();
     if (!content) return;
 
-    // Convert mentions @username to <@user_id>
     let processedContent = content;
     currentServerMembers.forEach((m) => {
       const mention = `@${m.username}`;
-      // Use regex to replace only full word mentions
       const escapedUsername = m.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`@${escapedUsername}(?=\\s|$)`, 'g');
       processedContent = processedContent.replace(regex, `<@${m.user_id}>`);

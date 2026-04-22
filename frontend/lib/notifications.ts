@@ -1,7 +1,7 @@
+import { invoke } from '@tauri-apps/api/core';
 import { 
   isPermissionGranted, 
-  requestPermission as requestTauriPermission, 
-  sendNotification as sendTauriNotification 
+  requestPermission as requestTauriPermission
 } from '@tauri-apps/plugin-notification';
 
 export const isTauri = () => {
@@ -14,7 +14,9 @@ export const requestNotificationPermission = async () => {
   if (isTauri()) {
     try {
       let permission = await isPermissionGranted();
+      console.log('Initial Tauri permission:', permission);
       if (!permission) {
+        console.log('Requesting notification permission...');
         const res = await requestTauriPermission();
         permission = res === 'granted';
       }
@@ -37,19 +39,16 @@ export const requestNotificationPermission = async () => {
 export const sendNotification = async (title: string, body: string) => {
   if (typeof window === 'undefined') return;
 
-  if (isTauri()) {
-    try {
-      sendTauriNotification({
-        title,
-        body,
-      });
-    } catch (e) {
-      console.error('Failed to send Tauri notification:', e);
+  try {
+    if (isTauri()) {
+      await invoke('send_desktop_notification', { title, body });
+    } else {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/icons/128x128.png' });
+      }
     }
-  } else {
-    if (!('Notification' in window)) return;
-    if (Notification.permission === 'granted') {
-      new Notification(title, { body });
-    }
+  } catch (e) {
+    console.error('Notification error:', e);
   }
 };
