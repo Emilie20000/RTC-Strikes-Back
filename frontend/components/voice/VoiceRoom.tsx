@@ -1,353 +1,361 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
+import { useVoiceContext } from "@/contexts/VoiceContext";
+import { getFileUrl } from "@/lib/utils";
 import { socket } from "@/lib/socket";
+import {
+    Mic,
+    MicOff,
+    MonitorUp,
+    MonitorX,
+    PhoneOff,
+    Video,
+    VideoOff,
+    Volume2,
+    VolumeX,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
-export default function VoiceRoom() {
-    const activeVoiceChannelId = useAppStore(s => s.activeVoiceChannelId);
-    const setActiveVoiceChannelId = useAppStore(s => s.setActiveVoiceChannelId);
-    const currentUser = useAppStore(s => s.currentUser);
-    const activeServerId = useAppStore(s => s.activeServerId);
-    const voiceServerId = useAppStore(s => s.voiceServerId);
-    const voiceStates = useAppStore(s => s.voiceStates);
-
-    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-    const [peers, setPeers] = useState<Record<string, RTCPeerConnection>>({});
-    const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
-    const peersRef = useRef<Record<string, RTCPeerConnection>>({}); // Ref for access in callbacks
-    const localStreamRef = useRef<MediaStream | null>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
-
-    // Initialize AudioContext
+function AudioPlayer({ stream }: { stream: MediaStream }) {
+    const ref = useRef<HTMLAudioElement>(null);
     useEffect(() => {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioContextClass) {
-            const ctx = new AudioContextClass();
-            audioContextRef.current = ctx;
-
-            // Resume AudioContext on any user interaction
-            const resumeAudio = () => {
-                if (ctx.state === 'suspended') {
-                    ctx.resume().then(() => {
-                        console.log("AudioContext resumed successfully");
-                    }).catch(e => console.error("Failed to resume AudioContext", e));
-                }
-            };
-
-            document.addEventListener('click', resumeAudio);
-            document.addEventListener('keydown', resumeAudio);
-            document.addEventListener('touchstart', resumeAudio);
-
-            return () => {
-                ctx.close();
-                document.removeEventListener('click', resumeAudio);
-                document.removeEventListener('keydown', resumeAudio);
-                document.removeEventListener('touchstart', resumeAudio);
-            };
+        if (ref.current && stream) {
+            ref.current.srcObject = stream;
+            ref.current.play().catch(console.error);
         }
-    }, []);
+    }, [stream]);
+    return <audio ref={ref} autoPlay playsInline />;
+}
 
-    // Helper to add remote stream
-    const addRemoteStream = (userId: string, stream: MediaStream) => {
-        console.log("Adding remote stream for user:", userId);
-        setRemoteStreams(prev => ({
-            ...prev,
-            [userId]: stream
-        }));
-    };
-
-    // Sync mute state with global state
-    useEffect(() => {
-        if (!currentUser) return;
-        const myState = voiceStates[currentUser.id];
-        if (localStreamRef.current) {
-            localStreamRef.current.getAudioTracks().forEach(t => {
-                t.enabled = !myState?.muted;
-            });
-        }
-    }, [voiceStates, currentUser, localStream]);
+function VideoTile({
+    stream,
+    label,
+    isSpeaking,
+    avatarUrl,
+    muted,
+    isLocal = false,
+}: {
+    stream?: MediaStream | null;
+    label: string;
+    isSpeaking: boolean;
+    avatarUrl?: string;
+    muted?: boolean;
+    isLocal?: boolean;
+}) {
+    const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
-        if (!activeVoiceChannelId || !currentUser || !voiceServerId) {
-            // Cleanup
-            if (localStreamRef.current) {
-                localStreamRef.current.getTracks().forEach(t => t.stop());
-                localStreamRef.current = null;
-                setLocalStream(null);
-            }
-            Object.values(peersRef.current).forEach(pc => pc.close());
-            peersRef.current = {};
-            setPeers({});
-            setRemoteStreams({});
-            return;
+        if (videoRef.current && stream) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(console.error);
         }
+    }, [stream]);
 
-        const roomId = activeVoiceChannelId;
-
-        const joinVoice = () => {
-            if (currentUser && voiceServerId) {
-                // Ensure we are in our signaling room FIRST to receive offers
-                socket.emit("join", `user:${currentUser.id}`);
-                
-                socket.emit("join_voice", { 
-                    channelId: roomId, 
-                    userId: currentUser.id,
-                    serverId: voiceServerId 
-                });
-            }
-        };
-
-        const onConnect = () => {
-            console.log("Reconnected, re-joining voice...");
-            joinVoice();
-        };
-
-        socket.on("connect", onConnect);
-
-        // Get User Media
-        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-            .then(stream => {
-                localStreamRef.current = stream;
-                setLocalStream(stream);
-
-                // Initial mute state check
-                const myState = voiceStates[currentUser.id];
-                stream.getAudioTracks().forEach(t => {
-                    t.enabled = !myState?.muted;
-                });
-
-                // Join room
-                joinVoice();
-            })
-            .catch(err => {
-                console.error("Failed to get user media", err);
-                alert("Impossible d'accéder au micro");
-                setActiveVoiceChannelId(null);
-            });
-            
-        // Socket handlers
-        const handleUserJoined = async (userId: string) => {
-            if (userId === currentUser.id) return;
-            console.log("User joined voice:", userId);
-            // Wait a bit to ensure stable connection? No, just create peer.
-            createPeer(userId, true);
-        };
-
-        const handleOffer = async (data: { senderId: string, signal: any }) => {
-            console.log("Received offer from:", data.senderId);
-            const pc = createPeer(data.senderId, false);
-            try {
-                await pc.setRemoteDescription(new RTCSessionDescription(data.signal));
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                socket.emit("answer", { targetUserId: data.senderId, signal: answer, senderId: currentUser.id });
-            } catch (e) {
-                console.error("Error handling offer:", e);
-            }
-        };
-
-        const handleAnswer = async (data: { senderId: string, signal: any }) => {
-            console.log("Received answer from:", data.senderId);
-            const pc = peersRef.current[data.senderId];
-            if (pc) {
-                try {
-                    await pc.setRemoteDescription(new RTCSessionDescription(data.signal));
-                } catch (e) {
-                    console.error("Error handling answer:", e);
-                }
-            }
-        };
-
-        const handleIceCandidate = async (data: { senderId: string, signal: any }) => {
-            const pc = peersRef.current[data.senderId];
-            if (pc) {
-                try {
-                    await pc.addIceCandidate(new RTCIceCandidate(data.signal));
-                } catch (e) {
-                    console.error("Error adding ice candidate:", e);
-                }
-            }
-        };
-
-        const handleUserLeft = (userId: string) => {
-            console.log("User left voice:", userId);
-             if (peersRef.current[userId]) {
-                 peersRef.current[userId].close();
-                 const newPeers = { ...peersRef.current };
-                 delete newPeers[userId];
-                 peersRef.current = newPeers;
-                 setPeers(newPeers);
-                 
-                 setRemoteStreams(prev => {
-                    const newStreams = { ...prev };
-                    delete newStreams[userId];
-                    return newStreams;
-                 });
-             }
-        };
-
-        socket.on("user_joined_voice", handleUserJoined);
-        socket.on("offer", handleOffer);
-        socket.on("answer", handleAnswer);
-        socket.on("ice_candidate", handleIceCandidate);
-        socket.on("user_left_voice", handleUserLeft);
-
-        return () => {
-            socket.off("connect", onConnect);
-            socket.off("user_joined_voice", handleUserJoined);
-            socket.off("offer", handleOffer);
-            socket.off("answer", handleAnswer);
-            socket.off("ice_candidate", handleIceCandidate);
-            socket.off("user_left_voice", handleUserLeft);
-        };
-
-    }, [activeVoiceChannelId, currentUser, voiceServerId]);
-
-    const createPeer = (targetUserId: string, initiator: boolean) => {
-        if (peersRef.current[targetUserId]) return peersRef.current[targetUserId];
-
-        const pc = new RTCPeerConnection({
-            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-        });
-
-        peersRef.current[targetUserId] = pc;
-        setPeers({ ...peersRef.current });
-
-        if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => pc.addTrack(track, localStreamRef.current!));
-        }
-
-        pc.onicecandidate = (event) => {
-            if (event.candidate) {
-                socket.emit("ice_candidate", {
-                    targetUserId,
-                    signal: event.candidate,
-                    senderId: currentUser?.id
-                });
-            }
-        };
-
-        pc.ontrack = (event) => {
-             console.log("Received track from", targetUserId);
-             if (event.streams && event.streams[0]) {
-                 addRemoteStream(targetUserId, event.streams[0]);
-             }
-        };
-
-        if (initiator) {
-            pc.createOffer().then(offer => {
-                pc.setLocalDescription(offer);
-                socket.emit("offer", {
-                    targetUserId,
-                    signal: offer,
-                    senderId: currentUser?.id
-                });
-            }).catch(e => console.error("Error creating offer:", e));
-        }
-
-        return pc;
-    };
+    const hasVideo = stream && stream.getVideoTracks().length > 0;
 
     return (
-        <div className="hidden">
-            {localStream && currentUser && audioContextRef.current && (
-                <AudioAnalyzer 
-                    stream={localStream} 
-                    userId={currentUser.id} 
-                    audioContext={audioContextRef.current}
-                />
+        <div
+            className={cn(
+                "relative flex flex-col items-center justify-center bg-[#111] border transition-all duration-200 overflow-hidden min-h-[160px]",
+                isSpeaking ? "border-[#3ba55c]/70 shadow-[0_0_0_2px_rgba(59,165,92,0.35)]" : "border-white/5"
             )}
-            {Object.entries(remoteStreams).map(([userId, stream]) => (
-                <div key={userId}>
-                    <AudioPlayer stream={stream} />
-                    {audioContextRef.current && (
-                        <AudioAnalyzer 
-                            stream={stream} 
-                            userId={userId} 
-                            audioContext={audioContextRef.current}
-                        />
+        >
+            {hasVideo ? (
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted={isLocal}
+                    className="w-full h-full object-cover bg-black"
+                />
+            ) : (
+                <div className="flex flex-col items-center gap-3 p-4">
+                    <div
+                        className={cn(
+                            "w-16 h-16 rounded-full border-2 overflow-hidden bg-white/5 flex items-center justify-center",
+                            isSpeaking ? "border-[#3ba55c]" : "border-white/10"
+                        )}
+                    >
+                        {avatarUrl ? (
+                            <img
+                                src={getFileUrl(avatarUrl) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${label}`}
+                                alt={label}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <span className="text-white/70 font-black text-xl uppercase">
+                                {label.slice(0, 2)}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Bottom bar */}
+            <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-2 py-1.5 bg-black/60 backdrop-blur-sm">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white truncate">
+                    {label} {isLocal && <span className="text-white/40">(vous)</span>}
+                </span>
+                <div className="flex items-center gap-1">
+                    {muted ? (
+                        <MicOff className="w-3 h-3 text-red-400" />
+                    ) : isSpeaking ? (
+                        <Volume2 className="w-3 h-3 text-[#3ba55c]" />
+                    ) : (
+                        <Mic className="w-3 h-3 text-white/30" />
                     )}
                 </div>
-            ))}
+            </div>
+
+            {isSpeaking && (
+                <div className="absolute inset-0 border-2 border-[#3ba55c]/40 pointer-events-none animate-pulse" />
+            )}
         </div>
     );
 }
 
-function AudioAnalyzer({ 
-    stream, 
-    userId, 
-    audioContext
-}: { 
-    stream: MediaStream, 
-    userId: string, 
-    audioContext: AudioContext
+function MediaShareTile({
+    stream,
+    label,
+    kind,
+}: {
+    stream: MediaStream;
+    label: string;
+    kind: "screen" | "camera";
 }) {
-    const setSpeakingUser = useAppStore(s => s.setSpeakingUser);
-
+    const videoRef = useRef<HTMLVideoElement>(null);
     useEffect(() => {
-        if (!stream || !audioContext) return;
-
-        let source: MediaStreamAudioSourceNode | null = null;
-        let analyser: AnalyserNode | null = null;
-        let interval: NodeJS.Timeout;
-        // Clone stream to avoid interfering with playback (Web Audio API can hijack the stream)
-        const analysisStream = stream.clone();
-
-        try {
-            analyser = audioContext.createAnalyser();
-            source = audioContext.createMediaStreamSource(analysisStream);
-            source.connect(analyser);
-
-            // No connection to destination here - we rely on <AudioPlayer> (HTMLAudioElement) for playback
-            // This separates playback (reliable via tag) from analysis (visuals)
-
-            analyser.fftSize = 512;
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-            interval = setInterval(() => {
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-                
-                analyser!.getByteFrequencyData(dataArray);
-                const sum = dataArray.reduce((a, b) => a + b, 0);
-                const average = sum / dataArray.length;
-                
-                // Threshold 
-                setSpeakingUser(userId, average > 10);
-            }, 100);
-
-        } catch (e) {
-            console.error("Audio analysis failed", e);
-        }
-
-        return () => {
-            clearInterval(interval);
-            if (source) source.disconnect();
-            if (analyser) analyser.disconnect();
-            setSpeakingUser(userId, false);
-            // Stop cloned tracks
-            analysisStream.getTracks().forEach(t => t.stop());
-        };
-    }, [stream, userId, audioContext, setSpeakingUser]);
-
-    return null;
-}
-
-function AudioPlayer({ stream }: { stream: MediaStream }) {
-    const audioRef = useRef<HTMLAudioElement>(null);
-
-    useEffect(() => {
-        if (audioRef.current && stream) {
-            audioRef.current.srcObject = stream;
-            // Ensure audio plays even if user hasn't interacted with this specific element
-            audioRef.current.play().catch(e => {
-                console.error("Failed to play audio:", e);
-                // Retry once after a short delay?
-            });
+        if (videoRef.current && stream) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(console.error);
         }
     }, [stream]);
 
-    return <audio ref={audioRef} autoPlay playsInline controls={false} />;
+    return (
+        <div className="relative col-span-full bg-black border border-white/10 overflow-hidden rounded-sm">
+            <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full max-h-[55vh] object-contain"
+            />
+            <div className="absolute top-2 left-2 bg-black/70 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-white/70 flex items-center gap-1.5">
+                {kind === "screen" ? (
+                    <MonitorUp className="w-3 h-3 text-[#3ba55c]" />
+                ) : (
+                    <Video className="w-3 h-3 text-blue-400" />
+                )}
+                {label} {kind === "screen" ? "partage son écran" : "partage sa caméra"}
+            </div>
+        </div>
+    );
+}
+
+export default function VoiceRoom() {
+    const t = useTranslations("app.voiceRoom");
+    const currentUser = useAppStore((s) => s.currentUser);
+    const activeVoiceChannelId = useAppStore((s) => s.activeVoiceChannelId);
+    const voiceServerId = useAppStore((s) => s.voiceServerId);
+    const voiceStates = useAppStore((s) => s.voiceStates);
+    const channels = useAppStore((s) => s.channels);
+    const setActiveVoiceChannelId = useAppStore((s) => s.setActiveVoiceChannelId);
+    const speakingUsers = useAppStore((s) => s.speakingUsers);
+
+    const {
+        localVideoStream,
+        screenStream,
+        peerStreams,
+        isSharingScreen,
+        isVideoEnabled,
+        startScreenShare,
+        stopScreenShare,
+        startVideo,
+        stopVideo,
+    } = useVoiceContext();
+
+    const isMuted = currentUser ? voiceStates[currentUser.id]?.muted ?? false : false;
+    const channel = channels.find((c) => c.id === activeVoiceChannelId);
+
+    const toggleMute = () => {
+        if (!currentUser || !voiceServerId || !activeVoiceChannelId) return;
+        socket.emit("voice_mute", {
+            channelId: activeVoiceChannelId,
+            userId: currentUser.id,
+            serverId: voiceServerId,
+            muted: !isMuted,
+        });
+    };
+
+    const handleDisconnect = () => {
+        if (!currentUser || !voiceServerId || !activeVoiceChannelId) return;
+        socket.emit("leave_voice", {
+            channelId: activeVoiceChannelId,
+            userId: currentUser.id,
+            serverId: voiceServerId,
+        });
+        setActiveVoiceChannelId(null);
+    };
+
+    if (!activeVoiceChannelId || !currentUser) return null;
+
+    const participants = Object.values(voiceStates).filter(
+        (vs) => vs.channelId === activeVoiceChannelId
+    );
+
+    const peerScreenStreams = peerStreams.filter((ps) => ps.kind === "screen");
+    const peerVideoStreams = peerStreams.filter((ps) => ps.kind === "video");
+    const peerAudioStreams = peerStreams.filter((ps) => ps.kind === "audio");
+
+    return (
+        <div className="flex flex-col h-full bg-[#0d0d0d] overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-white/5 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                    <Volume2 className="w-4 h-4 text-[#3ba55c]" />
+                    <span className="text-xs font-black uppercase tracking-[0.25em] text-white/70">
+                        {channel?.name || "Vocal"}
+                    </span>
+                    <span className="bg-white/5 text-[9px] font-mono px-1.5 py-0.5 text-white/40 uppercase tracking-widest">
+                        {participants.length} connecté{participants.length > 1 ? "s" : ""}
+                    </span>
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {(screenStream || peerScreenStreams.length > 0 || peerVideoStreams.length > 0) && (
+                    <div className="grid grid-cols-1 gap-3">
+                        {screenStream && (
+                            <MediaShareTile
+                                stream={screenStream}
+                                label={currentUser.username}
+                                kind="screen"
+                            />
+                        )}
+                        {peerScreenStreams.map((ps) => {
+                            const member = voiceStates[ps.userId];
+                            return (
+                                <MediaShareTile
+                                    key={`screen-${ps.userId}`}
+                                    stream={ps.stream}
+                                    label={member?.username ?? ps.userId}
+                                    kind="screen"
+                                />
+                            );
+                        })}
+                        {peerVideoStreams.map((ps) => {
+                            const member = voiceStates[ps.userId];
+                            return (
+                                <MediaShareTile
+                                    key={`video-${ps.userId}`}
+                                    stream={ps.stream}
+                                    label={member?.username ?? ps.userId}
+                                    kind="camera"
+                                />
+                            );
+                        })}
+                    </div>
+                )}
+
+                <div
+                    className={cn(
+                        "grid gap-3",
+                        participants.length <= 1
+                            ? "grid-cols-1 max-w-xs mx-auto"
+                            : participants.length <= 4
+                                ? "grid-cols-2"
+                                : participants.length <= 9
+                                    ? "grid-cols-3"
+                                    : "grid-cols-4"
+                    )}
+                >
+                    <VideoTile
+                        stream={isVideoEnabled ? localVideoStream : null}
+                        label={currentUser.username}
+                        isSpeaking={speakingUsers[currentUser.id] ?? false}
+                        avatarUrl={currentUser.avatar_url}
+                        muted={isMuted}
+                        isLocal
+                    />
+
+                    {participants
+                        .filter((vs) => vs.userId !== currentUser.id)
+                        .map((vs) => {
+                            const cameraStream =
+                                peerVideoStreams.find((ps) => ps.userId === vs.userId)?.stream ?? null;
+                            return (
+                                <VideoTile
+                                    key={vs.userId}
+                                    stream={cameraStream}
+                                    label={vs.username}
+                                    isSpeaking={speakingUsers[vs.userId] ?? false}
+                                    avatarUrl={vs.avatarUrl}
+                                    muted={vs.muted}
+                                />
+                            );
+                        })}
+                </div>
+
+                <div className="hidden">
+                    {peerAudioStreams.map((ps) => (
+                        <AudioPlayer key={ps.userId} stream={ps.stream} />
+                    ))}
+                </div>
+            </div>
+
+            <div className="flex-shrink-0 border-t border-white/5 bg-[#0a0a0a] px-5 py-3 flex items-center justify-center gap-3">
+                <button
+                    onClick={toggleMute}
+                    className={cn(
+                        "flex flex-col items-center gap-1 px-4 py-2 border transition-all text-[9px] font-black uppercase tracking-widest min-w-[64px]",
+                        isMuted
+                            ? "border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                    )}
+                >
+                    {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    {isMuted ? "Muet" : "Micro"}
+                </button>
+
+                <button
+                    onClick={isVideoEnabled ? stopVideo : startVideo}
+                    className={cn(
+                        "flex flex-col items-center gap-1 px-4 py-2 border transition-all text-[9px] font-black uppercase tracking-widest min-w-[64px]",
+                        isVideoEnabled
+                            ? "border-blue-500/50 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                    )}
+                >
+                    {isVideoEnabled ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
+                    {isVideoEnabled ? "Arrêter" : "Caméra"}
+                </button>
+
+                <button
+                    onClick={isSharingScreen ? stopScreenShare : startScreenShare}
+                    className={cn(
+                        "flex flex-col items-center gap-1 px-4 py-2 border transition-all text-[9px] font-black uppercase tracking-widest min-w-[64px]",
+                        isSharingScreen
+                            ? "border-[#3ba55c]/50 bg-[#3ba55c]/10 text-[#3ba55c] hover:bg-[#3ba55c]/20"
+                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                    )}
+                >
+                    {isSharingScreen ? (
+                        <MonitorX className="w-4 h-4" />
+                    ) : (
+                        <MonitorUp className="w-4 h-4" />
+                    )}
+                    {isSharingScreen ? "Arrêter" : "Écran"}
+                </button>
+
+                <button
+                    onClick={handleDisconnect}
+                    className="flex flex-col items-center gap-1 px-4 py-2 border border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all text-[9px] font-black uppercase tracking-widest min-w-[64px]"
+                >
+                    <PhoneOff className="w-4 h-4" />
+                    Quitter
+                </button>
+            </div>
+        </div>
+    );
 }

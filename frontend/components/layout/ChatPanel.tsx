@@ -559,6 +559,7 @@ export default function ChatPanel() {
                             <div className="relative bg-[#050505] px-4 text-[9px] font-black uppercase tracking-[0.3em] text-white/80">
                               {formatDateDivider(m.createdAt, locale)}
                             </div>
+
                           </div>
                         )}
                         <div
