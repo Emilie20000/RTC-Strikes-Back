@@ -33,7 +33,7 @@ export function HomeSidebar() {
       <ScrollArea className="flex-1 px-2 py-3 scrollbar-none">
         <div className="space-y-4">
           <div className="space-y-[2px]">
-            {channels.map((c) => (
+            {channels.filter(c => c.kind === "DM").map((c) => (
               <div key={c.id} className="group relative flex items-center w-full">
                 <button
                   className={`
@@ -49,7 +49,12 @@ export function HomeSidebar() {
                       {c.name?.slice(0, 2).toUpperCase() || "DM"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="font-black text-[10px] uppercase tracking-widest truncate">{c.name || t("privateConversation")}</span>
+                  <span className="font-black text-[10px] uppercase tracking-widest truncate mr-auto">{c.name || t("privateConversation")}</span>
+                  {useAppStore.getState().unreadCounts[c.id] > 0 && (
+                    <span className="bg-primary text-white text-[9px] font-black px-1.5 py-0.5 rounded-none min-w-[18px] text-center">
+                      {useAppStore.getState().unreadCounts[c.id]}
+                    </span>
+                  )}
                 </button>
               </div>
             ))}

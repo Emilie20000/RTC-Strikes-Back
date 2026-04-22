@@ -12,6 +12,7 @@ use redis::AsyncCommands;
 use dashmap::DashMap;
 use crate::VoiceState;
 use crate::services::message::{AddReactionSchema, add_reaction};
+use regex::Regex;
 
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -113,6 +114,11 @@ pub struct ScreenSharePayload {
 
 pub async fn on_connect(socket: SocketRef) {
     println!("Socket connected: {}", socket.id);
+
+    socket.on("identify", |socket: SocketRef, Data::<String>(user_id)| async move {
+        println!("Socket {} identifying as user {}", socket.id, user_id);
+        socket.join(format!("user:{}", user_id));
+    });
 
     socket.on("join", |socket: SocketRef, Data::<String>(room), State::<Arc<DashMap<String, VoiceState>>>(voice_users)| async move {
         println!("Socket {} attempting to join room '{}'", socket.id, room);
@@ -240,6 +246,76 @@ pub async fn on_connect(socket: SocketRef) {
             }
             let _ = socket.emit("message", &msg);
             let _ = socket.to(data.channel_id.clone()).emit("message", &msg).await;
+
+            // Fetch channel info for notifications
+            let channel_id_uuid = Uuid::parse_str(&data.channel_id).unwrap_or_default();
+            let channel: Option<crate::models::channel::Channel> = sqlx::query_as(
+                "SELECT * FROM channels WHERE id = $1"
+            )
+            .bind(channel_id_uuid)
+            .fetch_optional(&pool)
+            .await
+            .unwrap_or(None);
+
+            let channel_name = channel.as_ref()
+                .and_then(|c| c.name.clone())
+                .unwrap_or_else(|| "un salon".to_string());
+            
+            let is_dm = channel.as_ref().map(|c| c.kind == crate::models::channel::ChannelType::Dm).unwrap_or(false);
+
+            let mut notified_users = std::collections::HashSet::new();
+
+            // Handle DMs (notify recipient)
+            if is_dm {
+                if let Some(c) = channel.as_ref() {
+                    if let Some(recipient_id) = c.recipient_id {
+                        if Some(recipient_id) != data.author_id {
+                             let target_room = format!("user:{}", recipient_id);
+                             let _ = socket.to(target_room).emit("notification", &serde_json::json!({
+                                 "author": data.author,
+                                 "content": data.content,
+                                 "channelName": "un message privé",
+                                 "channelId": data.channel_id,
+                                 "isDm": true
+                             })).await;
+                             notified_users.insert(recipient_id.to_string());
+                        }
+                    }
+                }
+            }
+
+            // Handle mentions
+            let mention_regex = Regex::new(r"<@([a-f0-9-]{36})>").unwrap();
+            let mut unique_mentions = std::collections::HashSet::new();
+            for cap in mention_regex.captures_iter(&data.content) {
+                if let Some(matched) = cap.get(1) {
+                    unique_mentions.insert(matched.as_str().to_string());
+                }
+            }
+
+            for mentioned_user_id in unique_mentions {
+                // Don't notify self
+                if let Some(author_id) = data.author_id {
+                    if mentioned_user_id == author_id.to_string() {
+                        continue;
+                    }
+                }
+                
+                // Don't notify twice
+                if notified_users.contains(&mentioned_user_id) {
+                    continue;
+                }
+                
+                let target_room = format!("user:{}", mentioned_user_id);
+                let _ = socket.to(target_room).emit("notification", &serde_json::json!({
+                    "author": data.author,
+                    "content": data.content,
+                    "channelName": if is_dm { "un message privé".to_string() } else { channel_name.clone() },
+                    "channelId": data.channel_id,
+                    "isDm": is_dm
+                })).await;
+                notified_users.insert(mentioned_user_id);
+            }
 
             if let Some(author_id) = data.author_id {
                 if let Ok(sync) = trophee_service::sync_user_trophees(&pool, author_id).await {

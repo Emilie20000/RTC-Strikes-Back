@@ -343,8 +343,8 @@ export function ServerChannelsSidebar() {
     }
   };
 
-  const textChannels = channels.filter((c) => !c.kind || c.kind === "TEXT");
-  const voiceChannels = channels.filter((c) => c.kind === "VOICE");
+  const textChannels = channels.filter((c) => c.serverId === activeServerId && (!c.kind || c.kind === "TEXT"));
+  const voiceChannels = channels.filter((c) => c.serverId === activeServerId && c.kind === "VOICE");
 
   return (
     <div className="flex flex-col h-full bg-[#0a0a0a] w-full flex-shrink-0 border-r border-white/5 relative selection:bg-primary selection:text-white">
@@ -459,7 +459,12 @@ export function ServerChannelsSidebar() {
                 <div key={c.id} className="group relative flex items-center w-full">
                   <button className={`w-full flex items-center px-3 py-2 transition-all border-l-2 ${c.id === activeChannelId ? "bg-white/5 border-primary text-white" : "border-transparent text-white/70 hover:text-white hover:bg-white/[0.02]"} active:translate-x-0.5`} onClick={() => setActiveChannelId(c.id)}>
                     <span className="font-mono text-[11px] mr-2 opacity-30">/</span>
-                    <span className="font-bold text-[11px] uppercase tracking-wider truncate">{c.name}</span>
+                    <span className="font-bold text-[11px] uppercase tracking-wider truncate mr-auto">{c.name}</span>
+                    {useAppStore.getState().unreadCounts[c.id] > 0 && (
+                      <span className="ml-2 bg-primary text-white text-[9px] font-black px-1.5 py-0.5 rounded-none min-w-[18px] text-center transition-opacity group-hover:opacity-0">
+                        {useAppStore.getState().unreadCounts[c.id]}
+                      </span>
+                    )}
                   </button>
                   {isOwner && (
                     <div className="absolute right-2 opacity-0 group-hover:opacity-100 flex items-center gap-2">

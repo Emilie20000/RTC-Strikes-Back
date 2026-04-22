@@ -6,6 +6,8 @@
   "permissions": [
     "core:default",
     "opener:default",
+    "notification:default",
+    "notification:allow-notify",
     "core:window:allow-destroy",
     "core:window:allow-close"
   ]

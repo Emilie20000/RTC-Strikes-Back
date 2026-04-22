@@ -15,7 +15,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/http";
 import { getFileUrl } from "@/lib/utils";
-import { User as UserIcon, Settings, LogOut, Camera, ShieldAlert } from "lucide-react";
+import { User as UserIcon, Settings, LogOut, Camera, ShieldAlert, Bell } from "lucide-react";
+import { requestNotificationPermission, sendNotification } from "@/lib/notifications";
 import { useRouter } from "next/navigation";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { useTranslations } from "next-intl";
@@ -27,7 +28,7 @@ interface UserSettingsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Tab = "account" | "profile" | "language" | "trophees";
+type Tab = "account" | "profile" | "language" | "notifications" | "trophees";
 
 export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogProps) {
   const t = useTranslations("app.userSettings");
@@ -115,6 +116,13 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                 onClick={() => setActiveTab("language")}
               >
                 {t("tabs.language")}
+              </Button>
+              <Button
+                variant="ghost"
+                className={`w-full justify-start px-4 h-10 text-[10px] font-black uppercase tracking-widest rounded-none border-l-2 transition-all ${activeTab === "notifications" ? "bg-white/5 border-primary text-white" : "border-transparent text-white/40 hover:bg-white/[0.02] hover:text-white"}`}
+                onClick={() => setActiveTab("notifications")}
+              >
+                {t("tabs.notifications") || "Notifications"}
               </Button>
               <Button
                 variant="ghost"
@@ -315,6 +323,53 @@ export function UserSettingsDialog({ open, onOpenChange }: UserSettingsDialogPro
                       <div className="text-sm font-bold text-white uppercase">{t("language.options")}</div>
                     </div>
                     <LanguageSwitcher />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "notifications" && (
+              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div>
+                  <h1 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">Notifications</h1>
+                  <p className="text-white/30 text-[10px] uppercase tracking-widest">Gérer vos alertes et notifications système</p>
+                </div>
+
+                <div className="bg-[#0a0a0a] border border-white/10 rounded-none p-8 space-y-8">
+                  <div className="flex items-center justify-between group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/5">
+                        <Bell className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1">Notifications Bureau</div>
+                        <div className="text-xs font-bold text-white uppercase">Activer les alertes système</div>
+                      </div>
+                    </div>
+                    <Button 
+                      className={`h-10 px-8 rounded-none font-black text-[10px] uppercase tracking-widest transition-all ${useAppStore.getState().notificationsEnabled ? "bg-primary text-white hover:bg-red-500" : "bg-white text-black hover:bg-white/80"}`}
+                      onClick={async () => {
+                        const granted = await requestNotificationPermission();
+                        useAppStore.getState().setNotificationsEnabled(granted);
+                        if (granted) {
+                          toast.success("Notifications activées !");
+                          sendNotification("Notifications activées", "Vous recevrez une alerte pour chaque mention.");
+                        } else {
+                          toast.error("Veuillez autoriser les notifications dans votre navigateur.");
+                        }
+                      }}
+                    >
+                      {useAppStore.getState().notificationsEnabled ? "Désactiver" : "Activer"}
+                    </Button>
+                  </div>
+                  
+                  <Separator className="bg-white/5" />
+                  
+                  <div className="space-y-4">
+                    <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Note système</div>
+                    <p className="text-[10px] text-white/40 uppercase leading-relaxed tracking-wide">
+                      Les notifications respectent votre statut. Si vous êtes en mode "Occupé", les notifications desktop seront automatiquement suspendues pour ne pas interrompre votre session.
+                    </p>
                   </div>
                 </div>
               </div>

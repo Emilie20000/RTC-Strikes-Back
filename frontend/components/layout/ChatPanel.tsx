@@ -42,6 +42,7 @@ import {
 import MembersSidebar from "@/components/layout/MembersSidebar";
 import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
+import { requestNotificationPermission, sendNotification } from "@/lib/notifications";
 
 type Hello = { message: string };
 
@@ -108,6 +109,7 @@ export default function ChatPanel() {
   const currentUser = useAppStore((s) => s.currentUser);
   const setMessagesForChannel = useAppStore((s) => s.setMessagesForChannel);
   const serverMembersMap = useAppStore((s) => s.serverMembers);
+  const activeServerId = useAppStore((s) => s.activeServerId);
 
   const activeChannel = useMemo(
     () => channels.find((c) => c.id === activeChannelId),
@@ -115,9 +117,32 @@ export default function ChatPanel() {
   );
 
   const currentServerMembers = useMemo(() => {
-    if (!activeChannel?.serverId) return [];
-    return serverMembersMap[activeChannel.serverId] || [];
-  }, [serverMembersMap, activeChannel?.serverId]);
+    if (activeServerId) {
+      return serverMembersMap[activeServerId] || [];
+    }
+    if (activeChannel?.kind === "DM" && currentUser) {
+      const members = [
+        {
+          user_id: currentUser.id,
+          username: currentUser.username,
+          avatar_url: currentUser.avatar_url,
+          role: "MEMBER",
+          status: currentUser.status || "Online"
+        }
+      ];
+      if (activeChannel.recipientId) {
+        members.push({
+          user_id: activeChannel.recipientId,
+          username: activeChannel.name || "Utilisateur",
+          avatar_url: activeChannel.avatarUrl,
+          role: "MEMBER",
+          status: "Online"
+        });
+      }
+      return members;
+    }
+    return [];
+  }, [serverMembersMap, activeServerId, activeChannel, currentUser]);
 
   const memberMap = useMemo(() => {
     return currentServerMembers.reduce((acc, m) => {
@@ -234,6 +259,46 @@ export default function ChatPanel() {
 
   const [reactionPickerOpenForMsg, setReactionPickerOpenForMsg] = useState<string | null>(null);
 
+  const [mentionSearch, setMentionSearch] = useState("");
+  const [showMentionList, setShowMentionList] = useState(false);
+  const [mentionIndex, setMentionIndex] = useState(0);
+
+  const filteredMembers = useMemo(() => {
+    if (!mentionSearch) return currentServerMembers;
+    return currentServerMembers.filter((m) =>
+      m.username.toLowerCase().includes(mentionSearch.toLowerCase())
+    );
+  }, [currentServerMembers, mentionSearch]);
+
+  const insertMention = (member: any) => {
+    const parts = text.split("@");
+    const lastPart = parts.pop();
+    const newText = parts.join("@") + `@${member.username} `;
+    setText(newText);
+    setShowMentionList(false);
+    setMentionSearch("");
+  };
+
+  const renderContentWithMentions = (content: string) => {
+    if (!content) return null;
+
+    const mentionRegex = /<@([a-f0-9-]{36})>/g;
+    const parts = content.split(mentionRegex);
+
+    return parts.map((part, i) => {
+      if (i % 2 === 1) {
+        const member = currentServerMembers.find(m => m.user_id === part);
+        const username = member ? member.username : "utilisateur-inconnu";
+        return (
+          <span key={i} className="bg-primary/20 text-primary px-1 py-0.5 rounded font-medium cursor-pointer hover:bg-primary/30 transition-colors">
+            @{username}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -246,25 +311,77 @@ export default function ChatPanel() {
   useEffect(() => {
     socket.connect();
 
-    socket.on("connect", () => {
+    const onConnect = () => {
       console.log("Socket connected:", socket.id);
       setIsConnected(true);
       if (activeChannelIdRef.current) {
         socket.emit("join", activeChannelIdRef.current);
       }
-    });
+      
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          if (user.id) {
+            socket.emit("identify", user.id);
+          }
+        } catch (e) {}
+      }
+    };
 
-    socket.on("disconnect", () => {
+    const onNotification = (data: any) => {
+      if (data.channelId) {
+        useAppStore.getState().incrementUnread(data.channelId);
+      }
+
+      if (document.hasFocus()) {
+        console.log("Skipping notification: window is focused");
+        return;
+      }
+
+      const state = useAppStore.getState();
+      const currentUser = state.currentUser;
+      const notificationsEnabled = state.notificationsEnabled;
+
+      if (!notificationsEnabled) return;
+      if (currentUser?.status === "Busy") return;
+
+      let bodyContent = data.content;
+      const channels = useAppStore.getState().channels;
+      const activeChan = channels.find(c => c.id === data.channelId);
+      const serverId = activeChan?.serverId;
+      let members: any[] = serverId ? useAppStore.getState().serverMembers[serverId] : [];
+      
+      if (!serverId && activeChan?.kind === "DM") {
+        members = [
+          { user_id: currentUser?.id, username: currentUser?.username || "Moi" },
+          { user_id: activeChan?.recipientId, username: activeChan?.name || "Utilisateur" }
+        ];
+      }
+      
+      bodyContent = bodyContent.replace(/<@([a-f0-9-]{36})>/g, (match: string, uuid: string) => {
+          const m = members?.find(m => m.user_id === uuid);
+          return m ? `@${m.username}` : "@mention";
+      });
+
+      const title = `De ${data.author} ${data.isDm ? "" : `dans #${data.channelName || "un salon"}`}`;
+      const finalBody = bodyContent.length > 80 ? `${bodyContent.substring(0, 80)}...` : bodyContent;
+
+      console.log("Triggering desktop notification:", title, finalBody);
+      sendNotification(title, finalBody);
+    };
+
+    const onDisconnect = () => {
       console.log("Socket disconnected");
       setIsConnected(false);
-    });
+    };
 
-    socket.on("connect_error", (err: any) => {
+    const onConnectError = (err: any) => {
       console.error("Socket connection error:", err);
       setIsConnected(false);
-    });
+    };
 
-    function onReactionAdded(data: { messageId: number; userId: string; emoji: string }) {
+    const onReactionAdded = (data: { messageId: number; userId: string; emoji: string }) => {
       if (!activeChannelIdRef.current) return;
       const currentMsgs = useAppStore.getState().messagesByChannel[activeChannelIdRef.current] ?? [];
       const newMsgs = currentMsgs.map((m) => {
@@ -279,9 +396,9 @@ export default function ChatPanel() {
         return { ...m, reactions };
       });
       setMessagesForChannel(activeChannelIdRef.current, newMsgs);
-    }
+    };
 
-    function onReactionRemoved(data: { messageId: number; userId: string; emoji: string }) {
+    const onReactionRemoved = (data: { messageId: number; userId: string; emoji: string }) => {
       if (!activeChannelIdRef.current) return;
       const currentMsgs = useAppStore.getState().messagesByChannel[activeChannelIdRef.current] ?? [];
       const newMsgs = currentMsgs.map((m) => {
@@ -295,12 +412,9 @@ export default function ChatPanel() {
         return { ...m, reactions };
       });
       setMessagesForChannel(activeChannelIdRef.current, newMsgs);
-    }
+    };
 
-    socket.on("reaction_removed", onReactionRemoved);
-    socket.on("reaction_added", onReactionAdded);
-
-    function onMessage(data: any) {
+    const onMessage = (data: any) => {
       console.log("📩 Message received:", data);
       const newMsg: ChatMessage = {
         id: String(data.id),
@@ -311,36 +425,36 @@ export default function ChatPanel() {
         createdAt: data.createdAt,
       };
       addMessage(newMsg);
-    }
+    };
 
-    function onTyping(data: { channelId: string; author: string; userId: string; avatarUrl?: string }) {
+    const onTyping = (data: { channelId: string; author: string; userId: string; avatarUrl?: string }) => {
       if (data.channelId !== activeChannelIdRef.current) return;
       setTypingUsers((prev) => {
         const next = new Map(prev);
         next.set(data.userId, { username: data.author, avatarUrl: data.avatarUrl });
         return next;
       });
-    }
+    };
 
-    function onStopTyping(data: { channelId: string; author: string; userId: string }) {
+    const onStopTyping = (data: { channelId: string; author: string; userId: string }) => {
       if (data.channelId !== activeChannelIdRef.current) return;
       setTypingUsers((prev) => {
         const next = new Map(prev);
         next.delete(data.userId);
         return next;
       });
-    }
+    };
 
-    function onMessageDeleted(data: { channelId: string; messageId: number }) {
+    const onMessageDeleted = (data: { channelId: string; messageId: number }) => {
       console.log("🗑️ Message deleted:", data);
       if (data.channelId === activeChannelIdRef.current) {
         const currentMsgs = useAppStore.getState().messagesByChannel[data.channelId] ?? [];
         const newMsgs = currentMsgs.filter((m) => m.id !== String(data.messageId));
         setMessagesForChannel(data.channelId, newMsgs);
       }
-    }
+    };
 
-    function onMessageUpdated(data: any) {
+    const onMessageUpdated = (data: any) => {
       console.log("✏️ Message updated:", data);
       const channelId = data.channelId || data.channel_id;
       if (channelId === activeChannelIdRef.current) {
@@ -350,8 +464,14 @@ export default function ChatPanel() {
         );
         setMessagesForChannel(channelId, newMsgs);
       }
-    }
+    };
 
+    socket.on("connect", onConnect);
+    socket.on("notification", onNotification);
+    socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onConnectError);
+    socket.on("reaction_added", onReactionAdded);
+    socket.on("reaction_removed", onReactionRemoved);
     socket.on("message", onMessage);
     socket.on("typing", onTyping);
     socket.on("stop_typing", onStopTyping);
@@ -359,19 +479,24 @@ export default function ChatPanel() {
     socket.on("message_updated", onMessageUpdated);
 
     return () => {
+      socket.off("connect", onConnect);
+      socket.off("notification", onNotification);
+      socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onConnectError);
+      socket.off("reaction_added", onReactionAdded);
+      socket.off("reaction_removed", onReactionRemoved);
       socket.off("message", onMessage);
       socket.off("typing", onTyping);
       socket.off("stop_typing", onStopTyping);
       socket.off("message_deleted", onMessageDeleted);
       socket.off("message_updated", onMessageUpdated);
-      socket.off("reaction_added", onReactionAdded);
-      socket.off("reaction_removed", onReactionRemoved);
-      socket.disconnect();
     };
-  }, []);
+  }, [currentUser, addMessage, setMessagesForChannel]);
 
   useEffect(() => {
     if (!activeChannelId) return;
+
+    useAppStore.getState().clearUnread(activeChannelId);
 
     setTypingUsers(new Map());
 
@@ -418,10 +543,8 @@ export default function ChatPanel() {
       }
     };
 
-    // Initial scroll
     scrollToBottom();
 
-    // Use ResizeObserver to detect content changes (including images loading)
     const observer = new ResizeObserver(() => {
       scrollToBottom();
     });
@@ -463,17 +586,38 @@ export default function ChatPanel() {
 
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit("stop_typing", { 
-        channelId: activeChannelId, 
+        channel_id: activeChannelId, 
         author: currentUser?.username || username,
         userId: currentUser?.id
       });
     }, 1500);
+
+    const cursorPosition = e.target.selectionStart || 0;
+    const textBeforeCursor = e.target.value.substring(0, cursorPosition);
+    const words = textBeforeCursor.split(/\s/);
+    const lastWord = words[words.length - 1];
+
+    if (lastWord.startsWith("@")) {
+      setMentionSearch(lastWord.substring(1));
+      setShowMentionList(true);
+      setMentionIndex(0);
+    } else {
+      setShowMentionList(false);
+    }
   };
 
   const send = () => {
     if (!activeChannelId) return;
     const content = text.trim();
     if (!content) return;
+
+    let processedContent = content;
+    currentServerMembers.forEach((m) => {
+      const mention = `@${m.username}`;
+      const escapedUsername = m.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`@${escapedUsername}(?=\\s|$)`, 'g');
+      processedContent = processedContent.replace(regex, `<@${m.user_id}>`);
+    });
 
     if (typingTimeoutRef.current) {
       socket.emit("stop_typing", { 
@@ -487,7 +631,7 @@ export default function ChatPanel() {
       channelId: activeChannelId,
       author: currentUser?.username || username,
       authorId: currentUser?.id,
-      content,
+      content: processedContent,
     });
 
     setText("");
@@ -679,7 +823,7 @@ export default function ChatPanel() {
                                       />
                                     </div>
                                   ) : (
-                                    m.content
+                                    renderContentWithMentions(m.content)
                                   )}
                                 </>
                               )}
@@ -758,7 +902,20 @@ export default function ChatPanel() {
                 value={text}
                 onChange={handleInputChange}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (showMentionList && filteredMembers.length > 0) {
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setMentionIndex((prev) => (prev + 1) % filteredMembers.length);
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setMentionIndex((prev) => (prev - 1 + filteredMembers.length) % filteredMembers.length);
+                    } else if (e.key === "Enter" || e.key === "Tab") {
+                      e.preventDefault();
+                      insertMention(filteredMembers[mentionIndex]);
+                    } else if (e.key === "Escape") {
+                      setShowMentionList(false);
+                    }
+                  } else if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     send();
                   }
@@ -766,6 +923,29 @@ export default function ChatPanel() {
                 disabled={!activeChannelId}
                 autoComplete="off"
               />
+              {showMentionList && filteredMembers.length > 0 && (
+                <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#0a0a0a] border border-white/10 shadow-2xl z-50">
+                  <div className="p-2 border-b border-white/5 bg-white/5">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Membres</span>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {filteredMembers.map((member, idx) => (
+                      <div
+                        key={member.user_id}
+                        className={`flex items-center gap-3 px-4 py-2 cursor-pointer transition-colors ${idx === mentionIndex ? "bg-primary/20 border-l-2 border-primary" : "hover:bg-white/5"}`}
+                        onClick={() => insertMention(member)}
+                        onMouseEnter={() => setMentionIndex(idx)}
+                      >
+                        <Avatar className="w-6 h-6 rounded-full border border-white/10">
+                          <AvatarImage src={getFileUrl(member.avatar_url) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.username}`} />
+                          <AvatarFallback className="text-[8px] font-black">{member.username.slice(0, 2)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs font-medium text-white/90">{member.username}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-4 ml-4">
                 <div className="relative">
                   <Button

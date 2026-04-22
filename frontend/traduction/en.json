@@ -178,7 +178,8 @@
         "account": "My Account",
         "profile": "Profile",
         "language": "Language",
-        "trophees": "Trophies"
+        "trophees": "Trophies",
+        "notifications": "Notifications"
       },
       "account": {
         "title": "My Account",
