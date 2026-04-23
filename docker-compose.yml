@@ -88,6 +88,30 @@ services:
     networks:
       - app-network
 
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: tester
+    container_name: backend-test
+    profiles: ["test"]
+    env_file:
+      - .env
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/target
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
   frontend-dev:
     build:
       context: ./frontend

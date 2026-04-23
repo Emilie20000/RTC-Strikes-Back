@@ -88,3 +88,80 @@ pub async fn auth_middleware(
 
     Ok(next.run(request).await)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+        middleware::from_fn_with_state,
+        routing::get,
+        Router,
+    };
+    use tower::ServiceExt;
+    use crate::services::auth::generate_token;
+
+    // Helper to create a dummy AppState for tests
+    // Note: This still requires a pool, but for unit tests of non-db parts it can be uninitialized or mock
+    async fn setup_test_router(state: Arc<AppState>) -> Router {
+        Router::new()
+            .route("/", get(|| async { "OK" }))
+            .layer(from_fn_with_state(state.clone(), auth_middleware))
+            .with_state(state)
+    }
+
+    #[tokio::test]
+    async fn test_auth_middleware_missing_token() {
+        let pool = sqlx::PgPool::connect_lazy("postgres://localhost/test").unwrap();
+        let voice_users = Arc::new(dashmap::DashMap::new());
+        let redis_client = redis::Client::open("redis://127.0.0.1:6379").unwrap();
+        let io = socketioxide::SocketIo::builder().build_layer().1;
+        
+        let state = Arc::new(AppState {
+            pool,
+            io,
+            voice_users,
+            redis_client,
+        });
+
+        let app = setup_test_router(state).await;
+
+        let response = app
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_auth_middleware_invalid_token() {
+        let pool = sqlx::PgPool::connect_lazy("postgres://localhost/test").unwrap();
+        let voice_users = Arc::new(dashmap::DashMap::new());
+        let redis_client = redis::Client::open("redis://127.0.0.1:6379").unwrap();
+        let io = socketioxide::SocketIo::builder().build_layer().1;
+        
+        let state = Arc::new(AppState {
+            pool,
+            io,
+            voice_users,
+            redis_client,
+        });
+
+        let app = setup_test_router(state).await;
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header("Authorization", "Bearer invalid-token")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+}

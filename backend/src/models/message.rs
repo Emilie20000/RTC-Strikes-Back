@@ -40,6 +40,7 @@ mod tests {
             author_id: Some(uuid::Uuid::new_v4()),
             content: "Hello".to_string(),
             created_at: 1600000000,
+            reactions: vec![],
         };
 
         let json = serde_json::to_string(&msg).unwrap();

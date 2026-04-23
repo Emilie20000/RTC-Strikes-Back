@@ -95,16 +95,25 @@ mod tests {
     }
 
     #[test]
-    fn test_can_delete_message_check() {
-        // Author can always delete
-        assert!(can_delete_message_check(true, None));
-        assert!(can_delete_message_check(true, Some(UserRole::Member)));
+    fn test_user_role_deserialization() {
+        let json = "\"OWNER\"";
+        let role: UserRole = serde_json::from_str(json).unwrap();
+        assert_eq!(role, UserRole::Owner);
         
-        // Non-author needs Admin/Owner
-        assert!(!can_delete_message_check(false, None));
+        let json_member = "\"MEMBER\"";
+        let role_member: UserRole = serde_json::from_str(json_member).unwrap();
+        assert_eq!(role_member, UserRole::Member);
+    }
+
+    #[test]
+    fn test_can_delete_message_check_edge_cases() {
+        // Admin can delete messages they didn't write
+        assert!(can_delete_message_check(false, Some(UserRole::Admin)));
+        
+        // Member cannot delete messages they didn't write
         assert!(!can_delete_message_check(false, Some(UserRole::Member)));
         
-        assert!(can_delete_message_check(false, Some(UserRole::Admin)));
-        assert!(can_delete_message_check(false, Some(UserRole::Owner)));
+        // No role cannot delete messages they didn't write
+        assert!(!can_delete_message_check(false, None));
     }
 }

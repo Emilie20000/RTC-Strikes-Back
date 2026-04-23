@@ -515,9 +515,9 @@ pub async fn post_system_message(
     
     let msg = sqlx::query_as::<_, ChatMessage>(
         r#"
-        INSERT INTO messages (channel_id, author, content, created_at)
-        VALUES ($1, 'Système', $2, $3)
-        RETURNING id, channel_id::text as channel_id, author, content, created_at
+        INSERT INTO messages (channel_id, author, author_id, content, created_at)
+        VALUES ($1, 'Système', NULL, $2, $3)
+        RETURNING id, channel_id::text as channel_id, author, author_id, content, created_at
         "#
     )
     .bind(channel_id)
