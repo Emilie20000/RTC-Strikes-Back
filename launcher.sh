@@ -49,10 +49,10 @@ elif [ "$MODE" == "--dev" ]; then
         exit 1
     fi
     
-    echo "Lancement de Tauri en mode Dev..."
-    cd frontend
-    npm install --legacy-peer-deps
-    npm run tauri dev
+    # echo "Lancement de Tauri en mode Dev..."
+    # cd frontend
+    # npm install --legacy-peer-deps
+    # npm run tauri dev
 
 else
     echo "Usage: ./launcher.sh [--dev | --prod]"

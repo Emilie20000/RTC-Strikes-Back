@@ -14,7 +14,6 @@ run_backend() {
     
     if [ "$use_local" = "true" ]; then
         echo -e "${BLUE}Mode: LOCAL machine${NC}"
-        # Load .env variables for local execution
         if [ -f .env ]; then
             export $(grep -v '^#' .env | xargs)
         fi
@@ -33,7 +32,6 @@ run_frontend() {
     
     if [ "$use_local" = "true" ]; then
         echo -e "${BLUE}Mode: LOCAL machine${NC}"
-        # Load .env variables for local execution
         if [ -f .env ]; then
             export $(grep -v '^#' .env | xargs)
         fi
