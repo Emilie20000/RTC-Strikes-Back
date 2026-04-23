@@ -63,10 +63,100 @@ async fn test_socket_initialization_coverage() {
 
 #[test]
 fn test_socket_payloads_for_coverage() {
-    // Just instantiate them to cover serialization logic if any
-    let _ = StopTypingPayload {
+    // TypingPayload
+    let typing = TypingPayload {
+        channel_id: "c".to_string(),
+        author: "a".to_string(),
+        user_id: "u".to_string(),
+        avatar_url: Some("url".to_string()),
+    };
+    let json = serde_json::to_string(&typing).unwrap();
+    let _: TypingPayload = serde_json::from_str(&json).unwrap();
+
+    // StopTypingPayload
+    let stop_typing = StopTypingPayload {
         channel_id: "c".to_string(),
         author: "a".to_string(),
         user_id: "u".to_string(),
     };
+    let json = serde_json::to_string(&stop_typing).unwrap();
+    let _: StopTypingPayload = serde_json::from_str(&json).unwrap();
+
+    // SendMessagePayload
+    let send_msg = SendMessagePayload {
+        channel_id: "c".to_string(),
+        author: "a".to_string(),
+        author_id: Some(Uuid::new_v4()),
+        content: "hello".to_string(),
+    };
+    // Since SendMessagePayload is only Deserialize (if not Serialize, we can only test deserialization)
+    // Wait, let's just serialize it with a dummy json and deserialize it
+    let json = format!(r#"{{"channelId": "c", "author": "a", "authorId": "{}", "content": "hello"}}"#, Uuid::new_v4());
+    let _: SendMessagePayload = serde_json::from_str(&json).unwrap();
+
+    // JoinVoicePayload
+    let join_voice = JoinVoicePayload {
+        channel_id: "c".to_string(),
+        user_id: "u".to_string(),
+        server_id: "s".to_string(),
+    };
+    let json = serde_json::to_string(&join_voice).unwrap();
+    let _: JoinVoicePayload = serde_json::from_str(&json).unwrap();
+
+    // LeaveVoicePayload
+    let leave_voice = LeaveVoicePayload {
+        channel_id: "c".to_string(),
+        user_id: "u".to_string(),
+        server_id: "s".to_string(),
+    };
+    let json = serde_json::to_string(&leave_voice).unwrap();
+    let _: LeaveVoicePayload = serde_json::from_str(&json).unwrap();
+
+    // MutePayload
+    let mute = MutePayload {
+        channel_id: "c".to_string(),
+        user_id: "u".to_string(),
+        server_id: "s".to_string(),
+        muted: true,
+    };
+    let json = serde_json::to_string(&mute).unwrap();
+    let _: MutePayload = serde_json::from_str(&json).unwrap();
+
+    // SignalPayload
+    let signal = SignalPayload {
+        target_user_id: "t".to_string(),
+        signal: serde_json::json!({"type": "offer"}),
+        sender_id: "s".to_string(),
+    };
+    let json = serde_json::to_string(&signal).unwrap();
+    let _: SignalPayload = serde_json::from_str(&json).unwrap();
+
+    // ReactionPayload
+    let reaction = ReactionPayload {
+        message_id: 1,
+        user_id: "u".to_string(),
+        emoji: "smile".to_string(),
+    };
+    let json = serde_json::to_string(&reaction).unwrap();
+    let _: ReactionPayload = serde_json::from_str(&json).unwrap();
+
+    // ScreenSharePayload
+    let screen = ScreenSharePayload {
+        user_id: "u".to_string(),
+        channel_id: "c".to_string(),
+    };
+    let json = serde_json::to_string(&screen).unwrap();
+    let _: ScreenSharePayload = serde_json::from_str(&json).unwrap();
+}
+
+#[test]
+fn test_parse_mentions() {
+    let text = "Hello <@550e8400-e29b-41d4-a716-446655440000> and <@550e8400-e29b-41d4-a716-446655440001> !";
+    let mentions = parse_mentions(text);
+    assert_eq!(mentions.len(), 2);
+    assert!(mentions.contains("550e8400-e29b-41d4-a716-446655440000"));
+    assert!(mentions.contains("550e8400-e29b-41d4-a716-446655440001"));
+
+    let empty = parse_mentions("No mentions here!");
+    assert_eq!(empty.len(), 0);
 }
