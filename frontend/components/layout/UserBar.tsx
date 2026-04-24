@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Settings, Mic, MicOff, PhoneOff } from "lucide-react";
+import { Settings, Mic, MicOff, PhoneOff, Bell, BellOff } from "lucide-react";
+import { requestNotificationPermission, sendNotification } from "@/lib/notifications";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,17 +18,25 @@ import { api } from "@/lib/http";
 import { socket } from "@/lib/socket";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { getFileUrl } from "@/lib/utils";
 
 export function UserBar() {
   const t = useTranslations("app.userBar");
   const currentUser = useAppStore((s) => s.currentUser);
   const activeServerId = useAppStore((s) => s.activeServerId);
+  const voiceServerId = useAppStore((s) => s.voiceServerId);
   const activeVoiceChannelId = useAppStore((s) => s.activeVoiceChannelId);
   const voiceStates = useAppStore((s) => s.voiceStates);
-  const { setActiveVoiceChannelId } = useAppStore();
+  const { setActiveVoiceChannelId, setCurrentUser, notificationsEnabled, setNotificationsEnabled } = useAppStore();
 
-  const [userStatus, setUserStatus] = useState<"Online" | "Away" | "Busy" | "Offline">("Online");
+  const userStatus = currentUser?.status || "Online";
   const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationsEnabled(Notification.permission === 'granted');
+    }
+  }, []);
 
   // Fetch user's current status on mount
   useEffect(() => {
@@ -36,7 +45,7 @@ export function UserBar() {
       try {
         const user = await api<any>("/api/auth/me");
         if (user.status) {
-          setUserStatus(user.status);
+          setCurrentUser({ ...currentUser, status: user.status } as any);
         }
       } catch (e) {
         console.error("Failed to fetch user status", e);
@@ -51,7 +60,7 @@ export function UserBar() {
         method: "PATCH",
         body: JSON.stringify({ status: newStatus }),
       });
-      setUserStatus(newStatus);
+      setCurrentUser({ ...currentUser, status: newStatus } as any);
     } catch (e) {
       console.error("Failed to update status", e);
       toast.error(t("toastStatusError"));
@@ -59,7 +68,7 @@ export function UserBar() {
   };
 
   const toggleMute = () => {
-    if (!currentUser || !activeVoiceChannelId || !activeServerId) return;
+    if (!currentUser || !activeVoiceChannelId || !voiceServerId) return;
 
     const currentVoiceState = voiceStates[currentUser.id];
     const isMuted = currentVoiceState?.muted || false;
@@ -67,111 +76,128 @@ export function UserBar() {
     socket.emit("voice_mute", {
       channelId: activeVoiceChannelId,
       userId: currentUser.id,
-      serverId: activeServerId,
+      serverId: voiceServerId,
       muted: !isMuted
     });
   };
 
   const handleDisconnect = () => {
-    if (!currentUser || !activeVoiceChannelId || !activeServerId) return;
+    if (!currentUser || !activeVoiceChannelId || !voiceServerId) return;
 
     socket.emit("leave_voice", {
       channelId: activeVoiceChannelId,
       userId: currentUser.id,
-      serverId: activeServerId
+      serverId: voiceServerId
     });
 
     setActiveVoiceChannelId(null);
   };
 
+  const handleToggleNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    setNotificationsEnabled(granted);
+    if (granted) {
+      toast.success(t("notificationsEnabled"));
+      sendNotification(t("notificationsEnabled"), t("notificationsDescription"));
+    } else {
+      toast.error(t("notificationsDisabled"));
+    }
+  };
+
   return (
     <>
-      <div className="p-2 bg-[#292b2f] flex items-center gap-2 min-h-[52px]">
+      <div className="p-3 bg-[#0a0a0a] border-t border-white/5 flex items-center gap-2 min-h-[64px] relative selection:bg-primary selection:text-white">
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <div className="group relative flex items-center hover:bg-[#393c43] p-1 rounded-md cursor-pointer transition-colors mr-auto min-w-0">
-              <div className="relative mr-2 flex-shrink-0">
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src={currentUser?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-[#5865F2] text-white text-xs">{currentUser?.username?.slice(0, 2).toUpperCase()}</AvatarFallback>
+            <div className="group relative flex items-center hover:bg-white/5 p-2 transition-all cursor-pointer mr-auto min-w-0 border border-transparent hover:border-white/5">
+              <div className="relative mr-3 flex-shrink-0">
+                <Avatar className="w-9 h-9 rounded-full border border-white/10">
+                  <AvatarImage src={getFileUrl(currentUser?.avatar_url) || undefined} className="transition-all" />
+                  <AvatarFallback className="bg-white/5 text-white/70 text-[10px] font-black rounded-full uppercase">{currentUser?.username?.slice(0, 2)}</AvatarFallback>
                 </Avatar>
-                <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-[3px] border-[#292b2f] 
-                    ${userStatus === "Online" ? "bg-[#3ba55c]" : userStatus === "Busy" ? "bg-[#ED4245]" : userStatus === "Away" ? "bg-[#faa61a]" : "bg-[#747f8d]"}`}
+                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 border border-[#0a0a0a] 
+                    ${userStatus === "Online" ? "bg-[#3ba55c]" : userStatus === "Busy" ? "bg-red-800" : userStatus === "Away" ? "bg-yellow-600" : "bg-white/20"}`}
                 />
               </div>
               <div className="text-sm truncate">
-                <div className="font-semibold text-white text-xs leading-tight truncate">{currentUser?.username}</div>
-                <div className="text-[10px] text-[#b9bbbe] leading-tight truncate">#{currentUser?.id?.slice(0, 4)}</div>
+                <div className="font-black text-white text-[10px] uppercase tracking-tighter leading-tight truncate">{currentUser?.username}</div>
+                <div className="text-[9px] font-mono text-white/90 leading-tight truncate uppercase mt-0.5">ID: {currentUser?.id?.slice(0, 8)}</div>
               </div>
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-64 bg-[#18191c] border-none text-[#b9bbbe] p-1.5 shadow-xl mb-2 ml-2" side="top" align="start">
-            <div className="px-2 py-2 mb-1">
-              <div className="flex items-center gap-2 mb-2">
+          <DropdownMenuContent className="w-64 bg-[#0a0a0a] border border-white/10 text-white/80 p-2 shadow-2xl mb-2 ml-2 rounded-none" side="top" align="start">
+            <div className="px-2 py-3 mb-1 bg-white/5 border border-white/5">
+              <div className="flex items-center gap-3">
                 <div className="relative">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={currentUser?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-[#5865F2] text-white text-sm">{currentUser?.username?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  <Avatar className="w-12 h-12 rounded-none border border-white/10">
+                    <AvatarImage src={getFileUrl(currentUser?.avatar_url) || undefined} />
+                    <AvatarFallback className="bg-white/5 text-white/70 text-xs font-black uppercase rounded-none">{currentUser?.username?.slice(0, 2)}</AvatarFallback>
                   </Avatar>
-                  <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[3px] border-[#18191c] 
-                    ${userStatus === "Online" ? "bg-[#3ba55c]" : userStatus === "Busy" ? "bg-[#ED4245]" : userStatus === "Away" ? "bg-[#faa61a]" : "bg-[#747f8d]"}`}
+                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 border border-[#0a0a0a] 
+                    ${userStatus === "Online" ? "bg-[#3ba55c]" : userStatus === "Busy" ? "bg-red-800" : userStatus === "Away" ? "bg-yellow-600" : "bg-white/20"}`}
                   />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-white font-bold text-sm truncate">{currentUser?.username}</div>
-                  <div className="text-[#b9bbbe] text-xs truncate">#{currentUser?.id}</div>
+                  <div className="text-white font-black text-xs uppercase tracking-widest truncate">{currentUser?.username}</div>
+                  <div className="text-white/90 font-mono text-[9px] truncate mt-1">SYS_UID_{currentUser?.id?.slice(0, 12)}</div>
                 </div>
               </div>
             </div>
-            <DropdownMenuSeparator className="bg-[#2f3136]" />
-            <DropdownMenuLabel className="text-[10px] font-bold uppercase text-[#8e9297] px-2 py-1.5">{t("statusLabel")}</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => handleStatusChange("Online")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#3ba55c]" /> {t("status.online")}
+            <DropdownMenuSeparator className="bg-white/5 my-2" />
+            <DropdownMenuLabel className="text-[9px] font-black uppercase text-primary tracking-[0.2em] px-2 py-1.5 opacity-80">{t("statusLabel")}</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => handleStatusChange("Online")} className="focus:bg-white focus:text-black cursor-pointer rounded-none flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest py-2">
+              <div className="w-2 h-2 bg-[#3ba55c]" /> {t("status.online")}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleStatusChange("Away")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#faa61a]" /> {t("status.away")}
+            <DropdownMenuItem onClick={() => handleStatusChange("Away")} className="focus:bg-white focus:text-black cursor-pointer rounded-none flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest py-2">
+              <div className="w-2 h-2 bg-yellow-600" /> {t("status.away")}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleStatusChange("Busy")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#ED4245]" /> {t("status.busy")}
+            <DropdownMenuItem onClick={() => handleStatusChange("Busy")} className="focus:bg-white focus:text-black cursor-pointer rounded-none flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest py-2">
+              <div className="w-2 h-2 bg-red-800" /> {t("status.busy")}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleStatusChange("Offline")} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#747f8d]" /> {t("status.offline")}
+            <DropdownMenuItem onClick={() => handleStatusChange("Offline")} className="focus:bg-white focus:text-black cursor-pointer rounded-none flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest py-2">
+              <div className="w-2 h-2 bg-white/20" /> {t("status.offline")}
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-[#2f3136]" />
-            <DropdownMenuItem onClick={() => setIsUserSettingsOpen(true)} className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm">
+            <DropdownMenuSeparator className="bg-white/5 my-2" />
+            <DropdownMenuItem onClick={() => setIsUserSettingsOpen(true)} className="focus:bg-primary focus:text-white cursor-pointer rounded-none text-[10px] font-black uppercase tracking-widest py-2">
               {t("editProfile")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <div className="flex items-center">
+        <div className="flex items-center gap-1">
           <button
-            aria-label={t("mute")}
-            title={t("mute")}
-            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#393c43] text-[#b9bbbe] hover:text-[#dcddde] transition-colors relative"
+            className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/70 hover:text-white transition-all active:scale-90"
             onClick={toggleMute}
           >
             {voiceStates[currentUser?.id || '']?.muted ? (
-              <MicOff className="w-5 h-5 text-[#ED4245]" />
+              <MicOff className="w-4 h-4 text-primary" />
             ) : (
-              <Mic className="w-5 h-5" />
+              <Mic className="w-4 h-4" />
             )}
           </button>
           <button
-            aria-label={t("disconnect")}
-            title={t("disconnect")}
-            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#393c43] text-[#b9bbbe] hover:text-[#dcddde] transition-colors"
-            onClick={handleDisconnect}
+            className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/70 hover:text-white transition-all active:scale-90"
+            onClick={handleToggleNotifications}
+            title={notificationsEnabled ? t("tooltipDisableNotifications") : t("tooltipEnableNotifications")}
           >
-            <PhoneOff className="w-5 h-5" />
+            {notificationsEnabled ? (
+              <Bell className="w-4 h-4 text-primary" />
+            ) : (
+              <BellOff className="w-4 h-4" />
+            )}
           </button>
           <button
-            aria-label={t("settings")}
-            title={t("settings")}
-            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#393c43] text-[#b9bbbe] hover:text-[#dcddde] transition-colors"
+            className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/70 hover:text-white transition-all active:scale-90"
+            onClick={handleDisconnect}
+          >
+            <PhoneOff className="w-4 h-4" />
+          </button>
+          <button
+            className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/70 hover:text-white transition-all active:scale-90"
             onClick={() => setIsUserSettingsOpen(true)}
           >
-            <Settings className="w-5 h-5" />
+            <Settings className="w-4 h-4" />
           </button>
         </div>
       </div>

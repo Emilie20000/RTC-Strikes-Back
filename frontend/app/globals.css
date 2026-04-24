@@ -47,91 +47,74 @@
 }
 
 :root {
-  --radius: 0.5rem;
-  /* Discord Light Mode (Approximate, simplified) */
-  --background: #ffffff;
-  --foreground: #2e3338;
-  --card: #ffffff;
-  --card-foreground: #2e3338;
-  --popover: #ffffff;
-  --popover-foreground: #2e3338;
-  --primary: #5865F2;
-  /* Blurple */
-  --primary-foreground: #ffffff;
-  --secondary: #f2f3f5;
-  --secondary-foreground: #2e3338;
-  --muted: #f2f3f5;
-  --muted-foreground: #747f8d;
-  --accent: #f2f3f5;
-  --accent-foreground: #2e3338;
-  --destructive: #ED4245;
-  --border: #e3e5e8;
-  --input: #e3e5e8;
-  --ring: #5865F2;
-  --chart-1: #5865F2;
-  --chart-2: #57F287;
-  --chart-3: #FEE75C;
-  --chart-4: #EB459E;
-  --chart-5: #ED4245;
+  --background: hsl(0 0% 2%);
+  --foreground: hsl(0 0% 98%);
+  --card: hsl(0 0% 2%);
+  --card-foreground: hsl(0 0% 98%);
+  --popover: hsl(0 0% 2%);
+  --popover-foreground: hsl(0 0% 98%);
+  --primary: hsl(0 84% 60%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(0 0% 10%);
+  --secondary-foreground: hsl(0 0% 98%);
+  --muted: hsl(0 0% 7%);
+  --muted-foreground: hsl(0 0% 65%);
+  --accent: hsl(0 0% 15%);
+  --accent-foreground: hsl(0 0% 98%);
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 10%);
+  --input: hsl(0 0% 10%);
+  --ring: hsl(0 84% 60%);
+  --radius: 0rem;
 
-  /* Sidebar Light */
-  --sidebar: #f2f3f5;
-  --sidebar-foreground: #2e3338;
-  --sidebar-primary: #5865F2;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e3e5e8;
-  --sidebar-accent-foreground: #2e3338;
-  --sidebar-border: #e3e5e8;
-  --sidebar-ring: #5865F2;
+  --sidebar: hsl(0 0% 4%);
+  --sidebar-foreground: hsl(0 0% 98%);
+  --sidebar-primary: hsl(0 84% 60%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(0 0% 10%);
+  --sidebar-accent-foreground: hsl(0 0% 98%);
+  --sidebar-border: hsl(0 0% 10%);
+  --sidebar-ring: hsl(0 84% 60%);
+
+  --chart-1: hsl(0 84% 60%);
+  --chart-2: hsl(160 60% 45%);
+  --chart-3: hsl(30 80% 55%);
+  --chart-4: hsl(280 65% 60%);
+  --chart-5: hsl(340 75% 55%);
 }
 
 .dark {
-  /* Discord Dark Mode */
-  --background: #36393f;
-  /* Chat Background */
-  --foreground: #dcddde;
-  /* Normal Text */
-  --card: #36393f;
-  --card-foreground: #dcddde;
-  --popover: #2f3136;
-  /* Menus/Sidebar 2 */
-  --popover-foreground: #dcddde;
-  --primary: #5865F2;
-  /* Blurple */
-  --primary-foreground: #ffffff;
-  --secondary: #2f3136;
-  /* Elements background */
-  --secondary-foreground: #dcddde;
-  --muted: #40444b;
-  /* Input background / Muted elements */
-  --muted-foreground: #72767d;
-  /* Muted text */
-  --accent: #40444b;
-  --accent-foreground: #ffffff;
-  --destructive: #ED4245;
-  --border: #202225;
-  /* Borders usually very dark */
-  --input: #202225;
-  --ring: #5865F2;
+  --background: hsl(0 0% 2%);
+  --foreground: hsl(0 0% 98%);
+  --card: hsl(0 0% 2%);
+  --card-foreground: hsl(0 0% 98%);
+  --popover: hsl(0 0% 2%);
+  --popover-foreground: hsl(0 0% 98%);
+  --primary: hsl(0 84% 60%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(0 0% 10%);
+  --secondary-foreground: hsl(0 0% 98%);
+  --muted: hsl(0 0% 7%);
+  --muted-foreground: hsl(0 0% 40%);
+  --accent: hsl(0 0% 15%);
+  --accent-foreground: hsl(0 0% 98%);
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 10%);
+  --input: hsl(0 0% 10%);
+  --ring: hsl(0 84% 60%);
 
-  --chart-1: #5865F2;
-  --chart-2: #57F287;
-  --chart-3: #FEE75C;
-  --chart-4: #EB459E;
-  --chart-5: #ED4245;
-
-  /* Sidebar Specifics */
-  --sidebar: #202225;
-  /* Server Rail (Darkest) */
-  --sidebar-foreground: #dcddde;
-  --sidebar-primary: #5865F2;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #2f3136;
-  /* Channel Rail? Or Hover state */
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #202225;
-  --sidebar-ring: #5865F2;
+  --sidebar: hsl(0 0% 4%);
+  --sidebar-foreground: hsl(0 0% 98%);
+  --sidebar-primary: hsl(0 84% 60%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(0 0% 10%);
+  --sidebar-accent-foreground: hsl(0 0% 98%);
+  --sidebar-border: hsl(0 0% 10%);
+  --sidebar-ring: hsl(0 84% 60%);
 }
+
 
 @layer base {
   * {
@@ -142,31 +125,76 @@
     @apply bg-background text-foreground;
   }
 
-  /* Custom Scrollbar */
+  /* Custom Minimalist Scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-    background-color: #2f3136;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    background-color: #2f3136;
-    border-radius: 4px;
+    background-color: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: #202225;
-    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 0px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: #18191c;
+    background-color: var(--primary);
   }
-
   /* Selection */
   ::selection {
-    background-color: #5865F2;
-    /* Blurple */
+    background-color: var(--primary);
     color: white;
+  }
+}
+
+.trophy-toast {
+  animation: trophy-pop 220ms ease-out;
+}
+
+.trophy-shine {
+  background: linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, 0.16) 50%, transparent 80%);
+  transform: translateX(-140%) skewX(-20deg);
+  animation: trophy-shine 4s linear infinite;
+}
+
+.trophy-progress {
+  width: 100%;
+  animation: trophy-progress 5.5s linear forwards;
+}
+
+@keyframes trophy-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.97);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes trophy-shine {
+  0% {
+    transform: translateX(-140%) skewX(-20deg);
+  }
+  45% {
+    transform: translateX(220%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-20deg);
+  }
+}
+
+@keyframes trophy-progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
   }
 }

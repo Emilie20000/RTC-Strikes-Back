@@ -10,36 +10,55 @@ export function TypingIndicator({ users }: { users: TypingUser[] }) {
   const t = useTranslations("ui.typingIndicator");
   if (users.length === 0) return null;
 
+  // Limit avatars shown
+  const displayUsers = users.slice(0, 3);
+  const remainingCount = users.length - displayUsers.length;
+
   return (
-    <div className="flex flex-col gap-2 w-full max-w-[75%]">
-      {users.map((user) => (
-        <div
-          key={user.username}
-          className="flex gap-3 flex-row animate-in fade-in slide-in-from-bottom-2 duration-300"
-        >
-          <Avatar className="w-8 h-8 mt-1 border">
+    <div className="flex items-center gap-3 py-1 px-2 animate-in fade-in slide-in-from-bottom-1 duration-500">
+      {/* Overlapping Avatars */}
+      <div className="flex -space-x-3 overflow-hidden">
+        {displayUsers.map((user, i) => (
+          <Avatar 
+            key={user.username} 
+            className="w-5 h-5 border-2 border-[#050505] rounded-full ring-1 ring-white/5"
+            style={{ zIndex: 10 - i }}
+          >
             <AvatarImage
               src={user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`}
             />
-            <AvatarFallback className="bg-[#5865f2] text-white text-[10px]">
-              {user.username.slice(0, 2).toUpperCase()}
+            <AvatarFallback className="bg-primary/20 text-[6px] font-black uppercase">
+              {user.username.slice(0, 2)}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col items-start">
-            <div className="flex items-baseline gap-2 mb-1 px-1">
-              <span className="text-sm font-medium leading-none text-muted-foreground">
-                {user.username}
-              </span>
-              <span className="text-[10px] text-muted-foreground">{t("typing")}</span>
-            </div>
-            <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-muted/50 border shadow-sm flex items-center gap-1 h-[38px]">
-              <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-              <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-              <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce"></span>
-            </div>
+        ))}
+        {remainingCount > 0 && (
+          <div className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#050505] bg-white/5 text-[6px] font-black text-white/40 ring-1 ring-white/5 z-0">
+            +{remainingCount}
           </div>
+        )}
+      </div>
+
+      {/* Typing Text and Dots */}
+      <div className="flex items-center gap-2">
+        <p className="text-[10px] font-medium text-white/70 uppercase tracking-[0.2em] animate-pulse">
+          <span className="text-primary font-black">
+            {users.length === 1 
+              ? users[0].username 
+              : users.length === 2 
+                ? `${users[0].username} & ${users[1].username}`
+                : `${users[0].username} ${t("typingAndMore", { count: users.length - 1 })}`
+            }
+          </span>
+          {" "}{t("typing") || "is typing"}
+        </p>
+        
+        <div className="flex gap-1 items-center h-full pt-0.5">
+          <span className="w-1 h-1 bg-primary rounded-full animate-[bounce_1.4s_infinite_0ms]"></span>
+          <span className="w-1 h-1 bg-primary rounded-full animate-[bounce_1.4s_infinite_200ms]"></span>
+          <span className="w-1 h-1 bg-primary rounded-full animate-[bounce_1.4s_infinite_400ms]"></span>
         </div>
-      ))}
+      </div>
     </div>
   );
 }

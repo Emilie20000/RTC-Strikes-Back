@@ -13,7 +13,8 @@
       "poweredBy": "Powered by GIPHY"
     },
     "typingIndicator": {
-      "typing": "is typing..."
+      "typing": "is typing...",
+      "typingAndMore": "& {count} others"
     }
   },
   "auth": {
@@ -99,7 +100,10 @@
       "readyToChat": "Ready to chat?",
       "selectLeftChannel": "Select a channel on the left to start chatting.",
       "sendInChannel": "Send a message in #{channel}",
-      "selectChannelPlaceholder": "Select a channel..."
+      "selectChannelPlaceholder": "Select a channel...",
+      "onlyOwnerCanWrite": "Only the server owner can write in this channel.",
+      "toastReactionError": "Unable to update reaction",
+      "unknownUser": "unknown-user"
     },
     "serverChannelsSidebar": {
       "toastChannelCreated": "Channel created",
@@ -144,7 +148,8 @@
       "name": "Name",
       "invite": "Invite",
       "copied": "Copied!",
-      "copy": "Copy"
+      "copy": "Copy",
+      "deleteServerWarning": "This action is irreversible. All data will be purged from the network."
     },
     "userBar": {
       "toastStatusError": "Unable to update status",
@@ -158,14 +163,31 @@
       "editProfile": "Edit profile",
       "mute": "Toggle mute",
       "disconnect": "Disconnect from voice",
-      "settings": "Settings"
+      "settings": "Settings",
+      "notificationsEnabled": "Notifications enabled",
+      "notificationsDisabled": "Notifications denied or disabled",
+      "notificationsDescription": "You will receive a notification when mentioned.",
+      "tooltipDisableNotifications": "Disable notifications",
+      "tooltipEnableNotifications": "Enable notifications"
+    },
+    "voiceConnectionBar": {
+      "voiceConnected": "Voice connected",
+      "voiceChannel": "Voice channel",
+      "server": "Server",
+      "info": "Connection info",
+      "disconnect": "Disconnect",
+      "mute": "Muted",
+      "micro": "Microphone",
+      "stop": "Stop",
+      "screen": "Screen",
+      "screenShareActive": "Screen sharing active",
+      "tooltipMute": "Unmute",
+      "tooltipUnmute": "Mute",
+      "tooltipStopScreen": "Stop sharing",
+      "tooltipStartScreen": "Share screen",
+      "tooltipDisconnect": "Leave voice channel"
     },
     "userSettings": {
-      "alerts": {
-        "updateError": "Error while updating profile.",
-        "uploadFailed": "Upload failed",
-        "uploadError": "Upload error"
-      },
       "sidebar": {
         "title": "User Settings",
         "logout": "Log out"
@@ -173,7 +195,9 @@
       "tabs": {
         "account": "My Account",
         "profile": "Profile",
-        "language": "Language"
+        "language": "Language",
+        "trophees": "Trophies",
+        "notifications": "Notifications"
       },
       "account": {
         "title": "My Account",
@@ -204,13 +228,39 @@
         "label": "Language",
         "options": "Français / English"
       },
+      "trophees": {
+        "title": "Trophies",
+        "description": "Collect rewards while using the application.",
+        "completion": "Completion",
+        "searchPlaceholder": "Search a trophy...",
+        "empty": "No trophies match the current filters.",
+        "secretTitle": "Secret trophy",
+        "fallbackTitle": "Trophy",
+        "inProgress": "In progress",
+        "unlockedOn": "Unlocked on {date}",
+        "loadError": "Unable to load your trophies",
+        "filters": {
+          "all": "All",
+          "social": "Social",
+          "profil": "Profile",
+          "unlocked": "Unlocked",
+          "inProgress": "In progress",
+          "notObtained": "Not obtained"
+        }
+      },
       "saveBar": {
         "unsaved": "Warning — you have unsaved changes!",
         "reset": "Reset",
         "saving": "Saving...",
         "save": "Save"
       },
-      "escape": "Esc"
+      "escape": "Esc",
+      "alerts": {
+        "uploadSuccess": "Avatar uploaded successfully! Click Save to confirm.",
+        "uploadError": "Error while uploading avatar.",
+        "saveSuccess": "Profile updated!",
+        "saveError": "Error while updating profile."
+      }
     },
     "serverMembersList": {
       "loading": "Loading members...",
@@ -278,6 +328,8 @@
       }
     },
     "userProfileDialog": {
+      "title": "{username}'s Profile",
+      "description": "Detailed profile information for {username}",
       "online": "Online",
       "owner": "OWNER",
       "memberSince": "Member since",
@@ -318,6 +370,20 @@
         "kick": "Kick",
         "ban": "Ban"
       }
+    },
+    "voiceRoom": {
+      "voice": "Voice",
+      "you": "(you)",
+      "sharesScreen": "is sharing screen",
+      "sharesCamera": "is sharing camera",
+      "connected": "connected",
+      "connectedPlural": "connected",
+      "mute": "Muted",
+      "micro": "Microphone",
+      "stop": "Stop",
+      "camera": "Camera",
+      "screen": "Screen",
+      "leave": "Leave"
     }
   }
 }

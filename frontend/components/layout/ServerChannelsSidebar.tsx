@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { api } from "@/lib/http";
 import { useAppStore, type Channel, type VoiceState } from "@/lib/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Hash, Volume2, Plus, ChevronDown, Settings, UserPlus, Trash2, MicOff, LogOut } from "lucide-react";
+import { Hash, Volume2, Plus, ChevronDown, Settings, UserPlus, Trash2, MicOff, LogOut, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -18,7 +19,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@/lib/http";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
@@ -33,8 +33,8 @@ import { ServerBansList } from "@/components/server/ServerBansList";
 import { socket } from "@/lib/socket";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { UserBar } from "./UserBar";
 import { useTranslations } from "next-intl";
+import { getFileUrl } from "@/lib/utils";
 
 export function ServerChannelsSidebar() {
   const t = useTranslations("app.serverChannelsSidebar");
@@ -95,6 +95,7 @@ export function ServerChannelsSidebar() {
 
   useEffect(() => {
     if (activeServerId) {
+      // Fetch channels
       api<Channel[]>(`/api/channels/server/${activeServerId}`)
         .then((data) => {
           setChannels(data);
@@ -105,6 +106,13 @@ export function ServerChannelsSidebar() {
           }
         })
         .catch((e) => console.error("Failed to fetch channels", e));
+
+      // Fetch members (ensures avatars are available in chat)
+      api<any[]>(`/api/servers/${activeServerId}/members`)
+        .then((data) => {
+          useAppStore.getState().setServerMembers(activeServerId, data);
+        })
+        .catch((e) => console.error("Failed to fetch members on server entry", e));
     }
   }, [activeServerId, setChannels, setActiveChannelId, activeChannelId]);
 
@@ -113,6 +121,13 @@ export function ServerChannelsSidebar() {
 
     const serverRoom = `server:${activeServerId}`;
     socket.emit("join", serverRoom);
+
+    const onConnect = () => {
+      console.log("Socket reconnected, re-joining server room:", serverRoom);
+      socket.emit("join", serverRoom);
+    };
+
+    socket.on("connect", onConnect);
 
     function onChannelCreated(data: { channel: Channel; serverId: string }) {
       if (data.serverId === activeServerId) {
@@ -205,6 +220,7 @@ export function ServerChannelsSidebar() {
       socket.off("voice_states", onVoiceStates);
       socket.off("voice_state_update", onVoiceStateUpdate);
       socket.off("voice_user_left", onVoiceUserLeft);
+      socket.off("connect", onConnect);
       socket.emit("leave", serverRoom);
     };
   }, [activeServerId, currentUser?.id, addChannel, removeChannel, setActiveChannelId, removeServer, setActiveServerId, setChannels, setVoiceStates, updateVoiceState, removeVoiceState]);
@@ -270,7 +286,7 @@ export function ServerChannelsSidebar() {
         serverId: activeServerId
       });
     }
-    setActiveVoiceChannelId(channelId);
+    setActiveVoiceChannelId(channelId, activeServerId);
     setActiveChannelId(channelId);
   };
 
@@ -327,50 +343,51 @@ export function ServerChannelsSidebar() {
     }
   };
 
-  const textChannels = channels.filter((c) => !c.kind || c.kind === "TEXT");
-  const voiceChannels = channels.filter((c) => c.kind === "VOICE");
+  const textChannels = channels.filter((c) => c.serverId === activeServerId && (!c.kind || c.kind === "TEXT"));
+  const voiceChannels = channels.filter((c) => c.serverId === activeServerId && c.kind === "VOICE");
 
   return (
-    <div className="flex flex-col h-full bg-[#2f3136] w-full flex-shrink-0">
-      <div className="h-12 border-b border-[#202225] flex items-center px-4 font-semibold shadow-sm bg-[#2f3136] hover:bg-[#34373c] transition-colors cursor-pointer text-white">
+    <div className="flex flex-col h-full bg-[#0a0a0a] w-full flex-shrink-0 border-r border-white/5 relative selection:bg-primary selection:text-white">
+      
+      <div className="h-16 border-b border-white/5 flex items-center px-4 bg-transparent hover:bg-white/5 transition-all cursor-pointer text-white group">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center justify-between w-full h-full outline-none">
-              <span className="truncate font-bold">{activeServer ? activeServer.name : t("serverFallback")}</span>
-              <ChevronDown className="w-4 h-4 ml-auto opacity-70" />
+              <span className="truncate font-black text-xs uppercase tracking-[0.2em]">{activeServer ? activeServer.name : t("serverFallback")}</span>
+              <ChevronDown className="w-4 h-4 ml-auto opacity-40 group-hover:opacity-100 transition-opacity" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 bg-[#18191c] border-none text-[#b9bbbe] p-1.5 shadow-xl">
-            <DropdownMenuLabel className="text-xs font-bold uppercase text-[#b9bbbe] px-2 py-1.5">
+          <DropdownMenuContent className="w-56 bg-[#0a0a0a] border border-white/10 text-white/80 p-2 shadow-2xl rounded-none">
+            <DropdownMenuLabel className="text-[9px] font-black uppercase text-primary tracking-[0.2em] px-2 py-1.5">
               {activeServer ? activeServer.name : t("menu")}
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-[#2f3136]" />
+            <DropdownMenuSeparator className="bg-white/5" />
             {canManageServer && (
               <>
                 <DropdownMenuItem
                   onClick={() => { setIsSettingsOpen(true); setSettingsTab("general"); }}
-                  className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm"
+                  className="focus:bg-white focus:text-black cursor-pointer rounded-none text-[10px] font-bold uppercase tracking-widest py-2"
                 >
-                  <Settings className="w-4 h-4 mr-2" />
+                  <Settings className="w-3.5 h-3.5 mr-2" />
                   {t("serverSettings")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => { setIsSettingsOpen(true); setSettingsTab("members"); }}
-                  className="focus:bg-[#5865F2] focus:text-white cursor-pointer rounded-sm"
+                  className="focus:bg-white focus:text-black cursor-pointer rounded-none text-[10px] font-bold uppercase tracking-widest py-2"
                 >
-                  <UserPlus className="w-4 h-4 mr-2" />
+                  <UserPlus className="w-3.5 h-3.5 mr-2" />
                   {t("manageMembers")}
                 </DropdownMenuItem>
               </>
             )}
             {!isOwner && (
               <>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-white/5" />
                 <DropdownMenuItem 
                   onClick={handleLeaveServer}
-                  className="text-destructive focus:text-destructive"
+                  className="text-primary focus:bg-primary focus:text-white rounded-none text-[10px] font-bold uppercase tracking-widest py-2"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
+                  <LogOut className="w-3.5 h-3.5 mr-2" />
                   {t("leaveServer")}
                 </DropdownMenuItem>
               </>
@@ -379,12 +396,11 @@ export function ServerChannelsSidebar() {
         </DropdownMenu>
       </div>
 
-      <ScrollArea className="flex-1 px-2 py-3 scrollbar-none">
-        <div className="space-y-5">
+      <ScrollArea className="flex-1 px-3 py-6">
+        <div className="space-y-8">
           <div>
-            <div className="flex items-center justify-between mb-1 px-1 group/header">
-              <button className="flex items-center text-xs font-bold uppercase text-[#8e9297] hover:text-[#dcddde] transition-colors">
-                <ChevronDown className="w-3 h-3 mr-0.5" />
+            <div className="flex items-center justify-between mb-4 px-1">
+              <button className="flex items-center text-[10px] font-black uppercase text-white/70 hover:text-white transition-colors tracking-[0.2em]">
                 {t("textChannels")}
               </button>
               {canManageServer && (
@@ -394,69 +410,65 @@ export function ServerChannelsSidebar() {
                       <TooltipTrigger asChild>
                         <DialogTrigger asChild>
                           <button
-                            aria-label={t("createChannel")}
-                            title={t("createChannel")}
-                            className="text-[#8e9297] hover:text-[#dcddde] transition-colors"
+                            className="text-white/80 hover:text-primary transition-colors"
                           >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-3.5 h-3.5" />
                           </button>
                         </DialogTrigger>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-black text-white border-0 text-xs font-bold">
+                      <TooltipContent className="bg-white text-black border-none text-[9px] font-black uppercase tracking-widest rounded-none">
                         <p>{t("createChannel")}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  <DialogContent className="bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
-                    <DialogHeader>
-                      <DialogTitle className="text-white text-lg font-bold">{t("createChannel")}</DialogTitle>
-                      <DialogDescription className="text-[#b9bbbe] text-xs">
-                        {t("inCategory", {category: channelType === "TEXT" ? t("textChannels") : t("voiceChannels")})}
-                      </DialogDescription>
+                  <DialogContent className="bg-[#0a0a0a] border border-white/10 rounded-none shadow-2xl p-8">
+                    <DialogHeader className="space-y-4">
+                      <DialogTitle className="text-white text-xl font-black uppercase tracking-tighter">{t("createChannel")}</DialogTitle>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label className="text-[#b9bbbe] text-[10px] font-bold uppercase">{t("channelType")}</Label>
-                        <div className="flex gap-2">
-                          <div onClick={() => setChannelType("TEXT")} className={`flex-1 flex items-center p-3 rounded-md cursor-pointer border-none transition-colors ${channelType === "TEXT" ? "bg-[#4f545c]/60 text-white" : "bg-[#2f3136] text-[#b9bbbe] hover:bg-[#34373c]"}`}>
-                            <Hash className="w-6 h-6 mr-3 text-[#b9bbbe]" />
-                            <div><div className="font-bold text-sm">{t("textType")}</div><div className="text-[10px] opacity-70">{t("textTypeDesc")}</div></div>
-                            <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${channelType === "TEXT" ? "border-[#5865F2]" : "border-[#72767d]"}`}>{channelType === "TEXT" && <div className="w-2 h-2 rounded-full bg-[#5865F2]" />}</div>
+                    <div className="grid gap-6 py-6">
+                      <div className="grid gap-3">
+                        <Label className="text-primary text-[9px] font-black uppercase tracking-[0.2em]">{t("channelType")}</Label>
+                        <div className="flex gap-3">
+                          <div onClick={() => setChannelType("TEXT")} className={`flex-1 flex items-center p-4 border transition-all cursor-pointer ${channelType === "TEXT" ? "bg-white text-black border-white" : "bg-transparent text-white/70 border-white/5 hover:border-white/20"}`}>
+                            <Hash className="w-5 h-5 mr-3" />
+                            <div className="font-black text-[10px] uppercase tracking-widest">{t("textType")}</div>
                           </div>
-                          <div onClick={() => setChannelType("VOICE")} className={`flex-1 flex items-center p-3 rounded-md cursor-pointer border-none transition-colors ${channelType === "VOICE" ? "bg-[#4f545c]/60 text-white" : "bg-[#2f3136] text-[#b9bbbe] hover:bg-[#34373c]"}`}>
-                            <Volume2 className="w-6 h-6 mr-3 text-[#b9bbbe]" />
-                            <div><div className="font-bold text-sm">{t("voiceType")}</div><div className="text-[10px] opacity-70">{t("voiceTypeDesc")}</div></div>
-                            <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${channelType === "VOICE" ? "border-[#5865F2]" : "border-[#72767d]"}`}>{channelType === "VOICE" && <div className="w-2 h-2 rounded-full bg-[#5865F2]" />}</div>
+                          <div onClick={() => setChannelType("VOICE")} className={`flex-1 flex items-center p-4 border transition-all cursor-pointer ${channelType === "VOICE" ? "bg-white text-black border-white" : "bg-transparent text-white/70 border-white/5 hover:border-white/20"}`}>
+                            <Volume2 className="w-5 h-5 mr-3" />
+                            <div className="font-black text-[10px] uppercase tracking-widest">{t("voiceType")}</div>
                           </div>
                         </div>
                       </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="channel-name" className="text-[#b9bbbe] text-[10px] font-bold uppercase">{t("channelName")}</Label>
+                      <div className="grid gap-3">
+                        <Label htmlFor="channel-name" className="text-primary text-[9px] font-black uppercase tracking-[0.2em]">{t("channelName")}</Label>
                         <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-[#b9bbbe]"><Hash className="w-4 h-4" /></span>
-                          <Input id="channel-name" placeholder={t("channelNamePlaceholder")} className="pl-9 bg-[#1e1f22] border-none text-white h-10 focus-visible:ring-1 focus-visible:ring-[#5865F2]" value={newChannelName} onChange={(e) => setNewChannelName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} />
+                          <Input id="channel-name" placeholder="IDENTIFIER" className="bg-white/5 border-white/10 text-white h-12 rounded-none px-4 font-mono text-sm focus-visible:ring-primary/20" value={newChannelName} onChange={(e) => setNewChannelName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} />
                         </div>
                       </div>
                     </div>
-                    <DialogFooter className="bg-[#2f3136] -m-6 mt-0 p-4 pt-4 flex items-center">
-                      <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-white hover:underline hover:bg-transparent mr-auto text-sm">{t("cancel")}</Button>
-                      <Button onClick={handleCreateChannel} disabled={loading || !newChannelName.trim()} className="bg-[#5865F2] hover:bg-[#4752c4] text-white font-bold h-10 px-6">{loading ? t("creating") : t("createChannelAction")}</Button>
+                    <DialogFooter className="pt-6 border-t border-white/5 flex items-center justify-between sm:justify-between">
+                      <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-white/70 hover:text-white rounded-none hover:bg-transparent text-[10px] font-black uppercase tracking-widest">{t("cancel")}</Button>
+                      <Button onClick={handleCreateChannel} disabled={loading || !newChannelName.trim()} className="bg-primary text-white hover:bg-red-500 rounded-none h-12 px-8 font-black uppercase tracking-widest text-[10px]">{loading ? t("creating") : t("createChannelAction")}</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
               )}
             </div>
-            <div className="space-y-[2px]">
+            <div className="space-y-1">
               {textChannels.map((c) => (
                 <div key={c.id} className="group relative flex items-center w-full">
-                  <button className={`w-full flex items-center px-2 py-[6px] mx-0 rounded-md transition-all duration-200 group-hover:bg-[#34373c] ${c.id === activeChannelId ? "bg-[#393c43] text-white shadow-sm" : "text-[#8e9297] hover:text-[#dcddde]"} hover:scale-[1.01] active:translate-y-[1px]`} onClick={() => setActiveChannelId(c.id)}>
-                    <Hash className="w-5 h-5 mr-1.5 opacity-70" />
-                    <span className="font-medium truncate">{c.name}</span>
+                  <button className={`w-full flex items-center px-3 py-2 transition-all border-l-2 ${c.id === activeChannelId ? "bg-white/5 border-primary text-white" : "border-transparent text-white/70 hover:text-white hover:bg-white/[0.02]"} active:translate-x-0.5`} onClick={() => setActiveChannelId(c.id)}>
+                    <span className="font-mono text-[11px] mr-2 opacity-30">/</span>
+                    <span className="font-bold text-[11px] uppercase tracking-wider truncate mr-auto">{c.name}</span>
+                    {useAppStore.getState().unreadCounts[c.id] > 0 && (
+                      <span className="ml-2 bg-primary text-white text-[9px] font-black px-1.5 py-0.5 rounded-none min-w-[18px] text-center transition-opacity group-hover:opacity-0">
+                        {useAppStore.getState().unreadCounts[c.id]}
+                      </span>
+                    )}
                   </button>
                   {isOwner && (
-                    <div className="absolute right-1 opacity-0 group-hover:opacity-100 flex items-center">
-                      <Settings className="w-3.5 h-3.5 text-[#b9bbbe] hover:text-white mr-1 cursor-pointer" />
-                      <Trash2 className="w-3.5 h-3.5 text-[#b9bbbe] hover:text-[#ED4245] cursor-pointer" onClick={(e) => handleDeleteChannel(e, c.id)} />
+                    <div className="absolute right-2 opacity-0 group-hover:opacity-100 flex items-center gap-2">
+                      <Trash2 className="w-3.5 h-3.5 text-white/80 hover:text-primary cursor-pointer transition-colors" onClick={(e) => handleDeleteChannel(e, c.id)} />
                     </div>
                   )}
                 </div>
@@ -465,43 +477,42 @@ export function ServerChannelsSidebar() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1 px-1 group/header">
-              <span className="text-xs font-bold uppercase text-[#8e9297]">{t("voiceChannels")}</span>
+            <div className="flex items-center justify-between mb-4 px-1">
+              <span className="text-[10px] font-black uppercase text-white/70 tracking-[0.2em]">{t("voiceChannels")}</span>
               {canManageServer && (
                 <button 
-                  aria-label={t("createChannel")}
-                  title={t("createChannel")}
-                  className="text-[#8e9297] hover:text-[#dcddde] transition-colors"
+                  className="text-white/80 hover:text-primary transition-colors"
                   onClick={() => {
                     setChannelType("VOICE");
                     setIsCreateOpen(true);
                   }}
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
-            <div className="space-y-[2px]">
+            <div className="space-y-1">
               {voiceChannels.map((c) => {
                 const channelUsers = Object.values(voiceStates).filter(u => u.channelId === c.id);
+                const isActive = c.id === activeVoiceChannelId;
                 return (
                   <div key={c.id}>
-                    <button className={`w-full flex items-center px-2 py-[6px] mx-0 rounded-md transition-all duration-200 group-hover:bg-[#34373c] ${c.id === activeChannelId ? "bg-[#393c43] text-white shadow-sm" : "text-[#8e9297] hover:text-[#dcddde]"} ${c.id === activeVoiceChannelId ? "text-white" : ""} hover:scale-[1.01] active:translate-y-[1px]`} onClick={() => handleJoinVoiceChannel(c.id)}>
-                      <Volume2 className="w-5 h-5 mr-1.5 opacity-70" />
-                      <span className="font-medium truncate">{c.name}</span>
+                    <button className={`w-full flex items-center px-3 py-2 transition-all border-l-2 ${c.id === activeChannelId ? "bg-white/5 border-primary text-white" : "border-transparent text-white/70 hover:text-white hover:bg-white/[0.02]"} active:translate-x-0.5`} onClick={() => handleJoinVoiceChannel(c.id)}>
+                      <Volume2 className={`w-3.5 h-3.5 mr-2 ${isActive ? "text-primary" : "opacity-30"}`} />
+                      <span className="font-bold text-[11px] uppercase tracking-wider truncate">{c.name}</span>
                     </button>
                     {channelUsers.length > 0 && (
-                      <div className="pl-8 space-y-1 mt-1 mb-2">
+                      <div className="pl-6 space-y-2 mt-3 mb-4">
                         {channelUsers.map(u => {
                           const isSpeaking = speakingUsers[u.userId];
                           return (
-                            <div key={u.userId} className="flex items-center gap-2 text-[#b9bbbe] group/user hover:bg-[#34373c] p-1 rounded transition-colors cursor-default">
-                              <Avatar className={`w-6 h-6 border-[2px] transition-all duration-100 ${isSpeaking ? "border-[#57F287]" : "border-transparent"}`}>
-                                <AvatarImage src={u.avatarUrl} />
-                                <AvatarFallback className="text-[9px] bg-[#5865F2] text-white">{u.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+                            <div key={u.userId} className="flex items-center gap-3 text-white/80 group/user p-1 transition-colors">
+                              <Avatar className={`w-8 h-8 rounded-full border-2 transition-all duration-300 ${isSpeaking ? "border-primary shadow-[0_0_12px_rgba(237,66,69,0.6)] scale-105" : "border-white/10"}`}>
+                                <AvatarImage src={getFileUrl(u.avatarUrl)} />
+                                <AvatarFallback className="text-[10px] bg-white/5 text-white/70 font-black rounded-full">{u.username.slice(0, 2).toUpperCase()}</AvatarFallback>
                               </Avatar>
-                              <span className={`text-xs truncate max-w-[120px] font-medium transition-colors ${isSpeaking ? "text-white" : ""}`}>{u.username}</span>
-                              {u.muted && <MicOff className="w-3 h-3 ml-auto text-[#ED4245]" />}
+                              <span className={`text-xs font-black uppercase tracking-widest truncate max-w-[120px] transition-all ${isSpeaking ? "text-white translate-x-1" : "text-white/80"}`}>{u.username}</span>
+                              {u.muted && <MicOff className="w-2.5 h-2.5 ml-auto text-primary" />}
                             </div>
                           )
                         })}
@@ -515,43 +526,56 @@ export function ServerChannelsSidebar() {
         </div>
       </ScrollArea>
 
-      <UserBar />
 
-      {/* Settings Dialog (moved here for clarity) */}
+
+      {/* Settings Dialog (Noir Redesign) */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent hideDefaultClose className="max-w-4xl h-[700px] flex p-0 gap-0 overflow-hidden bg-[#36393f] text-[#dcddde] border-none shadow-2xl">
+        <DialogContent hideDefaultClose className="max-w-4xl h-[700px] flex p-0 gap-0 overflow-hidden bg-[#050505] text-white/80 border border-white/10 rounded-none shadow-2xl">
           <DialogTitle className="sr-only">{t("serverSettingsFor", {server: activeServer?.name || ""})}</DialogTitle>
           <DialogDescription className="sr-only">{t("serverSettingsDesc")}</DialogDescription>
-          <div className="w-60 bg-[#2f3136] flex flex-col pt-10 px-2 gap-0.5">
-            <div className="text-[11px] font-bold text-[#8e9297] uppercase tracking-wider mb-2 px-2.5">{t("menu")}</div>
-            <Button variant="ghost" className={`justify-start w-full h-8 px-2.5 font-medium rounded-sm ${settingsTab === "general" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`} onClick={() => setSettingsTab("general")}>{t("overview")}</Button>
-            <Button variant="ghost" className={`justify-start w-full h-8 px-2.5 font-medium rounded-sm ${settingsTab === "members" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`} onClick={() => setSettingsTab("members")}>{t("members")}</Button>
-            {canManageServer && <Button variant="ghost" className={`justify-start w-full h-8 px-2.5 font-medium rounded-sm ${settingsTab === "bans" ? "bg-[#4f545c]/40 text-white" : "text-[#b9bbbe] hover:bg-[#4f545c]/20 hover:text-[#dcddde]"}`} onClick={() => setSettingsTab("bans")}>{t("bans")}</Button>}
+          <div className="w-60 bg-[#0a0a0a] border-r border-white/5 flex flex-col pt-12 px-4 gap-2">
+            <div className="text-[9px] font-black text-primary uppercase tracking-[0.3em] mb-4">{t("menu")}</div>
+            <Button variant="ghost" className={`justify-start w-full h-10 px-3 font-black text-[10px] uppercase tracking-widest rounded-none ${settingsTab === "general" ? "bg-white text-black" : "text-white/70 hover:bg-white/5 hover:text-white"}`} onClick={() => setSettingsTab("general")}>{t("overview")}</Button>
+            <Button variant="ghost" className={`justify-start w-full h-10 px-3 font-black text-[10px] uppercase tracking-widest rounded-none ${settingsTab === "members" ? "bg-white text-black" : "text-white/70 hover:bg-white/5 hover:text-white"}`} onClick={() => setSettingsTab("members")}>{t("members")}</Button>
+            {canManageServer && <Button variant="ghost" className={`justify-start w-full h-10 px-3 font-black text-[10px] uppercase tracking-widest rounded-none ${settingsTab === "bans" ? "bg-white text-black" : "text-white/70 hover:bg-white/5 hover:text-white"}`} onClick={() => setSettingsTab("bans")}>{t("bans")}</Button>}
             {activeServer && currentUser && activeServer.owner_id === currentUser.id && (
-              <Button variant="ghost" className="justify-start w-full h-8 px-2.5 font-medium rounded-sm text-[#ed4245] hover:bg-[#ed4245]/10" onClick={() => setSettingsTab("danger")}>{t("deleteServer")}</Button>
+              <Button variant="ghost" className="justify-start w-full h-10 px-3 font-black text-[10px] uppercase tracking-widest rounded-none text-primary hover:bg-primary hover:text-white mt-auto mb-8" onClick={() => setSettingsTab("danger")}>{t("deleteServer")}</Button>
             )}
           </div>
-          <div className="flex-1 p-10 overflow-y-auto bg-[#36393f] relative">
+          <div className="flex-1 p-12 overflow-y-auto bg-transparent relative">
             {settingsTab === "general" && (
-              <div className="space-y-6 max-w-2xl">
-                <h3 className="text-xl font-bold text-white mb-6">{t("overview")}</h3>
-                <div className="grid gap-2"><Label className="text-[#b9bbbe] font-bold text-[10px] uppercase">{t("name")}</Label><Input value={activeServer?.name || ""} readOnly className="bg-[#1e1f22] border-none text-white h-10" /></div>
-                <div className="grid gap-2"><Label className="text-[#b9bbbe] font-bold text-[10px] uppercase">{t("invite")}</Label><div className="flex gap-2"><Input readOnly value={activeServer?.invite_code || "..."} className="bg-[#1e1f22] border-none text-white font-mono h-10" /><Button className="bg-[#5865F2]" onClick={() => { navigator.clipboard.writeText(activeServer?.invite_code || ""); toast.success(t("copied")); }}>{t("copy")}</Button></div></div>
+              <div className="space-y-10 max-w-xl">
+                <h3 className="text-3xl font-black text-white uppercase tracking-tighter">{t("overview")}</h3>
+                <div className="grid gap-3">
+                  <Label className="text-primary font-black text-[10px] uppercase tracking-[0.2em]">{t("name")}</Label>
+                  <Input value={activeServer?.name || ""} readOnly className="bg-white/5 border-white/10 text-white h-12 rounded-none font-bold text-sm" />
+                </div>
+                <div className="grid gap-3">
+                  <Label className="text-primary font-black text-[10px] uppercase tracking-[0.2em]">{t("invite")}</Label>
+                  <div className="flex gap-3">
+                    <Input readOnly value={activeServer?.invite_code || "..."} className="bg-white/5 border-white/10 text-white font-mono h-12 rounded-none text-sm tracking-widest" />
+                    <Button className="bg-white text-black hover:bg-white/80 rounded-none h-12 px-6 font-black uppercase text-[10px] tracking-widest" onClick={() => { navigator.clipboard.writeText(activeServer?.invite_code || ""); toast.success(t("copied")); }}>{t("copy")}</Button>
+                  </div>
+                </div>
               </div>
             )}
             {settingsTab === "members" && activeServer && <ServerMembersList serverId={activeServer.id} currentUserId={currentUser?.id} />}
             {settingsTab === "bans" && activeServer && <ServerBansList serverId={activeServer.id} />}
             {settingsTab === "danger" && activeServer && (
-              <div className="border border-[#ed4245]/50 rounded-lg p-6 bg-[#ed4245]/5">
-                <h4 className="font-bold text-white">{t("deleteServer")}</h4>
-                <Button variant="destructive" className="mt-4" onClick={handleDeleteServer} disabled={deleteLoading}>{t("delete")}</Button>
+              <div className="border border-primary/50 p-8 bg-primary/5">
+                <h4 className="font-black text-white uppercase tracking-widest text-sm">{t("deleteServer")}</h4>
+                <p className="text-white/70 text-xs mt-2 uppercase tracking-wide">{t("deleteServerWarning")}</p>
+                <Button variant="destructive" className="mt-8 bg-primary hover:bg-red-500 rounded-none h-12 px-8 font-black uppercase text-[10px] tracking-widest" onClick={handleDeleteServer} disabled={deleteLoading}>{t("delete")}</Button>
               </div>
             )}
-            <div className="absolute right-6 top-6"><Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(false)}>✕</Button></div>
+            <div className="absolute right-8 top-8">
+              <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(false)} className="text-white/80 hover:text-white">
+                <X className="w-6 h-6" />
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
-
       <ConfirmModal isOpen={confirmData.isOpen} onClose={() => setConfirmData({ ...confirmData, isOpen: false })} onConfirm={confirmData.onConfirm} title={confirmData.title} message={confirmData.message} confirmText={confirmData.confirmText} isDestructive={confirmData.isDestructive} />
     </div>
   );

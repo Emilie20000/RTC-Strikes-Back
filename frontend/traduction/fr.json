@@ -13,7 +13,8 @@
       "poweredBy": "Propulsé par GIPHY"
     },
     "typingIndicator": {
-      "typing": "écrit..."
+      "typing": "écrit...",
+      "typingAndMore": "& {count} autres"
     }
   },
   "auth": {
@@ -99,7 +100,10 @@
       "readyToChat": "Prêt à discuter ?",
       "selectLeftChannel": "Sélectionnez un salon sur la gauche pour commencer la conversation.",
       "sendInChannel": "Envoyer un message dans #{channel}",
-      "selectChannelPlaceholder": "Sélectionnez un canal..."
+      "selectChannelPlaceholder": "Sélectionnez un canal...",
+      "onlyOwnerCanWrite": "Seul le propriétaire peut écrire dans ce salon.",
+      "toastReactionError": "Impossible de modifier la réaction",
+      "unknownUser": "utilisateur-inconnu"
     },
     "serverChannelsSidebar": {
       "toastChannelCreated": "Salon créé",
@@ -144,7 +148,8 @@
       "name": "Nom",
       "invite": "Invitation",
       "copied": "Copié !",
-      "copy": "Copier"
+      "copy": "Copier",
+      "deleteServerWarning": "Cette action est irréversible. Toutes les données seront purgées du réseau."
     },
     "userBar": {
       "toastStatusError": "Impossible de mettre à jour le statut",
@@ -158,14 +163,31 @@
       "editProfile": "Modifier le profil",
       "mute": "Activer/Désactiver le micro",
       "disconnect": "Se déconnecter du vocal",
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "notificationsEnabled": "Notifications activées",
+      "notificationsDisabled": "Notifications refusées ou désactivées",
+      "notificationsDescription": "Vous recevrez une notification quand on vous mentionne.",
+      "tooltipDisableNotifications": "Désactiver les notifications",
+      "tooltipEnableNotifications": "Activer les notifications"
+    },
+    "voiceConnectionBar": {
+      "voiceConnected": "Vocal connecté",
+      "voiceChannel": "Salon vocal",
+      "server": "Serveur",
+      "info": "Informations de connexion",
+      "disconnect": "Déconnecter",
+      "mute": "Muet",
+      "micro": "Micro",
+      "stop": "Stop",
+      "screen": "Écran",
+      "screenShareActive": "Partage d'écran actif",
+      "tooltipMute": "Réactiver le micro",
+      "tooltipUnmute": "Couper le micro",
+      "tooltipStopScreen": "Arrêter le partage",
+      "tooltipStartScreen": "Partager l'écran",
+      "tooltipDisconnect": "Quitter le salon vocal"
     },
     "userSettings": {
-      "alerts": {
-        "updateError": "Erreur lors de la mise à jour du profil.",
-        "uploadFailed": "Échec de l'upload",
-        "uploadError": "Erreur lors de l'upload"
-      },
       "sidebar": {
         "title": "Paramètres utilisateur",
         "logout": "Déconnexion"
@@ -173,7 +195,9 @@
       "tabs": {
         "account": "Mon compte",
         "profile": "Profil",
-        "language": "Langue"
+        "language": "Langue",
+        "trophees": "Trophees",
+        "notifications": "Notifications"
       },
       "account": {
         "title": "Mon compte",
@@ -204,13 +228,39 @@
         "label": "Langue",
         "options": "Français / English"
       },
+      "trophees": {
+        "title": "Trophees",
+        "description": "Collectionne des recompenses en utilisant l'application.",
+        "completion": "Completion",
+        "searchPlaceholder": "Rechercher un trophee...",
+        "empty": "Aucun trophee ne correspond aux filtres.",
+        "secretTitle": "Trophee secret",
+        "fallbackTitle": "Trophee",
+        "inProgress": "En cours",
+        "unlockedOn": "Debloque le {date}",
+        "loadError": "Impossible de charger tes trophees",
+        "filters": {
+          "all": "Tout",
+          "social": "Social",
+          "profil": "Profil",
+          "unlocked": "Debloques",
+          "inProgress": "En cours",
+          "notObtained": "Non obtenus"
+        }
+      },
       "saveBar": {
         "unsaved": "Attention — vous avez des modifications non enregistrées !",
         "reset": "Réinitialiser",
         "saving": "Enregistrement...",
         "save": "Enregistrer"
       },
-      "escape": "Échap"
+      "escape": "Échap",
+      "alerts": {
+        "uploadSuccess": "Avatar téléchargé avec succès ! Cliquez sur Enregistrer pour confirmer.",
+        "uploadError": "Erreur lors du téléchargement de l'avatar.",
+        "saveSuccess": "Profil mis à jour !",
+        "saveError": "Erreur lors de la mise à jour du profil."
+      }
     },
     "serverMembersList": {
       "loading": "Chargement des membres...",
@@ -278,6 +328,8 @@
       }
     },
     "userProfileDialog": {
+      "title": "Profil de {username}",
+      "description": "Informations détaillées sur le membre {username}",
       "online": "En ligne",
       "owner": "PROPRIÉTAIRE",
       "memberSince": "Membre depuis",
@@ -318,6 +370,20 @@
         "kick": "Expulser",
         "ban": "Bannir"
       }
+    },
+    "voiceRoom": {
+      "voice": "Vocal",
+      "you": "(vous)",
+      "sharesScreen": "partage son écran",
+      "sharesCamera": "partage sa caméra",
+      "connected": "connecté",
+      "connectedPlural": "connectés",
+      "mute": "Muet",
+      "micro": "Micro",
+      "stop": "Arrêter",
+      "camera": "Caméra",
+      "screen": "Écran",
+      "leave": "Quitter"
     }
   }
 }

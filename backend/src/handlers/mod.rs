@@ -4,3 +4,4 @@ pub mod channel;
 pub mod messages;
 pub mod user;
 pub mod upload;
+pub mod trophee;

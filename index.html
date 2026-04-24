@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download | YourApp</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #f87171;
+            --primary-border: rgba(239, 68, 68, 0.4);
+            --primary-bg: rgba(239, 68, 68, 0.1);
+            --primary-hover: rgba(239, 68, 68, 0.2);
+
+            --bg: #050505;
+            --surface: #0a0a0a;
+            --border: rgba(255, 255, 255, 0.08);
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --text-main: rgba(255, 255, 255, 0.9);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(var(--border) 1px, transparent 1px);
+            background-size: 32px 32px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 4rem;
+        }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            border: 1px solid var(--primary-border);
+            background: var(--primary-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            transform: rotate(-45deg);
+        }
+
+        .logo-icon i {
+            transform: rotate(45deg);
+            color: var(--primary);
+        }
+
+        h1 {
+            font-size: 0.75rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.4em;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 0.7rem;
+            font-family: monospace;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        @media (max-width: 640px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 2.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .card:hover {
+            border-color: var(--primary-border);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.1);
+        }
+
+        .card h2 {
+            font-size: 0.7rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+        }
+
+        .btn {
+            width: 100%;
+            background: var(--primary-bg);
+            border: 1px solid var(--primary-border);
+            color: var(--primary);
+            padding: 0.8rem 1.5rem;
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            color: white;
+        }
+
+        .btn-primary {
+            background: white;
+            color: black;
+            border-color: white;
+        }
+
+        .os-list {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 15px;
+            opacity: 0.5;
+        }
+
+        .os-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-tag {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 9px;
+            font-weight: 900;
+            padding: 2px 6px;
+            background: var(--primary);
+            color: black;
+            letter-spacing: 1px;
+        }
+
+        .footer {
+            margin-top: 4rem;
+            font-size: 10px;
+            font-family: monospace;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .lang-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .lang-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px 10px;
+            font-size: 10px;
+        }
+        .lang-btn.active { color: var(--primary); border-color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="lang-switch">
+    <button class="lang-btn active" onclick="setLang('fr')">FR</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<div class="container">
+    <header class="header">
+        <div class="logo-icon">
+            <i data-lucide="send" size="28"></i>
+        </div>
+        <h1 id="main-title">Accéder à la plateforme</h1>
+    </header>
+
+    <div class="grid">
+        <div class="card">
+            <h2 id="title-web">Application Web</h2>
+            <a href="https://rtc-front.onrender.com" class="btn" id="btn-web">
+                <i data-lucide="globe" size="14"></i>
+                <span>Ouvrir dans le navigateur</span>
+            </a>
+            <div class="os-list">
+                <span id="browser" class="os-item"><i data-lucide="chrome" size="12"></i> Navigateur</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="status-tag">STABLE</div>
+            <h2 id="title-desktop">Application Desktop</h2>
+            <a href="#" id="download-btn" class="btn btn-primary">
+                <i data-lucide="download" size="14"></i>
+                <span id="btn-desktop">Télécharger la release</span>
+            </a>
+            <div class="os-list">
+                <span class="os-item"><i data-lucide="apple" size="12"></i> Mac</span>
+                <span class="os-item"><i data-lucide="monitor" size="12"></i> Linux</span>
+                <span class="os-item"><i data-lucide="layout-grid" size="12"></i> Windows</span>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p id="copyright">&copy; 2026 RTC RUST // TOUS DROITS RÉSERVÉS</p>
+    </footer>
+</div>
+
+<script>
+    lucide.createIcons();
+
+    const translations = {
+        fr: {
+            mainTitle: "Accéder à la plateforme",
+            titleWeb: "Application Web",
+            btnWeb: "Ouvrir dans le navigateur",
+            titleDesktop: "Application Desktop",
+            btnDesktop: "Télécharger la release",
+            downloading: "Téléchargement...",
+            copyright: "&copy; 2026 RTC RUST // TOUS DROITS RÉSERVÉS",
+            browser: "Navigateur"
+        },
+        en: {
+            mainTitle: "Access the platform",
+            titleWeb: "Web Application",
+            btnWeb: "Open in browser",
+            titleDesktop: "Desktop Application",
+            btnDesktop: "Download latest release",
+            downloading: "Downloading...",
+            copyright: "&copy; 2026 RTC RUST // ALL RIGHTS RESERVED",
+            browser: "Browser"
+        }
+    };
+
+    function setLang(lang) {
+        document.getElementById('main-title').innerText = translations[lang].mainTitle;
+        document.getElementById('title-web').innerText = translations[lang].titleWeb;
+        document.getElementById('btn-web').querySelector('span').innerText = translations[lang].btnWeb;
+        document.getElementById('title-desktop').innerText = translations[lang].titleDesktop;
+        document.getElementById('btn-desktop').innerText = translations[lang].btnDesktop;
+        document.getElementById('copyright').innerText = translations[lang].copyright;
+        document.getElementById('browser').innerText = translations[lang].browser;
+
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText.toLowerCase() === lang);
+        });
+
+        window.currentLang = lang;
+    }
+
+    const downloadBtn = document.getElementById('download-btn');
+    window.currentLang = 'fr';
+
+    downloadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const userAgent = navigator.userAgent.toLowerCase();
+        let url = "";
+
+        if (userAgent.includes("mac")) {
+            url = "https://github.com/EpitechMscProPromo2028/T-DEV-600-LIL_10/releases/latest/download/app.dmg";
+        } else if (userAgent.includes("win")) {
+            url = "https://github.com/EpitechMscProPromo2028/T-DEV-600-LIL_10/releases/latest/download/app.exe";
+        } else if (userAgent.includes("linux")) {
+            url = "https://github.com/EpitechMscProPromo2028/T-DEV-600-LIL_10/releases/latest/download/app.AppImage";
+        } else {
+            url = "https://github.com/EpitechMscProPromo2028/T-DEV-600-LIL_10/releases/latest";
+        }
+
+        document.getElementById('btn-desktop').innerText = translations[window.currentLang].downloading;
+        downloadBtn.style.opacity = "0.7";
+        window.location.href = url;
+    });
+</script>
+</body>
+</html>

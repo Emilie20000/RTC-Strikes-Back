@@ -7,10 +7,12 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
+  const isFormData = options.body instanceof FormData;
+  
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
@@ -25,7 +27,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
       if (json.error) {
         error.error = json.error;
         
-        if (json.error === "User not found" && typeof window !== "undefined") {
+        if ((json.error === "User not found" || json.error === "Invalid or expired token") && typeof window !== "undefined") {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           window.location.href = "/login";

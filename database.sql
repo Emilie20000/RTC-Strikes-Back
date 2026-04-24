@@ -70,6 +70,7 @@ CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
     channel_id VARCHAR(50) NOT NULL,
     author VARCHAR(50) NOT NULL,
+    author_id UUID REFERENCES users(id),
     content TEXT NOT NULL,
     created_at BIGINT NOT NULL
 );
@@ -86,3 +87,20 @@ CREATE TABLE server_bans (
     expires_at TIMESTAMPTZ,
     PRIMARY KEY (server_id, user_id)
 );
+
+CREATE TABLE message_reactions (
+    message_id INT REFERENCES messages(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    emoji VARCHAR(10) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (message_id, user_id, emoji)
+);
+
+CREATE TABLE user_trophies (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    trophy_id VARCHAR(100) NOT NULL,
+    unlocked_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (user_id, trophy_id)
+);
+
+CREATE INDEX idx_reactions_message ON message_reactions(message_id);

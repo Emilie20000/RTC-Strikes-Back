@@ -1,6 +1,13 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ReactionGroup {
+    pub emoji: String,
+    #[serde(rename = "userIds")]
+    pub user_ids: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct ChatMessage {
     pub id: i32,
@@ -8,10 +15,15 @@ pub struct ChatMessage {
     #[serde(rename = "channelId")]
     pub channel_id: String,
     pub author: String,
+    #[sqlx(rename = "author_id")]
+    #[serde(rename = "authorId")]
+    pub author_id: Option<uuid::Uuid>,
     pub content: String,
     #[sqlx(rename = "created_at")]
     #[serde(rename = "createdAt")]
     pub created_at: i64,
+    #[sqlx(skip)]
+    pub reactions: Vec<ReactionGroup>,
 }
 
 #[cfg(test)]
@@ -25,8 +37,10 @@ mod tests {
             id: 1,
             channel_id: "123".to_string(),
             author: "User".to_string(),
+            author_id: Some(uuid::Uuid::new_v4()),
             content: "Hello".to_string(),
             created_at: 1600000000,
+            reactions: vec![],
         };
 
         let json = serde_json::to_string(&msg).unwrap();
