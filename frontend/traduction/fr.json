@@ -101,7 +101,9 @@
       "selectLeftChannel": "Sélectionnez un salon sur la gauche pour commencer la conversation.",
       "sendInChannel": "Envoyer un message dans #{channel}",
       "selectChannelPlaceholder": "Sélectionnez un canal...",
-      "onlyOwnerCanWrite": "Seul le propriétaire peut écrire dans ce salon."
+      "onlyOwnerCanWrite": "Seul le propriétaire peut écrire dans ce salon.",
+      "toastReactionError": "Impossible de modifier la réaction",
+      "unknownUser": "utilisateur-inconnu"
     },
     "serverChannelsSidebar": {
       "toastChannelCreated": "Salon créé",
@@ -146,7 +148,8 @@
       "name": "Nom",
       "invite": "Invitation",
       "copied": "Copié !",
-      "copy": "Copier"
+      "copy": "Copier",
+      "deleteServerWarning": "Cette action est irréversible. Toutes les données seront purgées du réseau."
     },
     "userBar": {
       "toastStatusError": "Impossible de mettre à jour le statut",
@@ -160,14 +163,29 @@
       "editProfile": "Modifier le profil",
       "mute": "Activer/Désactiver le micro",
       "disconnect": "Se déconnecter du vocal",
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "notificationsEnabled": "Notifications activées",
+      "notificationsDisabled": "Notifications refusées ou désactivées",
+      "notificationsDescription": "Vous recevrez une notification quand on vous mentionne.",
+      "tooltipDisableNotifications": "Désactiver les notifications",
+      "tooltipEnableNotifications": "Activer les notifications"
     },
     "voiceConnectionBar": {
       "voiceConnected": "Vocal connecté",
       "voiceChannel": "Salon vocal",
       "server": "Serveur",
       "info": "Informations de connexion",
-      "disconnect": "Déconnecter"
+      "disconnect": "Déconnecter",
+      "mute": "Muet",
+      "micro": "Micro",
+      "stop": "Stop",
+      "screen": "Écran",
+      "screenShareActive": "Partage d'écran actif",
+      "tooltipMute": "Réactiver le micro",
+      "tooltipUnmute": "Couper le micro",
+      "tooltipStopScreen": "Arrêter le partage",
+      "tooltipStartScreen": "Partager l'écran",
+      "tooltipDisconnect": "Quitter le salon vocal"
     },
     "userSettings": {
       "sidebar": {
@@ -352,6 +370,20 @@
         "kick": "Expulser",
         "ban": "Bannir"
       }
+    },
+    "voiceRoom": {
+      "voice": "Vocal",
+      "you": "(vous)",
+      "sharesScreen": "partage son écran",
+      "sharesCamera": "partage sa caméra",
+      "connected": "connecté",
+      "connectedPlural": "connectés",
+      "mute": "Muet",
+      "micro": "Micro",
+      "stop": "Arrêter",
+      "camera": "Caméra",
+      "screen": "Écran",
+      "leave": "Quitter"
     }
   }
 }

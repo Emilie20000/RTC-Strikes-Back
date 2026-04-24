@@ -101,7 +101,9 @@
       "selectLeftChannel": "Select a channel on the left to start chatting.",
       "sendInChannel": "Send a message in #{channel}",
       "selectChannelPlaceholder": "Select a channel...",
-      "onlyOwnerCanWrite": "Only the server owner can write in this channel."
+      "onlyOwnerCanWrite": "Only the server owner can write in this channel.",
+      "toastReactionError": "Unable to update reaction",
+      "unknownUser": "unknown-user"
     },
     "serverChannelsSidebar": {
       "toastChannelCreated": "Channel created",
@@ -146,7 +148,8 @@
       "name": "Name",
       "invite": "Invite",
       "copied": "Copied!",
-      "copy": "Copy"
+      "copy": "Copy",
+      "deleteServerWarning": "This action is irreversible. All data will be purged from the network."
     },
     "userBar": {
       "toastStatusError": "Unable to update status",
@@ -160,14 +163,29 @@
       "editProfile": "Edit profile",
       "mute": "Toggle mute",
       "disconnect": "Disconnect from voice",
-      "settings": "Settings"
+      "settings": "Settings",
+      "notificationsEnabled": "Notifications enabled",
+      "notificationsDisabled": "Notifications denied or disabled",
+      "notificationsDescription": "You will receive a notification when mentioned.",
+      "tooltipDisableNotifications": "Disable notifications",
+      "tooltipEnableNotifications": "Enable notifications"
     },
     "voiceConnectionBar": {
       "voiceConnected": "Voice connected",
       "voiceChannel": "Voice channel",
       "server": "Server",
       "info": "Connection info",
-      "disconnect": "Disconnect"
+      "disconnect": "Disconnect",
+      "mute": "Muted",
+      "micro": "Microphone",
+      "stop": "Stop",
+      "screen": "Screen",
+      "screenShareActive": "Screen sharing active",
+      "tooltipMute": "Unmute",
+      "tooltipUnmute": "Mute",
+      "tooltipStopScreen": "Stop sharing",
+      "tooltipStartScreen": "Share screen",
+      "tooltipDisconnect": "Leave voice channel"
     },
     "userSettings": {
       "sidebar": {
@@ -352,6 +370,20 @@
         "kick": "Kick",
         "ban": "Ban"
       }
+    },
+    "voiceRoom": {
+      "voice": "Voice",
+      "you": "(you)",
+      "sharesScreen": "is sharing screen",
+      "sharesCamera": "is sharing camera",
+      "connected": "connected",
+      "connectedPlural": "connected",
+      "mute": "Muted",
+      "micro": "Microphone",
+      "stop": "Stop",
+      "camera": "Camera",
+      "screen": "Screen",
+      "leave": "Leave"
     }
   }
 }

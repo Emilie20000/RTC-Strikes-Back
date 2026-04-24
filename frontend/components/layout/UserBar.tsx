@@ -97,10 +97,10 @@ export function UserBar() {
     const granted = await requestNotificationPermission();
     setNotificationsEnabled(granted);
     if (granted) {
-      toast.success(t("notificationsEnabled") || "Notifications activées");
-      sendNotification("Notifications activées", "Vous recevrez une notification quand on vous mentionne.");
+      toast.success(t("notificationsEnabled"));
+      sendNotification(t("notificationsEnabled"), t("notificationsDescription"));
     } else {
-      toast.error(t("notificationsDisabled") || "Notifications refusées ou désactivées");
+      toast.error(t("notificationsDisabled"));
     }
   };
 
@@ -179,7 +179,7 @@ export function UserBar() {
           <button
             className="w-9 h-9 flex items-center justify-center border border-white/5 bg-transparent hover:bg-white/5 text-white/70 hover:text-white transition-all active:scale-90"
             onClick={handleToggleNotifications}
-            title={notificationsEnabled ? "Désactiver les notifications (via navigateur)" : "Activer les notifications"}
+            title={notificationsEnabled ? t("tooltipDisableNotifications") : t("tooltipEnableNotifications")}
           >
             {notificationsEnabled ? (
               <Bell className="w-4 h-4 text-primary" />

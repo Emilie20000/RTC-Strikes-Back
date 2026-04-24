@@ -207,5 +207,5 @@ pub async fn get_me(
 }
 
 pub async fn logout() -> StatusCode {
-    StatusCode::OK
+    StatusCode::NO_CONTENT
 }

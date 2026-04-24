@@ -337,3 +337,49 @@ fn metric_for(id: &str, stats: &UserStats) -> i64 {
         _ => 0,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_metric_for() {
+        let stats = UserStats {
+            messages_count: 10,
+            reactions_count: 5,
+            owned_servers_count: 1,
+            joined_servers_count: 3,
+            has_avatar: true,
+        };
+
+        assert_eq!(metric_for("welcome_aboard", &stats), 1);
+        assert_eq!(metric_for("first_message", &stats), 10);
+        assert_eq!(metric_for("talkative", &stats), 10);
+        assert_eq!(metric_for("community_builder", &stats), 1);
+        assert_eq!(metric_for("reaction_fan", &stats), 5);
+        assert_eq!(metric_for("social_circle", &stats), 3);
+        assert_eq!(metric_for("mystery_ghost", &stats), 10);
+        assert_eq!(metric_for("profile_customizer", &stats), 1);
+        assert_eq!(metric_for("unknown", &stats), 0);
+    }
+
+    #[test]
+    fn test_trophee_struct_serialization() {
+        let trophee = Trophee {
+            id: "test".to_string(),
+            title: Some("Title".to_string()),
+            condition: Some("Condition".to_string()),
+            description_fun: Some("Fun".to_string()),
+            status: "unlocked".to_string(),
+            progress: Some(100),
+            current: Some(1),
+            goal: Some(1),
+            unlocked_at: Some(Utc::now()),
+            trophee_type: "social".to_string(),
+        };
+
+        let json = serde_json::to_string(&trophee).unwrap();
+        assert!(json.contains("\"id\":\"test\""));
+        assert!(json.contains("\"status\":\"unlocked\""));
+    }
+}

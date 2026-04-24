@@ -115,137 +115,176 @@ pub struct ScreenSharePayload {
 pub async fn on_connect(socket: SocketRef) {
     println!("Socket connected: {}", socket.id);
 
-    socket.on("identify", |socket: SocketRef, Data::<String>(user_id)| async move {
-        println!("Socket {} identifying as user {}", socket.id, user_id);
-        socket.join(format!("user:{}", user_id));
-    });
+    socket.on("identify", handle_identify);
+    socket.on("join", handle_join);
+    socket.on("join_voice", handle_join_voice);
+    socket.on("leave_voice", handle_leave_voice);
+    socket.on("voice_mute", handle_voice_mute);
+    socket.on("offer", handle_offer);
+    socket.on("answer", handle_answer);
+    socket.on("ice_candidate", handle_ice_candidate);
+    socket.on("leave", handle_leave);
+    socket.on("typing", handle_typing);
+    socket.on("stop_typing", handle_stop_typing);
+    socket.on("send_message", handle_send_message);
+    socket.on("screen_share_started", handle_screen_share_started);
+    socket.on("screen_share_stopped", handle_screen_share_stopped);
+    socket.on("camera_video_started", handle_camera_video_started);
+    socket.on("camera_video_stopped", handle_camera_video_stopped);
+    socket.on("add_reaction", handle_add_reaction);
+    socket.on("remove_reaction", handle_remove_reaction);
+    socket.on("disconnect", handle_disconnect);
+}
 
-    socket.on("join", |socket: SocketRef, Data::<String>(room), State::<Arc<DashMap<String, VoiceState>>>(voice_users)| async move {
-        println!("Socket {} attempting to join room '{}'", socket.id, room);
-        socket.join(room.clone());
-        println!("✅ Socket {} successfully joined room '{}'", socket.id, room);
+pub async fn handle_identify(socket: SocketRef, Data::<String>(user_id): Data<String>) {
+    println!("Socket {} identifying as user {}", socket.id, user_id);
+    socket.join(format!("user:{}", user_id));
+}
 
-        if room.starts_with("server:") {
-            let server_id = room.trim_start_matches("server:");
-            let states: Vec<VoiceState> = voice_users
-                .iter()
-                .filter(|r| r.value().server_id == server_id)
-                .map(|r| r.value().clone())
-                .collect();
-            
-            if !states.is_empty() {
-                 let _ = socket.emit("voice_states", &states);
-            }
-        }
-    });
+pub async fn handle_join(socket: SocketRef, Data::<String>(room): Data<String>, State::<Arc<DashMap<String, VoiceState>>>(voice_users): State<Arc<DashMap<String, VoiceState>>>) {
+    println!("Socket {} attempting to join room '{}'", socket.id, room);
+    socket.join(room.clone());
+    println!("✅ Socket {} successfully joined room '{}'", socket.id, room);
 
-    socket.on("join_voice", |socket: SocketRef, Data::<JoinVoicePayload>(data), State::<Arc<DashMap<String, VoiceState>>>(voice_users), State::<PgPool>(pool)| async move {
-        let room = format!("voice:{}", data.channel_id);
-        println!("User {} joining voice channel {}", data.user_id, data.channel_id);
-        socket.join(room.clone());
-
-        let user_data = sqlx::query("SELECT username, avatar_url FROM users WHERE id = $1")
-            .bind(uuid::Uuid::parse_str(&data.user_id).unwrap_or_default())
-            .fetch_optional(&pool)
-            .await
-            .unwrap_or(None);
+    if room.starts_with("server:") {
+        let server_id = room.trim_start_matches("server:");
+        let states: Vec<VoiceState> = voice_users
+            .iter()
+            .filter(|r| r.value().server_id == server_id)
+            .map(|r| r.value().clone())
+            .collect();
         
-        let (username, avatar_url) = if let Some(row) = user_data {
-            (
-                row.try_get("username").unwrap_or_else(|_| "Unknown".to_string()),
-                row.try_get("avatar_url").ok()
-            )
-        } else {
-            ("Unknown".to_string(), None)
-        };
-        
-        let state_voice = VoiceState {
-            user_id: data.user_id.clone(),
-            username,
-            avatar_url,
-            channel_id: data.channel_id.clone(),
-            server_id: data.server_id.clone(),
-            muted: false,
-            deafened: false,
-            socket_id: Some(socket.id.to_string()),
-        };
-        voice_users.insert(data.user_id.clone(), state_voice.clone());
-
-        let server_room = format!("server:{}", data.server_id);
-        let _ = socket.to(server_room).emit("voice_state_update", &state_voice).await;
-        let _ = socket.emit("voice_state_update", &state_voice);
-        let _ = socket.to(room).emit("user_joined_voice", &data.user_id).await;
-    });
-
-    socket.on("leave_voice", |socket: SocketRef, Data::<LeaveVoicePayload>(data), State::<Arc<DashMap<String, VoiceState>>>(voice_users)| async move {
-        let room = format!("voice:{}", data.channel_id);
-        println!("User {} leaving voice channel {}", data.user_id, data.channel_id);
-        let _ = socket.leave(room.clone());
-        voice_users.remove(&data.user_id);
-
-        let server_room = format!("server:{}", data.server_id);
-        let _ = socket.to(server_room).emit("voice_user_left", &data).await;
-        let _ = socket.emit("voice_user_left", &data);
-        let _ = socket.to(room).emit("user_left_voice", &data.user_id).await;
-    });
-
-    socket.on("voice_mute", |socket: SocketRef, Data::<MutePayload>(data), State::<Arc<DashMap<String, VoiceState>>>(voice_users)| async move {
-        if let Some(mut state_voice) = voice_users.get_mut(&data.user_id) {
-            state_voice.muted = data.muted;
-            let updated_state = state_voice.clone();
-            let server_room = format!("server:{}", data.server_id);
-            let _ = socket.to(server_room).emit("voice_state_update", &updated_state).await;
-            let _ = socket.emit("voice_state_update", &updated_state);
+        if !states.is_empty() {
+             let _ = socket.emit("voice_states", &states);
         }
-    });
+    }
+}
 
-    socket.on("offer", |socket: SocketRef, Data::<SignalPayload>(data)| async move {
-        let target_room = format!("user:{}", data.target_user_id);
-        let _ = socket.to(target_room).emit("offer", &data).await;
-    });
+pub async fn handle_join_voice(
+    socket: SocketRef, 
+    Data::<JoinVoicePayload>(data): Data<JoinVoicePayload>, 
+    State::<Arc<DashMap<String, VoiceState>>>(voice_users): State<Arc<DashMap<String, VoiceState>>>, 
+    State::<PgPool>(pool): State<PgPool>
+) {
+    let room = format!("voice:{}", data.channel_id);
+    println!("User {} joining voice channel {}", data.user_id, data.channel_id);
+    socket.join(room.clone());
 
-    socket.on("answer", |socket: SocketRef, Data::<SignalPayload>(data)| async move {
-        let target_room = format!("user:{}", data.target_user_id);
-        let _ = socket.to(target_room).emit("answer", &data).await;
-    });
-
-    socket.on("ice_candidate", |socket: SocketRef, Data::<SignalPayload>(data)| async move {
-        let target_room = format!("user:{}", data.target_user_id);
-        let _ = socket.to(target_room).emit("ice_candidate", &data).await;
-    });
-
-    socket.on("leave", |socket: SocketRef, Data::<String>(room)| async move {
-        let _ = socket.leave(room);
-    });
-
-    socket.on("typing", |socket: SocketRef, Data::<TypingPayload>(data)| async move {
-        let _ = socket.to(data.channel_id.clone()).emit("typing", &data).await;
-    });
-
-    socket.on("stop_typing", |socket: SocketRef, Data::<StopTypingPayload>(data)| async move {
-        let _ = socket.to(data.channel_id.clone()).emit("stop_typing", &data).await;
-    });
-
-    socket.on("send_message", |socket: SocketRef, Data::<SendMessagePayload>(data), State::<PgPool>(pool), State::<redis::Client>(redis_client)| async move {
-        let created_at = chrono::Utc::now().timestamp_millis();
-        let result = sqlx::query_as::<_, ChatMessage>(
-            "INSERT INTO messages (channel_id, author, author_id, content, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id, channel_id, author, author_id, content, created_at"
+    let user_data = sqlx::query("SELECT username, avatar_url FROM users WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&data.user_id).unwrap_or_default())
+        .fetch_optional(&pool)
+        .await
+        .unwrap_or(None);
+    
+    let (username, avatar_url) = if let Some(row) = user_data {
+        (
+            row.try_get("username").unwrap_or_else(|_| "Unknown".to_string()),
+            row.try_get("avatar_url").ok()
         )
-        .bind(&data.channel_id)
-        .bind(&data.author)
-        .bind(&data.author_id)
-        .bind(&data.content)
-        .bind(created_at)
-        .fetch_one(&pool)
-        .await;
+    } else {
+        ("Unknown".to_string(), None)
+    };
+    
+    let state_voice = VoiceState {
+        user_id: data.user_id.clone(),
+        username,
+        avatar_url,
+        channel_id: data.channel_id.clone(),
+        server_id: data.server_id.clone(),
+        muted: false,
+        deafened: false,
+        socket_id: Some(socket.id.to_string()),
+    };
+    voice_users.insert(data.user_id.clone(), state_voice.clone());
 
-        if let Ok(msg) = result {
-            if let Ok(mut conn) = redis_client.get_multiplexed_tokio_connection().await {
-                let cache_key = format!("messages:{}", data.channel_id);
-                let _: () = conn.del(cache_key).await.unwrap_or_default();
-            }
-            let _ = socket.emit("message", &msg);
-            let _ = socket.to(data.channel_id.clone()).emit("message", &msg).await;
+    let server_room = format!("server:{}", data.server_id);
+    let _ = socket.to(server_room).emit("voice_state_update", &state_voice).await;
+    let _ = socket.emit("voice_state_update", &state_voice);
+    let _ = socket.to(room).emit("user_joined_voice", &data.user_id).await;
+}
+
+pub async fn handle_leave_voice(
+    socket: SocketRef, 
+    Data::<LeaveVoicePayload>(data): Data<LeaveVoicePayload>, 
+    State::<Arc<DashMap<String, VoiceState>>>(voice_users): State<Arc<DashMap<String, VoiceState>>>
+) {
+    let room = format!("voice:{}", data.channel_id);
+    println!("User {} leaving voice channel {}", data.user_id, data.channel_id);
+    let _ = socket.leave(room.clone());
+    voice_users.remove(&data.user_id);
+
+    let server_room = format!("server:{}", data.server_id);
+    let _ = socket.to(server_room).emit("voice_user_left", &data).await;
+    let _ = socket.emit("voice_user_left", &data);
+    let _ = socket.to(room).emit("user_left_voice", &data.user_id).await;
+}
+
+pub async fn handle_voice_mute(
+    socket: SocketRef, 
+    Data::<MutePayload>(data): Data<MutePayload>, 
+    State::<Arc<DashMap<String, VoiceState>>>(voice_users): State<Arc<DashMap<String, VoiceState>>>
+) {
+    if let Some(mut state_voice) = voice_users.get_mut(&data.user_id) {
+        state_voice.muted = data.muted;
+        let updated_state = state_voice.clone();
+        let server_room = format!("server:{}", data.server_id);
+        let _ = socket.to(server_room).emit("voice_state_update", &updated_state).await;
+        let _ = socket.emit("voice_state_update", &updated_state);
+    }
+}
+
+pub async fn handle_offer(socket: SocketRef, Data::<SignalPayload>(data): Data<SignalPayload>) {
+    let target_room = format!("user:{}", data.target_user_id);
+    let _ = socket.to(target_room).emit("offer", &data).await;
+}
+
+pub async fn handle_answer(socket: SocketRef, Data::<SignalPayload>(data): Data<SignalPayload>) {
+    let target_room = format!("user:{}", data.target_user_id);
+    let _ = socket.to(target_room).emit("answer", &data).await;
+}
+
+pub async fn handle_ice_candidate(socket: SocketRef, Data::<SignalPayload>(data): Data<SignalPayload>) {
+    let target_room = format!("user:{}", data.target_user_id);
+    let _ = socket.to(target_room).emit("ice_candidate", &data).await;
+}
+
+pub async fn handle_leave(socket: SocketRef, Data::<String>(room): Data<String>) {
+    let _ = socket.leave(room);
+}
+
+pub async fn handle_typing(socket: SocketRef, Data::<TypingPayload>(data): Data<TypingPayload>) {
+    let _ = socket.to(data.channel_id.clone()).emit("typing", &data).await;
+}
+
+pub async fn handle_stop_typing(socket: SocketRef, Data::<StopTypingPayload>(data): Data<StopTypingPayload>) {
+    let _ = socket.to(data.channel_id.clone()).emit("stop_typing", &data).await;
+}
+
+pub async fn handle_send_message(
+    socket: SocketRef, 
+    Data::<SendMessagePayload>(data): Data<SendMessagePayload>, 
+    State::<PgPool>(pool): State<PgPool>, 
+    State::<redis::Client>(redis_client): State<redis::Client>
+) {
+    let created_at = chrono::Utc::now().timestamp_millis();
+    let result = sqlx::query_as::<_, ChatMessage>(
+        "INSERT INTO messages (channel_id, author, author_id, content, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id, channel_id, author, author_id, content, created_at"
+    )
+    .bind(&data.channel_id)
+    .bind(&data.author)
+    .bind(&data.author_id)
+    .bind(&data.content)
+    .bind(created_at)
+    .fetch_one(&pool)
+    .await;
+
+    if let Ok(msg) = result {
+        if let Ok(mut conn) = redis_client.get_multiplexed_tokio_connection().await {
+            let cache_key = format!("messages:{}", data.channel_id);
+            let _: () = conn.del(cache_key).await.unwrap_or_default();
+        }
+        let _ = socket.emit("message", &msg);
+        let _ = socket.to(data.channel_id.clone()).emit("message", &msg).await;
 
             // Fetch channel info for notifications
             let channel_id_uuid = Uuid::parse_str(&data.channel_id).unwrap_or_default();
@@ -285,15 +324,8 @@ pub async fn on_connect(socket: SocketRef) {
             }
 
             // Handle mentions
-            let mention_regex = Regex::new(r"<@([a-f0-9-]{36})>").unwrap();
-            let mut unique_mentions = std::collections::HashSet::new();
-            for cap in mention_regex.captures_iter(&data.content) {
-                if let Some(matched) = cap.get(1) {
-                    unique_mentions.insert(matched.as_str().to_string());
-                }
-            }
-
-            for mentioned_user_id in unique_mentions {
+            let mentions = parse_mentions(&data.content);
+            for mentioned_user_id in mentions {
                 // Don't notify self
                 if let Some(author_id) = data.author_id {
                     if mentioned_user_id == author_id.to_string() {
@@ -327,132 +359,127 @@ pub async fn on_connect(socket: SocketRef) {
                         let payload = serde_json::json!({ "userId": author_id.to_string() });
                         let _ = socket.to(room).emit("trophees_updated", &payload).await;
                     }
-                }
             }
         }
-    });
+    }
+}
 
-    socket.on("screen_share_started", |socket: SocketRef, Data::<ScreenSharePayload>(data)| async move {
-        let channel_room = format!("voice:{}", data.channel_id);
-        let _ = socket.to(channel_room).emit("peer_screen_share_started", &data).await;
-    });
+pub async fn handle_screen_share_started(socket: SocketRef, Data::<ScreenSharePayload>(data): Data<ScreenSharePayload>) {
+    let channel_room = format!("voice:{}", data.channel_id);
+    let _ = socket.to(channel_room).emit("peer_screen_share_started", &data).await;
+}
 
-    socket.on("screen_share_stopped", |socket: SocketRef, Data::<ScreenSharePayload>(data)| async move {
-        let channel_room = format!("voice:{}", data.channel_id);
-        let _ = socket.to(channel_room).emit("peer_screen_share_stopped", &data).await;
-    });
+pub async fn handle_screen_share_stopped(socket: SocketRef, Data::<ScreenSharePayload>(data): Data<ScreenSharePayload>) {
+    let channel_room = format!("voice:{}", data.channel_id);
+    let _ = socket.to(channel_room).emit("peer_screen_share_stopped", &data).await;
+}
 
-    socket.on("camera_video_started", |socket: SocketRef, Data::<ScreenSharePayload>(data)| async move {
-        let channel_room = format!("voice:{}", data.channel_id);
-        let _ = socket.to(channel_room).emit("peer_camera_video_started", &data).await;
-    });
+pub async fn handle_camera_video_started(socket: SocketRef, Data::<ScreenSharePayload>(data): Data<ScreenSharePayload>) {
+    let channel_room = format!("voice:{}", data.channel_id);
+    let _ = socket.to(channel_room).emit("peer_camera_video_started", &data).await;
+}
 
-    socket.on("camera_video_stopped", |socket: SocketRef, Data::<ScreenSharePayload>(data)| async move {
-        let channel_room = format!("voice:{}", data.channel_id);
-        let _ = socket.to(channel_room).emit("peer_camera_video_stopped", &data).await;
-    });
+pub async fn handle_camera_video_stopped(socket: SocketRef, Data::<ScreenSharePayload>(data): Data<ScreenSharePayload>) {
+    let channel_room = format!("voice:{}", data.channel_id);
+    let _ = socket.to(channel_room).emit("peer_camera_video_stopped", &data).await;
+}
 
-    socket.on(
-        "add_reaction",
-        |socket: SocketRef,
-         Data::<ReactionPayload>(data),
-         State::<PgPool>(pool)| async move {
+pub async fn handle_add_reaction(
+    socket: SocketRef, 
+    Data::<ReactionPayload>(data): Data<ReactionPayload>, 
+    State::<PgPool>(pool): State<PgPool>
+) {
+    let user_id = match Uuid::parse_str(&data.user_id) {
+        Ok(id) => id,
+        Err(_) => return,
+    };
 
-            let user_id = match Uuid::parse_str(&data.user_id) {
-                Ok(id) => id,
-                Err(_) => return,
-            };
+    let schema = AddReactionSchema {
+        message_id: data.message_id,
+        user_id,
+        emoji: data.emoji.clone(),
+    };
 
-            let schema = AddReactionSchema {
-                message_id: data.message_id,
-                user_id,
-                emoji: data.emoji.clone(),
-            };
+    let channel_id = match add_reaction(&pool, schema).await {
+        Ok(id) => id,
+        Err(_) => return,
+    };
 
-            let channel_id = match add_reaction(&pool, schema).await {
-                Ok(id) => id,
-                Err(_) => return,
-            };
+    let _ = socket.to(channel_id).emit("reaction_added", &data).await;
+    let _ = socket.emit("reaction_added", &data);
 
-            let _ = socket
-                .to(channel_id)
-                .emit("reaction_added", &data)
-                .await;
-
-            let _ = socket.emit("reaction_added", &data);
-
-            if let Ok(sync) = trophee_service::sync_user_trophees(&pool, user_id).await {
-                if !sync.newly_unlocked.is_empty() {
-                    let room = format!("user:{}", user_id);
-                    for trophy in &sync.newly_unlocked {
-                        let _ = socket.to(room.clone()).emit("trophee_unlocked", trophy).await;
-                    }
-                    let payload = serde_json::json!({ "userId": user_id.to_string() });
-                    let _ = socket.to(room).emit("trophees_updated", &payload).await;
-                }
+    if let Ok(sync) = trophee_service::sync_user_trophees(&pool, user_id).await {
+        if !sync.newly_unlocked.is_empty() {
+            let room = format!("user:{}", user_id);
+            for trophy in &sync.newly_unlocked {
+                let _ = socket.to(room.clone()).emit("trophee_unlocked", trophy).await;
             }
-        },
-    );
-
-    socket.on(
-        "remove_reaction",
-        |socket: SocketRef,
-         Data::<ReactionPayload>(data),
-         State::<PgPool>(pool)| async move {
-
-            let user_id = match Uuid::parse_str(&data.user_id) {
-                Ok(id) => id,
-                Err(_) => return,
-            };
-
-            let _ = sqlx::query(
-                "DELETE FROM message_reactions
-             WHERE message_id = $1 AND user_id = $2 AND emoji = $3"
-            )
-                .bind(data.message_id)
-                .bind(user_id)
-                .bind(&data.emoji)
-                .execute(&pool)
-                .await;
-
-            let channel_id: Result<String, _> = sqlx::query_scalar(
-                "SELECT channel_id FROM messages WHERE id = $1"
-            )
-                .bind(data.message_id)
-                .fetch_one(&pool)
-                .await;
-
-            if let Ok(channel_id) = channel_id {
-                let _ = socket
-                    .to(channel_id.clone())
-                    .emit("reaction_removed", &data)
-                    .await;
-
-                let _ = socket.emit("reaction_removed", &data);
-            }
-        },
-    );
-
-    socket.on("disconnect", |socket: SocketRef, State::<Arc<DashMap<String, VoiceState>>>(voice_users)| async move {
-        let socket_id = socket.id.to_string();
-        let mut user_to_remove = None;
-        for entry in voice_users.iter() {
-            if entry.value().socket_id.as_ref() == Some(&socket_id) {
-                user_to_remove = Some(entry.value().clone());
-                break;
-            }
+            let payload = serde_json::json!({ "userId": user_id.to_string() });
+            let _ = socket.to(room).emit("trophees_updated", &payload).await;
         }
-        if let Some(sv) = user_to_remove {
-            voice_users.remove(&sv.user_id);
-            let payload = LeaveVoicePayload {
-                channel_id: sv.channel_id.clone(),
-                user_id: sv.user_id.clone(),
-                server_id: sv.server_id.clone(),
-            };
-            let _ = socket.to(format!("server:{}", sv.server_id)).emit("voice_user_left", &payload).await;
-            let _ = socket.to(format!("voice:{}", sv.channel_id)).emit("user_left_voice", &sv.user_id).await;
+    }
+}
+
+pub async fn handle_remove_reaction(
+    socket: SocketRef, 
+    Data::<ReactionPayload>(data): Data<ReactionPayload>, 
+    State::<PgPool>(pool): State<PgPool>
+) {
+    let user_id = match Uuid::parse_str(&data.user_id) {
+        Ok(id) => id,
+        Err(_) => return,
+    };
+
+    let _ = sqlx::query(
+        "DELETE FROM message_reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3"
+    )
+    .bind(data.message_id)
+    .bind(user_id)
+    .bind(&data.emoji)
+    .execute(&pool)
+    .await;
+
+    let channel_id: Result<String, _> = sqlx::query_scalar("SELECT channel_id FROM messages WHERE id = $1")
+        .bind(data.message_id)
+        .fetch_one(&pool)
+        .await;
+
+    if let Ok(channel_id) = channel_id {
+        let _ = socket.to(channel_id).emit("reaction_removed", &data).await;
+        let _ = socket.emit("reaction_removed", &data);
+    }
+}
+
+pub async fn handle_disconnect(socket: SocketRef, State::<Arc<DashMap<String, VoiceState>>>(voice_users): State<Arc<DashMap<String, VoiceState>>>) {
+    let socket_id = socket.id.to_string();
+    let mut user_to_remove = None;
+    for entry in voice_users.iter() {
+        if entry.value().socket_id.as_ref() == Some(&socket_id) {
+            user_to_remove = Some(entry.value().clone());
+            break;
         }
-    });
+    }
+    if let Some(sv) = user_to_remove {
+        voice_users.remove(&sv.user_id);
+        let payload = LeaveVoicePayload {
+            channel_id: sv.channel_id.clone(),
+            user_id: sv.user_id.clone(),
+            server_id: sv.server_id.clone(),
+        };
+        let _ = socket.to(format!("server:{}", sv.server_id)).emit("voice_user_left", &payload).await;
+        let _ = socket.to(format!("voice:{}", sv.channel_id)).emit("user_left_voice", &sv.user_id).await;
+    }
+}
+
+pub fn parse_mentions(content: &str) -> std::collections::HashSet<String> {
+    let mention_regex = Regex::new(r"<@([a-f0-9-]{36})>").unwrap();
+    let mut unique_mentions = std::collections::HashSet::new();
+    for cap in mention_regex.captures_iter(content) {
+        if let Some(matched) = cap.get(1) {
+            unique_mentions.insert(matched.as_str().to_string());
+        }
+    }
+    unique_mentions
 }
 
 pub async fn broadcast_channel_created(io: &socketioxide::SocketIo, server_id: Uuid, channel: Channel) {

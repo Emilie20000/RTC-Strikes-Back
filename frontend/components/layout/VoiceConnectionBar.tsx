@@ -15,6 +15,7 @@ export function VoiceConnectionBar() {
     const servers = useAppStore((s) => s.servers);
     const channels = useAppStore((s) => s.channels);
     const voiceStates = useAppStore((s) => s.voiceStates);
+    const activeChannelId = useAppStore((s) => s.activeChannelId);
     const { setActiveVoiceChannelId, setActiveServerId, setActiveChannelId } = useAppStore();
 
     const { isSharingScreen, startScreenShare, stopScreenShare } = useVoiceContext();
@@ -45,6 +46,18 @@ export function VoiceConnectionBar() {
             userId: currentUser.id,
             serverId: voiceServerId,
         });
+
+        // If the user is currently viewing the voice channel they are leaving,
+        // redirect them to the first text channel of the server.
+        if (activeChannelId === activeVoiceChannelId && voiceServerId) {
+            const firstTextChannel = channels.find(
+                (c) => c.serverId === voiceServerId && c.kind === "TEXT"
+            );
+            if (firstTextChannel) {
+                setActiveChannelId(firstTextChannel.id);
+            }
+        }
+
         setActiveVoiceChannelId(null);
     };
 
@@ -83,10 +96,10 @@ export function VoiceConnectionBar() {
                             ? "border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20"
                             : "border-white/8 bg-white/[0.03] text-white/50 hover:bg-white/10 hover:text-white/80"
                     )}
-                    title={isMuted ? "Réactiver le micro" : "Couper le micro"}
+                    title={isMuted ? t("tooltipMute") : t("tooltipUnmute")}
                 >
                     {isMuted ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
-                    {isMuted ? "Muet" : "Micro"}
+                    {isMuted ? t("mute") : t("micro")}
                 </button>
 
                 <button
@@ -97,20 +110,20 @@ export function VoiceConnectionBar() {
                             ? "border-[#3ba55c]/40 bg-[#3ba55c]/10 text-[#3ba55c] hover:bg-[#3ba55c]/20"
                             : "border-white/8 bg-white/[0.03] text-white/50 hover:bg-white/10 hover:text-white/80"
                     )}
-                    title={isSharingScreen ? "Arrêter le partage" : "Partager l'écran"}
+                    title={isSharingScreen ? t("tooltipStopScreen") : t("tooltipStartScreen")}
                 >
                     {isSharingScreen ? (
                         <MonitorX className="w-3 h-3" />
                     ) : (
                         <MonitorUp className="w-3 h-3" />
                     )}
-                    {isSharingScreen ? "Stop" : "Écran"}
+                    {isSharingScreen ? t("stop") : t("screen")}
                 </button>
 
                 <button
                     onClick={handleDisconnect}
                     className="flex items-center justify-center w-8 h-8 border border-red-500/30 bg-red-500/5 text-red-400/70 hover:bg-red-500/15 hover:text-red-400 transition-all"
-                    title="Quitter le salon vocal"
+                    title={t("tooltipDisconnect")}
                 >
                     <PhoneOff className="w-3.5 h-3.5" />
                 </button>
@@ -120,7 +133,7 @@ export function VoiceConnectionBar() {
                 <div className="mx-3 mb-3 flex items-center gap-1.5 bg-[#3ba55c]/10 border border-[#3ba55c]/20 px-2 py-1">
                     <div className="w-1.5 h-1.5 bg-[#3ba55c] rounded-full animate-pulse" />
                     <span className="text-[9px] font-black uppercase tracking-widest text-[#3ba55c]">
-                        Partage d'écran actif
+                        {t("screenShareActive")}
                     </span>
                 </div>
             )}
