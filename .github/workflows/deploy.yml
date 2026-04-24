@@ -1,0 +1,35 @@
+name: Deploy Web
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build backend
+        run: docker build -t ghcr.io/${{ github.repository }}/backend:latest ./backend
+
+      - name: Push backend
+        run: docker push ghcr.io/${{ github.repository }}/backend:latest
+
+      - name: DB migrations
+        run: npx supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_TOKEN }}
+
+      - name: Deploy backend
+        run: curl -X POST ${{ secrets.RENDER_BACKEND_HOOK_PROD }}
+
+      - name: Deploy frontend
+        run: curl -X POST ${{ secrets.RENDER_FRONTEND_HOOK_PROD }}
