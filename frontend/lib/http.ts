@@ -27,7 +27,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
       if (json.error) {
         error.error = json.error;
         
-        if (json.error === "User not found" && typeof window !== "undefined") {
+        if ((json.error === "User not found" || json.error === "Invalid or expired token") && typeof window !== "undefined") {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           window.location.href = "/login";

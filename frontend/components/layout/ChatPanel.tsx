@@ -314,9 +314,6 @@ export default function ChatPanel() {
     const onConnect = () => {
       console.log("Socket connected:", socket.id);
       setIsConnected(true);
-      if (activeChannelIdRef.current) {
-        socket.emit("join", activeChannelIdRef.current);
-      }
       
       const userStr = localStorage.getItem("user");
       if (userStr) {
@@ -425,6 +422,11 @@ export default function ChatPanel() {
         createdAt: data.createdAt,
       };
       addMessage(newMsg);
+
+      const state = useAppStore.getState();
+      if (data.channelId !== state.activeChannelId) {
+        state.incrementUnread(data.channelId);
+      }
     };
 
     const onTyping = (data: { channelId: string; author: string; userId: string; avatarUrl?: string }) => {
@@ -494,17 +496,22 @@ export default function ChatPanel() {
   }, [currentUser, addMessage, setMessagesForChannel]);
 
   useEffect(() => {
+    if (!isConnected) return;
+    channels.forEach((c) => {
+      socket.emit("join", c.id);
+    });
+    return () => {
+      channels.forEach((c) => {
+        socket.emit("leave", c.id);
+      });
+    };
+  }, [channels, isConnected]);
+
+  useEffect(() => {
     if (!activeChannelId) return;
 
     useAppStore.getState().clearUnread(activeChannelId);
-
     setTypingUsers(new Map());
-
-    socket.emit("join", activeChannelId);
-
-    return () => {
-      socket.emit("leave", activeChannelId);
-    };
   }, [activeChannelId]);
 
   useEffect(() => {

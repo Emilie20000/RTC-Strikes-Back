@@ -60,6 +60,9 @@ export function useVoice(): VoiceHookReturn {
     const pendingVideoKindRef = useRef<Map<string, "screen" | "video">>(new Map());
     const audioCtxRef = useRef<AudioContext | null>(null);
     const analyserCleanupsRef = useRef<Map<string, () => void>>(new Map());
+    const makingOfferRef = useRef<Map<string, boolean>>(new Map());
+    const ignoreOfferRef = useRef<Map<string, boolean>>(new Map());
+    const politeRef = useRef<Map<string, boolean>>(new Map());
 
     useEffect(() => {
         const Ctx = window.AudioContext ?? (window as any).webkitAudioContext;
@@ -146,6 +149,8 @@ export function useVoice(): VoiceHookReturn {
             const existing = peersRef.current.get(userId);
             if (existing) return existing;
 
+            politeRef.current.set(userId, !initiator);
+
             const pc = createPeerConnection();
             peersRef.current.set(userId, pc);
 
@@ -170,17 +175,19 @@ export function useVoice(): VoiceHookReturn {
             };
 
             pc.onnegotiationneeded = async () => {
-                if (!initiator) return;
                 try {
+                    makingOfferRef.current.set(userId, true);
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
                     socket.emit("offer", {
                         targetUserId: userId,
-                        signal: offer,
+                        signal: pc.localDescription || offer,
                         senderId: currentUser?.id,
                     });
                 } catch (e) {
                     console.error("onnegotiationneeded error:", e);
+                } finally {
+                    makingOfferRef.current.set(userId, false);
                 }
             };
 
@@ -202,19 +209,6 @@ export function useVoice(): VoiceHookReturn {
                 rebuildPeerStreams();
             };
 
-            if (initiator) {
-                pc.createOffer()
-                    .then((offer) => {
-                        pc.setLocalDescription(offer);
-                        socket.emit("offer", {
-                            targetUserId: userId,
-                            signal: offer,
-                            senderId: currentUser?.id,
-                        });
-                    })
-                    .catch(console.error);
-            }
-
             return pc;
         },
         [currentUser, attachAudioAnalyser, rebuildPeerStreams]
@@ -230,6 +224,9 @@ export function useVoice(): VoiceHookReturn {
             pendingVideoKindRef.current.delete(userId);
             analyserCleanupsRef.current.get(userId)?.();
             analyserCleanupsRef.current.delete(userId);
+            makingOfferRef.current.delete(userId);
+            ignoreOfferRef.current.delete(userId);
+            politeRef.current.delete(userId);
             rebuildPeerStreams();
         },
         [rebuildPeerStreams]
@@ -258,6 +255,9 @@ export function useVoice(): VoiceHookReturn {
         pendingVideoKindRef.current.clear();
         analyserCleanupsRef.current.forEach((fn) => fn());
         analyserCleanupsRef.current.clear();
+        makingOfferRef.current.clear();
+        ignoreOfferRef.current.clear();
+        politeRef.current.clear();
         setPeerStreams([]);
     }, []);
 
@@ -308,13 +308,25 @@ export function useVoice(): VoiceHookReturn {
         const handleOffer = async (data: { senderId: string; signal: RTCSessionDescriptionInit }) => {
             if (!mounted) return;
             const pc = getOrCreatePeer(data.senderId, false);
+
+            const polite = politeRef.current.get(data.senderId) ?? true;
+            const makingOffer = makingOfferRef.current.get(data.senderId) ?? false;
+            const offerCollision = makingOffer || pc.signalingState !== "stable";
+            
+            const ignoreOffer = !polite && offerCollision;
+            ignoreOfferRef.current.set(data.senderId, ignoreOffer);
+
+            if (ignoreOffer) {
+                return;
+            }
+
             try {
                 await pc.setRemoteDescription(new RTCSessionDescription(data.signal));
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
                 socket.emit("answer", {
                     targetUserId: data.senderId,
-                    signal: answer,
+                    signal: pc.localDescription || answer,
                     senderId: currentUser.id,
                 });
             } catch (e) {
@@ -335,10 +347,15 @@ export function useVoice(): VoiceHookReturn {
         const handleIceCandidate = async (data: { senderId: string; signal: RTCIceCandidateInit }) => {
             const pc = peersRef.current.get(data.senderId);
             if (!pc) return;
+
+            const ignoreOffer = ignoreOfferRef.current.get(data.senderId) ?? false;
+
             try {
                 await pc.addIceCandidate(new RTCIceCandidate(data.signal));
             } catch (e) {
-                console.error("Error adding ICE candidate:", e);
+                if (!ignoreOffer) {
+                    console.error("Error adding ICE candidate:", e);
+                }
             }
         };
 
