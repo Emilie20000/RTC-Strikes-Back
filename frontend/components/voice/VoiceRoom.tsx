@@ -45,6 +45,7 @@ function VideoTile({
     muted?: boolean;
     isLocal?: boolean;
 }) {
+    const t = useTranslations("app.voiceRoom");
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
@@ -97,7 +98,7 @@ function VideoTile({
             {/* Bottom bar */}
             <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-2 py-1.5 bg-black/60 backdrop-blur-sm">
                 <span className="text-[10px] font-black uppercase tracking-widest text-white truncate">
-                    {label} {isLocal && <span className="text-white/40">(vous)</span>}
+                    {label} {isLocal && <span className="text-white/40">{t("you")}</span>}
                 </span>
                 <div className="flex items-center gap-1">
                     {muted ? (
@@ -126,6 +127,7 @@ function MediaShareTile({
     label: string;
     kind: "screen" | "camera";
 }) {
+    const t = useTranslations("app.voiceRoom");
     const videoRef = useRef<HTMLVideoElement>(null);
     useEffect(() => {
         if (videoRef.current && stream) {
@@ -148,7 +150,7 @@ function MediaShareTile({
                 ) : (
                     <Video className="w-3 h-3 text-blue-400" />
                 )}
-                {label} {kind === "screen" ? "partage son écran" : "partage sa caméra"}
+                {label} {kind === "screen" ? t("sharesScreen") : t("sharesCamera")}
             </div>
         </div>
     );
@@ -215,10 +217,10 @@ export default function VoiceRoom() {
                 <div className="flex items-center gap-2">
                     <Volume2 className="w-4 h-4 text-[#3ba55c]" />
                     <span className="text-xs font-black uppercase tracking-[0.25em] text-white/70">
-                        {channel?.name || "Vocal"}
+                        {channel?.name || t("voice")}
                     </span>
                     <span className="bg-white/5 text-[9px] font-mono px-1.5 py-0.5 text-white/40 uppercase tracking-widest">
-                        {participants.length} connecté{participants.length > 1 ? "s" : ""}
+                        {participants.length} {participants.length > 1 ? t("connectedPlural") : t("connected")}
                     </span>
                 </div>
             </div>
@@ -315,7 +317,7 @@ export default function VoiceRoom() {
                     )}
                 >
                     {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                    {isMuted ? "Muet" : "Micro"}
+                    {isMuted ? t("mute") : t("micro")}
                 </button>
 
                 <button
@@ -328,7 +330,7 @@ export default function VoiceRoom() {
                     )}
                 >
                     {isVideoEnabled ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
-                    {isVideoEnabled ? "Arrêter" : "Caméra"}
+                    {isVideoEnabled ? t("stop") : t("camera")}
                 </button>
 
                 <button
@@ -345,7 +347,7 @@ export default function VoiceRoom() {
                     ) : (
                         <MonitorUp className="w-4 h-4" />
                     )}
-                    {isSharingScreen ? "Arrêter" : "Écran"}
+                    {isSharingScreen ? t("stop") : t("screen")}
                 </button>
 
                 <button
@@ -353,7 +355,7 @@ export default function VoiceRoom() {
                     className="flex flex-col items-center gap-1 px-4 py-2 border border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all text-[9px] font-black uppercase tracking-widest min-w-[64px]"
                 >
                     <PhoneOff className="w-4 h-4" />
-                    Quitter
+                    {t("leave")}
                 </button>
             </div>
         </div>

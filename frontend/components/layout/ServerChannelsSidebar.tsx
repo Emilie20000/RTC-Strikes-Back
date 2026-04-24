@@ -564,7 +564,7 @@ export function ServerChannelsSidebar() {
             {settingsTab === "danger" && activeServer && (
               <div className="border border-primary/50 p-8 bg-primary/5">
                 <h4 className="font-black text-white uppercase tracking-widest text-sm">{t("deleteServer")}</h4>
-                <p className="text-white/70 text-xs mt-2 uppercase tracking-wide">This action is irreversible. All data will be purged from the network.</p>
+                <p className="text-white/70 text-xs mt-2 uppercase tracking-wide">{t("deleteServerWarning")}</p>
                 <Button variant="destructive" className="mt-8 bg-primary hover:bg-red-500 rounded-none h-12 px-8 font-black uppercase text-[10px] tracking-widest" onClick={handleDeleteServer} disabled={deleteLoading}>{t("delete")}</Button>
               </div>
             )}

@@ -228,7 +228,7 @@ export default function ChatPanel() {
         });
       }
     } catch (e) {
-      toast.error("Impossible de modifier la réaction");
+      toast.error(t("toastReactionError"));
 
     }
   };
@@ -288,7 +288,7 @@ export default function ChatPanel() {
     return parts.map((part, i) => {
       if (i % 2 === 1) {
         const member = currentServerMembers.find(m => m.user_id === part);
-        const username = member ? member.username : "utilisateur-inconnu";
+        const username = member ? member.username : t("unknownUser");
         return (
           <span key={i} className="bg-primary/20 text-primary px-1 py-0.5 rounded font-medium cursor-pointer hover:bg-primary/30 transition-colors">
             @{username}
@@ -544,13 +544,19 @@ export default function ChatPanel() {
 
   useEffect(() => {
     const scrollToBottom = () => {
-      const viewport = document.querySelector('[data-radix-scroll-area-viewport]');
+      // Find the viewport inside our specific ScrollArea ref
+      const viewport = scrollViewportRef.current?.querySelector('[data-radix-scroll-area-viewport]');
       if (viewport) {
         viewport.scrollTop = viewport.scrollHeight;
       }
     };
 
+    // Scroll immediately on mount/update
     scrollToBottom();
+
+    // Also scroll after a short delay to ensure any dynamic content (images, etc) are handled
+    // and that the DOM has fully settled after switching channels.
+    const timeoutId = setTimeout(scrollToBottom, 50);
 
     const observer = new ResizeObserver(() => {
       scrollToBottom();
@@ -560,7 +566,10 @@ export default function ChatPanel() {
       observer.observe(messagesContainerRef.current);
     }
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      clearTimeout(timeoutId);
+    };
   }, [activeChannelId, msgs.length, typingUsers.size]);
 
   const ping = async () => {
