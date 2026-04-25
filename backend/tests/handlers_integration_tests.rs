@@ -641,12 +641,7 @@ async fn test_user_handlers() {
         )
         .await
         .unwrap();
-    assert!(
-        response.status() == StatusCode::OK
-            || response.status() == StatusCode::INTERNAL_SERVER_ERROR,
-        "unexpected status: {}",
-        response.status()
-    );
+    assert_eq!(response.status(), StatusCode::OK);
 
 }
 

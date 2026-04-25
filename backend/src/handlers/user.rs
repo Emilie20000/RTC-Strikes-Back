@@ -163,14 +163,14 @@ pub async fn update_user_profile(
     let server_ids: Vec<(uuid::Uuid,)> = sqlx::query_as(
         "SELECT server_id FROM server_members WHERE user_id = $1"
     )
-    .bind(&auth_user.user_id)
-    .fetch_all(&state.pool)
-    .await
-    .unwrap_or_default();
+        .bind(&auth_user.user_id)
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default();
     
     //broadcast d'update
     for (server_id,) in server_ids {
-        crate::socket::broadcast_user_updated(&state.io, server_id, updated_user.clone().into()).await;
+        let _ = crate::socket::broadcast_user_updated(&state.io, server_id, updated_user.clone().into()).await;
 
         if let Some(mut voice_state) = state.voice_users.get_mut(&auth_user.user_id.to_string()) {
             if let Some(username) = &payload.username {
