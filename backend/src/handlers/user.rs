@@ -78,88 +78,66 @@ pub async fn update_user_profile(
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<UpdateUserPayload>,
 ) -> Result<Json<crate::models::user::PublicUser>, (StatusCode, Json<serde_json::Value>)> {
+
+    // 1. Validation langue
     if let Some(langue) = &payload.langue {
         if langue != "fr" && langue != "en" {
             return Err((
                 StatusCode::BAD_REQUEST,
-                Json(json!({"error": "Invalid langue. Allowed values: fr, en"})),
+                Json(json!({
+                    "error": "Invalid langue. Allowed values: fr, en"
+                })),
             ));
         }
     }
 
-    let mut tx = state.pool.begin().await.map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": format!("Database error: {}", e)})),
-        )
-    })?;
-
+    // 2. Check username uniqueness (si modifié)
     if let Some(username) = &payload.username {
-        let exists = sqlx::query("SELECT 1 FROM users WHERE username = $1 AND id != $2")
+        let exists: Option<(i32,)> = sqlx::query_as(
+            "SELECT 1 FROM users WHERE username = $1 AND id != $2"
+        )
             .bind(username)
             .bind(auth_user.user_id)
-            .fetch_optional(&mut *tx)
+            .fetch_optional(&state.pool)
             .await
-            .map_err(|e| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({"error": format!("Database error: {}", e)})),
-                )
-            })?;
+            .map_err(|e| (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": e.to_string() })),
+            ))?;
 
         if exists.is_some() {
             return Err((
                 StatusCode::CONFLICT,
-                Json(json!({"error": "Username already taken"})),
+                Json(json!({ "error": "Username already taken" })),
             ));
         }
     }
 
-    let mut query = "UPDATE users SET updated_at = NOW()".to_string();
-    let mut i = 1;
-
-    if payload.username.is_some() {
-        query.push_str(&format!(", username = ${}", i));
-        i += 1;
-    }
-    if payload.avatar_url.is_some() {
-        query.push_str(&format!(", avatar_url = ${}", i));
-        i += 1;
-    }
-    if payload.langue.is_some() {
-        query.push_str(&format!(", langue = ${}", i));
-        i += 1;
-    }
-
-    query.push_str(&format!(" WHERE id = ${} RETURNING *", i));
-
-    let mut q = sqlx::query_as::<_, crate::models::user::User>(&query);
-
-    if let Some(username) = &payload.username {
-        q = q.bind(username);
-    }
-    if let Some(avatar_url) = &payload.avatar_url {
-        q = q.bind(avatar_url);
-    }
-    if let Some(langue) = &payload.langue {
-        q = q.bind(langue);
-    }
-    q = q.bind(auth_user.user_id);
-
-    let updated_user = q.fetch_one(&mut *tx).await.map_err(|e| {
-        (
+    // 3. UPDATE SAFE (NO SQL DYNAMIQUE)
+    let updated_user = sqlx::query_as::<_, crate::models::user::User>(
+        r#"
+        UPDATE users
+        SET
+            username = COALESCE($1, username),
+            avatar_url = COALESCE($2, avatar_url),
+            langue = COALESCE($3, langue),
+            updated_at = NOW()
+        WHERE id = $4
+        RETURNING *
+        "#
+    )
+        .bind(&payload.username)
+        .bind(&payload.avatar_url)
+        .bind(&payload.langue)
+        .bind(auth_user.user_id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": format!("Failed to update user: {}", e)})),
-        )
-    })?;
+            Json(json!({ "error": format!("Failed to update user: {}", e) })),
+        ))?;
 
-    tx.commit().await.map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": format!("Failed to commit transaction: {}", e)})),
-        )
-    })?;
-
+    // 4. Server broadcasts
     let server_ids: Vec<(uuid::Uuid,)> = sqlx::query_as(
         "SELECT server_id FROM server_members WHERE user_id = $1"
     )
@@ -168,9 +146,12 @@ pub async fn update_user_profile(
         .await
         .unwrap_or_default();
 
-    //broadcast d'update
     for (server_id,) in server_ids {
-        crate::socket::broadcast_user_updated(&state.io, server_id, updated_user.clone().into()).await;
+        let _ = crate::socket::broadcast_user_updated(
+            &state.io,
+            server_id,
+            updated_user.clone().into(),
+        ).await;
 
         if let Some(mut voice_state) = state.voice_users.get_mut(&auth_user.user_id.to_string()) {
             if let Some(username) = &payload.username {
@@ -187,27 +168,31 @@ pub async fn update_user_profile(
         }
     }
 
-    // Broadcast update to DM contacts
+    // 5. DM broadcasts
     let dm_recipient_ids: Vec<(uuid::Uuid,)> = sqlx::query_as(
         r#"
         SELECT DISTINCT cs2.user_id
         FROM channel_subscribers cs1
         JOIN channels c ON cs1.channel_id = c.id
         JOIN channel_subscribers cs2 ON c.id = cs2.channel_id
-        WHERE c.kind = 'DM' AND cs1.user_id = $1 AND cs2.user_id != $1
+        WHERE c.kind = 'DM'
+        AND cs1.user_id = $1
+        AND cs2.user_id != $1
         "#
     )
-    .bind(&auth_user.user_id)
-    .fetch_all(&state.pool)
-    .await
-    .unwrap_or_default();
+        .bind(&auth_user.user_id)
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default();
 
     for (recipient_id,) in dm_recipient_ids {
         let room = format!("user:{}", recipient_id);
+
         let payload = json!({
             "user": crate::models::user::PublicUser::from(updated_user.clone()),
             "serverId": null
         });
+
         let _ = state.io.to(room).emit("user_updated", &payload).await;
     }
 
