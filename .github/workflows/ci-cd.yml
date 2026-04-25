@@ -18,6 +18,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -35,11 +47,25 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build backend
-        run: cargo build --release
+      - name: Run backend tests
+        run: cargo test --all --release
 
-      - name: Test backend
-        run: cargo test --all
+      - name: Install Tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Run coverage (Tarpaulin)
+        run: |
+          cargo tarpaulin \
+            --all \
+            --engine llvm \
+            --out Xml \
+            --timeout 120
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: cobertura.xml
+        continue-on-error: true
 
   deploy_web:
     runs-on: ubuntu-latest
@@ -49,27 +75,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: docker/login-action@v3
+      - name: Set image tag
+        run: echo "TAG=${GITHUB_SHA}" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build backend image
-        run: docker build -t $IMAGE_BACKEND:latest ./backend
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }} \
+            --build-arg NEXT_PUBLIC_API_BASE_URL=${{ secrets.API_BASE_URL }} \
+            -t $IMAGE_BACKEND:$TAG \
+            -t $IMAGE_BACKEND:latest \
+            .
 
-      - name: Push backend image
-        run: docker push $IMAGE_BACKEND:latest
+      - name: Push Docker image
+        run: |
+          docker push $IMAGE_BACKEND:$TAG
+          docker push $IMAGE_BACKEND:latest
+
+      - name: Install Supabase CLI
+        run: npm install -g supabase
 
       - name: Apply DB migrations
-        run: npx supabase db push
+        run: supabase db push
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_TOKEN }}
 
-      - name: Deploy backend
+      - name: Deploy backend (Render)
         run: curl -X POST ${{ secrets.RENDER_BACKEND_HOOK_PROD }}
 
-      - name: Deploy frontend
+      - name: Deploy frontend (Render)
         run: curl -X POST ${{ secrets.RENDER_FRONTEND_HOOK_PROD }}
 
   release_desktop:
@@ -94,7 +135,4 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/*.exe
-            dist/*.dmg
-            dist/*.AppImage
+          files: dist/**
