@@ -20,40 +20,33 @@ jobs:
 
       - uses: actions/cache@v4
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
-
-      - uses: actions/cache@v4
-        with:
           path: |
             ~/.cargo
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            backend/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('backend/Cargo.lock') }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install frontend deps
-        run: npm ci
-
-      - name: Lint frontend
-        run: npm run lint
-
-      - name: Build frontend
-        run: npm run build
+      - name: Build frontend Docker image
+        run: |
+          docker build \
+            --build-arg CI=true \
+            --build-arg NEXT_PUBLIC_GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }} \
+            --build-arg NEXT_PUBLIC_API_BASE_URL=${{ secrets.API_BASE_URL }} \
+            --target builder \
+            -t frontend-ci \
+            ./frontend
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run backend tests
+        working-directory: ./backend
         run: cargo test --all --release
 
       - name: Install Tarpaulin
         run: cargo install cargo-tarpaulin
 
       - name: Run coverage (Tarpaulin)
+        working-directory: ./backend
         run: |
           cargo tarpaulin \
             --all \
@@ -64,7 +57,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          files: cobertura.xml
+          files: backend/cobertura.xml
         continue-on-error: true
 
   deploy_web:
@@ -92,7 +85,7 @@ jobs:
             --build-arg NEXT_PUBLIC_API_BASE_URL=${{ secrets.API_BASE_URL }} \
             -t $IMAGE_BACKEND:$TAG \
             -t $IMAGE_BACKEND:latest \
-            .
+            ./frontend
 
       - name: Push Docker image
         run: |
@@ -152,8 +145,8 @@ jobs:
         with:
           path: |
             ~/.cargo
-            src-tauri/target
-          key: ${{ runner.os }}-cargo-tauri-${{ hashFiles('**/Cargo.lock') }}
+            frontend/src-tauri/target
+          key: ${{ runner.os }}-cargo-tauri-${{ hashFiles('frontend/src-tauri/Cargo.lock') }}
 
       - name: Install Linux system deps
         if: matrix.platform == 'ubuntu-22.04'
@@ -168,7 +161,8 @@ jobs:
             pkg-config
 
       - name: Install frontend deps
-        run: npm ci
+        working-directory: ./frontend
+        run: npm ci --legacy-peer-deps --include=optional
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -178,6 +172,7 @@ jobs:
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.API_BASE_URL }}
           IS_TAURI: "true"
         with:
+          projectPath: ./frontend
           tagName: ${{ github.ref_name }}
           releaseName: "Release ${{ github.ref_name }}"
           releaseBody: "See CHANGELOG for details."
@@ -188,23 +183,23 @@ jobs:
       - name: Rename artifacts (Linux)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
-          find src-tauri/target/release/bundle -name "*.AppImage" -exec cp {} app.AppImage \;
+          find frontend/src-tauri/target/release/bundle -name "*.AppImage" -exec cp {} app.AppImage \;
 
       - name: Rename artifacts (macOS arm)
         if: matrix.platform == 'macos-latest' && matrix.artifact_name == 'macos-arm'
         run: |
-          find src-tauri/target/aarch64-apple-darwin/release/bundle -name "*.dmg" -exec cp {} app.dmg \;
+          find frontend/src-tauri/target/aarch64-apple-darwin/release/bundle -name "*.dmg" -exec cp {} app.dmg \;
 
       - name: Rename artifacts (macOS x64)
         if: matrix.platform == 'macos-latest' && matrix.artifact_name == 'macos-x64'
         run: |
-          find src-tauri/target/x86_64-apple-darwin/release/bundle -name "*.dmg" -exec cp {} app-x64.dmg \;
+          find frontend/src-tauri/target/x86_64-apple-darwin/release/bundle -name "*.dmg" -exec cp {} app-x64.dmg \;
 
       - name: Rename artifacts (Windows)
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
-          Get-ChildItem -Recurse -Filter "*.exe" src-tauri/target/release/bundle | Copy-Item -Destination app.exe
+          Get-ChildItem -Recurse -Filter "*.exe" frontend/src-tauri/target/release/bundle | Copy-Item -Destination app.exe
 
       - name: Upload renamed artifacts to release
         uses: softprops/action-gh-release@v2
