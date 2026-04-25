@@ -316,16 +316,8 @@
 
     downloadBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const userAgent = navigator.userAgent.toLowerCase();
-        let url = "";
 
-        if (userAgent.includes("mac")) {
-            url = "https://github.com/EpitechMscProPromo2028/T-DEV-600-LIL_10/releases/latest/download/app.dmg";
-        } else if (userAgent.includes("linux")) {
-            url = "https://github.com/EpitechMscProPromo2028/T-DEV-600-LIL_10/releases/latest/download/app.AppImage";
-        } else {
-            url = "https://github.com/EpitechMscProPromo2028/T-DEV-600-LIL_10/releases/latest";
-        }
+        window.location.href = "https://github.com/Emilie20000/RTC-Strikes-Back/releases/tag/main";
 
         document.getElementById('btn-desktop').innerText = translations[window.currentLang].downloading;
         downloadBtn.style.opacity = "0.7";

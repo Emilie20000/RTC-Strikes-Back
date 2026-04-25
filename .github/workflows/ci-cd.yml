@@ -6,13 +6,13 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v*"
 
 env:
   REGISTRY: ghcr.io
 
-
 jobs:
-
   ci:
     runs-on: ubuntu-latest
 
@@ -44,6 +44,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
 
       - name: Build frontend Docker image
         run: |
@@ -92,6 +93,12 @@ jobs:
 
       - name: Run coverage
         working-directory: ./backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          REDIS_URL: redis://localhost:6379
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
         run: |
           cargo tarpaulin \
             --all \
@@ -105,67 +112,69 @@ jobs:
           files: backend/cobertura.xml
         continue-on-error: true
 
-  deploy_web:
-    runs-on: ubuntu-latest
-    needs: ci
-    if: github.ref == 'refs/heads/main'
 
-    permissions:
-      contents: read
-      packages: write
+    deploy_web:
+      runs-on: ubuntu-latest
+      needs: ci
+      if: github.ref == 'refs/heads/main'
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      permissions:
+        contents: read
+        packages: write
 
-      - name: Set image tag
-        run: echo "TAG=${GITHUB_SHA}" >> $GITHUB_ENV
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
 
-      - name: Set lowercase image names
-        run: |
-          REPO=$(echo "${GITHUB_REPOSITORY,,}")
-          echo "IMAGE_FRONTEND=ghcr.io/$REPO/frontend" >> $GITHUB_ENV
-          echo "IMAGE_BACKEND=ghcr.io/$REPO/backend" >> $GITHUB_ENV
+        - name: Set image tag
+          run: echo "TAG=${GITHUB_SHA}" >> $GITHUB_ENV
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        - name: Set lowercase image names
+          run: |
+            REPO=$(echo "${GITHUB_REPOSITORY,,}")
+            echo "IMAGE_FRONTEND=ghcr.io/$REPO/frontend" >> $GITHUB_ENV
+            echo "IMAGE_BACKEND=ghcr.io/$REPO/backend" >> $GITHUB_ENV
 
-      - name: Build frontend
-        run: |
-          docker build \
-            --build-arg NEXT_PUBLIC_GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }} \
-            --build-arg NEXT_PUBLIC_API_BASE_URL=${{ secrets.API_BASE_URL }} \
-            -t $IMAGE_FRONTEND:$TAG \
-            -t $IMAGE_FRONTEND:latest \
-            ./frontend
+        - name: Login to GHCR
+          uses: docker/login-action@v3
+          with:
+            registry: ${{ env.REGISTRY }}
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push frontend
-        run: |
-          docker push $IMAGE_FRONTEND:$TAG
-          docker push $IMAGE_FRONTEND:latest
 
-      - name: Build backend
-        run: |
-          docker build \
-            -f ./backend/Dockerfile \
-            -t $IMAGE_BACKEND:$TAG \
-            -t $IMAGE_BACKEND:latest \
-            ./backend
+        - name: Build frontend Docker image
+          run: |
+            docker build \
+              --build-arg NEXT_PUBLIC_GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }} \
+              --build-arg NEXT_PUBLIC_API_BASE_URL=${{ secrets.API_BASE_URL }} \
+              -t $IMAGE_FRONTEND:$TAG \
+              -t $IMAGE_FRONTEND:latest \
+              ./frontend
 
-      - name: Push backend
-        run: |
-          docker push $IMAGE_BACKEND:$TAG
-          docker push $IMAGE_BACKEND:latest
+        - name: Push frontend Docker image
+          run: |
+            docker push $IMAGE_FRONTEND:$TAG
+            docker push $IMAGE_FRONTEND:latest
 
-      - name: Deploy backend
-        run: curl -X POST ${{ secrets.RENDER_BACKEND_HOOK_PROD }}
+        - name: Build backend Docker image
+          run: |
+            docker build \
+              -f ./backend/Dockerfile \
+              -t $IMAGE_BACKEND:$TAG \
+              -t $IMAGE_BACKEND:latest \
+              ./backend
 
-      - name: Deploy frontend
-        run: curl -X POST ${{ secrets.RENDER_FRONTEND_HOOK_PROD }}
+        - name: Push backend Docker image
+          run: |
+            docker push $IMAGE_BACKEND:$TAG
+            docker push $IMAGE_BACKEND:latest
+
+        - name: Deploy backend (Render)
+          run: curl -X POST ${{ secrets.RENDER_BACKEND_HOOK_PROD }}
+
+        - name: Deploy frontend (Render)
+          run: curl -X POST ${{ secrets.RENDER_FRONTEND_HOOK_PROD }}
 
   tag_release:
     runs-on: ubuntu-latest
@@ -179,40 +188,37 @@ jobs:
       new_tag: ${{ steps.tag.outputs.new_tag }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Create new tag
+      - name: Get latest tag and bump patch version
         id: tag
         run: |
           LATEST=$(git tag --list 'v*' --sort=-version:refname | head -n1)
-
           if [ -z "$LATEST" ]; then
             LATEST="v0.0.0"
           fi
-
+          
           VERSION=${LATEST#v}
           MAJOR=$(echo $VERSION | cut -d. -f1)
           MINOR=$(echo $VERSION | cut -d. -f2)
           PATCH=$(echo $VERSION | cut -d. -f3)
-
           NEW_TAG="v$MAJOR.$MINOR.$((PATCH + 1))"
-
+          
+          echo "Latest tag: $LATEST → New tag: $NEW_TAG"
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
-
+          
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git tag $NEW_TAG
           git push origin $NEW_TAG
 
 
   release_desktop:
-    runs-on: ${{ matrix.platform }}
-
     needs: tag_release
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: needs.tag_release.outputs.new_tag != ''
 
     permissions:
       contents: write
@@ -233,25 +239,35 @@ jobs:
             args: "--target x86_64-apple-darwin"
             artifact_name: macos-x64
 
-    steps:
-      - uses: actions/checkout@v4
+          - platform: windows-latest
+            args: ""
+            artifact_name: windows
 
-      - uses: actions/setup-node@v4
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - uses: actions/cache@v4
+      - name: Cache Tauri Cargo
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo
             frontend/src-tauri/target
           key: ${{ runner.os }}-cargo-tauri-${{ hashFiles('frontend/src-tauri/Cargo.lock') }}
 
-      - name: Linux deps
+      - name: Install Linux system deps
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
@@ -263,11 +279,11 @@ jobs:
             libssl-dev \
             pkg-config
 
-      - name: Install deps
+      - name: Install frontend deps
         working-directory: ./frontend
         run: npm ci --legacy-peer-deps --include=optional
 
-      - name: Build Tauri
+      - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -278,7 +294,7 @@ jobs:
           projectPath: ./frontend
           tagName: ${{ github.ref_name }}
           releaseName: Release ${{ github.ref_name }}
-          releaseBody: Automated release
+          releaseBody: See CHANGELOG for details.
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
