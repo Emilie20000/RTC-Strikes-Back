@@ -10,8 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_FRONTEND: ghcr.io/${{ toLower(github.repository) }}/frontend
-  IMAGE_BACKEND: ghcr.io/${{ toLower(github.repository) }}/backend
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -73,7 +72,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('backend/Cargo.lock') }}
 
       # ======================
-      # INIT DATABASE (IMPORTANT)
+      # INIT DATABASE
       # ======================
       - name: Install Postgres client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
@@ -86,7 +85,7 @@ jobs:
             -d postgres \
             -f database.sql
 
-            # ======================
+      # ======================
       # BACKEND TESTS
       # ======================
       - name: Run backend tests
@@ -126,6 +125,7 @@ jobs:
           files: backend/cobertura.xml
         continue-on-error: true
 
+
   deploy_web:
     runs-on: ubuntu-latest
     needs: ci
@@ -137,6 +137,13 @@ jobs:
 
       - name: Set image tag
         run: echo "TAG=${GITHUB_SHA}" >> $GITHUB_ENV
+
+      # 🔥 FIX IMPORTANT: lowercase repository
+      - name: Set lowercase image names
+        run: |
+          REPO=$(echo "${GITHUB_REPOSITORY,,}")
+          echo "IMAGE_FRONTEND=ghcr.io/$REPO/frontend" >> $GITHUB_ENV
+          echo "IMAGE_BACKEND=ghcr.io/$REPO/backend" >> $GITHUB_ENV
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -197,6 +204,7 @@ jobs:
 
       - name: Deploy frontend (Render)
         run: curl -X POST ${{ secrets.RENDER_FRONTEND_HOOK_PROD }}
+
 
   release_desktop:
     needs: ci
@@ -277,42 +285,3 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
-
-      - name: Rename artifacts (Linux)
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          find frontend/src-tauri/target/release/bundle \
-            -name "*.AppImage" \
-            -exec cp {} app.AppImage \;
-
-      - name: Rename artifacts (macOS arm)
-        if: matrix.platform == 'macos-latest' && matrix.artifact_name == 'macos-arm'
-        run: |
-          find frontend/src-tauri/target/aarch64-apple-darwin/release/bundle \
-            -name "*.dmg" \
-            -exec cp {} app.dmg \;
-
-      - name: Rename artifacts (macOS x64)
-        if: matrix.platform == 'macos-latest' && matrix.artifact_name == 'macos-x64'
-        run: |
-          find frontend/src-tauri/target/x86_64-apple-darwin/release/bundle \
-            -name "*.dmg" \
-            -exec cp {} app-x64.dmg \;
-
-      - name: Rename artifacts (Windows)
-        if: matrix.platform == 'windows-latest'
-        shell: pwsh
-        run: |
-          Get-ChildItem -Recurse -Filter "*.exe" frontend/src-tauri/target/release/bundle |
-          Copy-Item -Destination app.exe
-
-      - name: Upload renamed artifacts to release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          files: |
-            app.AppImage
-            app.dmg
-            app-x64.dmg
-            app.exe
-        continue-on-error: true
