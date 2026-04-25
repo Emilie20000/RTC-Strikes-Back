@@ -3,12 +3,14 @@ name: CI/CD
 on:
   pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
     tags:
       - "v*"
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_FRONTEND: ghcr.io/${{ github.repository }}/frontend
   IMAGE_BACKEND: ghcr.io/${{ github.repository }}/backend
 
 jobs:
@@ -16,15 +18,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo
-            backend/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('backend/Cargo.lock') }}
-
+      #
+      # FRONTEND CHECK
+      #
       - name: Build frontend Docker image
         run: |
           docker build \
@@ -35,11 +34,31 @@ jobs:
             -t frontend-ci \
             ./frontend
 
+      #
+      # BACKEND CHECK
+      #
+      - name: Cache Rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo
+            backend/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('backend/Cargo.lock') }}
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Build backend Docker image
+        run: |
+          docker build \
+            -t backend-ci \
+            -f ./backend/Dockerfile \
+            ./backend
+
       - name: Run backend tests
         working-directory: ./backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: cargo test --all --release
 
       - name: Install Tarpaulin
@@ -47,6 +66,8 @@ jobs:
 
       - name: Run coverage (Tarpaulin)
         working-directory: ./backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cargo tarpaulin \
             --all \
@@ -66,7 +87,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set image tag
         run: echo "TAG=${GITHUB_SHA}" >> $GITHUB_ENV
@@ -78,20 +100,42 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker image
+      #
+      # FRONTEND IMAGE
+      #
+      - name: Build frontend Docker image
         run: |
           docker build \
             --build-arg NEXT_PUBLIC_GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }} \
             --build-arg NEXT_PUBLIC_API_BASE_URL=${{ secrets.API_BASE_URL }} \
-            -t $IMAGE_BACKEND:$TAG \
-            -t $IMAGE_BACKEND:latest \
+            -t $IMAGE_FRONTEND:$TAG \
+            -t $IMAGE_FRONTEND:latest \
             ./frontend
 
-      - name: Push Docker image
+      - name: Push frontend Docker image
+        run: |
+          docker push $IMAGE_FRONTEND:$TAG
+          docker push $IMAGE_FRONTEND:latest
+
+      #
+      # BACKEND IMAGE
+      #
+      - name: Build backend Docker image
+        run: |
+          docker build \
+            -f ./backend/Dockerfile \
+            -t $IMAGE_BACKEND:$TAG \
+            -t $IMAGE_BACKEND:latest \
+            ./backend
+
+      - name: Push backend Docker image
         run: |
           docker push $IMAGE_BACKEND:$TAG
           docker push $IMAGE_BACKEND:latest
 
+      #
+      # DATABASE
+      #
       - name: Install Supabase CLI
         run: npm install -g supabase
 
@@ -100,6 +144,9 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_TOKEN }}
 
+      #
+      # DEPLOY
+      #
       - name: Deploy backend (Render)
         run: curl -X POST ${{ secrets.RENDER_BACKEND_HOOK_PROD }}
 
@@ -109,6 +156,7 @@ jobs:
   release_desktop:
     needs: ci
     if: startsWith(github.ref, 'refs/tags/v')
+
     strategy:
       fail-fast: false
       matrix:
@@ -116,12 +164,15 @@ jobs:
           - platform: ubuntu-22.04
             args: ""
             artifact_name: linux
+
           - platform: macos-latest
             args: "--target aarch64-apple-darwin"
             artifact_name: macos-arm
+
           - platform: macos-latest
             args: "--target x86_64-apple-darwin"
             artifact_name: macos-x64
+
           - platform: windows-latest
             args: ""
             artifact_name: windows
@@ -129,7 +180,8 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -141,7 +193,8 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - uses: actions/cache@v4
+      - name: Cache Tauri Cargo
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo
@@ -174,8 +227,8 @@ jobs:
         with:
           projectPath: ./frontend
           tagName: ${{ github.ref_name }}
-          releaseName: "Release ${{ github.ref_name }}"
-          releaseBody: "See CHANGELOG for details."
+          releaseName: Release ${{ github.ref_name }}
+          releaseBody: See CHANGELOG for details.
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
@@ -183,23 +236,30 @@ jobs:
       - name: Rename artifacts (Linux)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
-          find frontend/src-tauri/target/release/bundle -name "*.AppImage" -exec cp {} app.AppImage \;
+          find frontend/src-tauri/target/release/bundle \
+            -name "*.AppImage" \
+            -exec cp {} app.AppImage \;
 
       - name: Rename artifacts (macOS arm)
         if: matrix.platform == 'macos-latest' && matrix.artifact_name == 'macos-arm'
         run: |
-          find frontend/src-tauri/target/aarch64-apple-darwin/release/bundle -name "*.dmg" -exec cp {} app.dmg \;
+          find frontend/src-tauri/target/aarch64-apple-darwin/release/bundle \
+            -name "*.dmg" \
+            -exec cp {} app.dmg \;
 
       - name: Rename artifacts (macOS x64)
         if: matrix.platform == 'macos-latest' && matrix.artifact_name == 'macos-x64'
         run: |
-          find frontend/src-tauri/target/x86_64-apple-darwin/release/bundle -name "*.dmg" -exec cp {} app-x64.dmg \;
+          find frontend/src-tauri/target/x86_64-apple-darwin/release/bundle \
+            -name "*.dmg" \
+            -exec cp {} app-x64.dmg \;
 
       - name: Rename artifacts (Windows)
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
-          Get-ChildItem -Recurse -Filter "*.exe" frontend/src-tauri/target/release/bundle | Copy-Item -Destination app.exe
+          Get-ChildItem -Recurse -Filter "*.exe" frontend/src-tauri/target/release/bundle |
+          Copy-Item -Destination app.exe
 
       - name: Upload renamed artifacts to release
         uses: softprops/action-gh-release@v2
