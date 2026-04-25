@@ -252,9 +252,16 @@
             <div class="os-list">
                 <span class="os-item"><i data-lucide="apple" size="12"></i> Mac</span>
                 <span class="os-item"><i data-lucide="monitor" size="12"></i> Linux</span>
-                <span class="os-item"><i data-lucide="layout-grid" size="12"></i> Windows</span>
+            </div>
+
+            <div style="margin-top: 1.5rem; font-size: 0.6rem; color: var(--text-muted); text-align: left; line-height: 1.6;">
+                <p><strong>Installation :</strong></p>
+                <p>• <b>macOS</b> : ouvrez le fichier .dmg puis glissez l’app dans Applications</p>
+                <p>• <b>Linux</b> : rendez le fichier .AppImage exécutable puis lancez-le</p>
+                <p style="opacity: 0.7;">(chmod +x app.AppImage)</p>
             </div>
         </div>
+
     </div>
 
     <footer class="footer">
@@ -314,8 +321,6 @@
 
         if (userAgent.includes("mac")) {
             url = "https://github.com/EpitechMscProPromo2028/T-DEV-600-LIL_10/releases/latest/download/app.dmg";
-        } else if (userAgent.includes("win")) {
-            url = "https://github.com/EpitechMscProPromo2028/T-DEV-600-LIL_10/releases/latest/download/app.exe";
         } else if (userAgent.includes("linux")) {
             url = "https://github.com/EpitechMscProPromo2028/T-DEV-600-LIL_10/releases/latest/download/app.AppImage";
         } else {
