@@ -23,11 +23,11 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: snouwzrtc
+          POSTGRES_DB: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -36,6 +36,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ======================
+      # FRONTEND BUILD CHECK
+      # ======================
       - name: Build frontend Docker image
         run: |
           docker build \
@@ -46,10 +49,13 @@ jobs:
             -t frontend-ci \
             ./frontend
 
-      #
-      # BACKEND CHECK
-      #
-      - name: Cache Rust
+      # ======================
+      # BACKEND SETUP
+      # ======================
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
         uses: actions/cache@v4
         with:
           path: |
@@ -57,38 +63,39 @@ jobs:
             backend/target
           key: ${{ runner.os }}-cargo-${{ hashFiles('backend/Cargo.lock') }}
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      # ======================
+      # INIT DATABASE (IMPORTANT)
+      # ======================
+      - name: Install Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Build backend Docker image
+      - name: Load database schema
         run: |
-          docker build \
-            -t backend-ci \
-            -f ./backend/Dockerfile \
-            ./backend
+          PGPASSWORD=postgres psql \
+            -h localhost \
+            -U postgres \
+            -d postgres \
+            -f database.sql
 
-      - name: Install sqlx-cli
-        run: cargo install sqlx-cli
-
-      - name: Run migrations
-        working-directory: ./backend
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/snouwzrtc
-        run: sqlx migrate run --source ./migrations
-
+      # ======================
+      # BACKEND TESTS
+      # ======================
       - name: Run backend tests
         working-directory: ./backend
         env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/snouwzrtc
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
         run: cargo test --all --release
 
+      # ======================
+      # COVERAGE
+      # ======================
       - name: Install Tarpaulin
         run: cargo install cargo-tarpaulin
 
-      - name: Run coverage (Tarpaulin)
+      - name: Run coverage
         working-directory: ./backend
         env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/snouwzrtc
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
         run: |
           cargo tarpaulin \
             --all \
@@ -96,7 +103,7 @@ jobs:
             --out Xml \
             --timeout 120
 
-      - name: Upload coverage to Codecov
+      - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
           files: backend/cobertura.xml
