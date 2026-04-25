@@ -77,25 +77,28 @@ jobs:
             -d postgres \
             -f database.sql
 
-      # ======================
+            # ======================
       # BACKEND TESTS
       # ======================
       - name: Run backend tests
         working-directory: ./backend
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
         run: cargo test --all --release
 
       # ======================
       # COVERAGE
       # ======================
-      - name: Install Tarpaulin
-        run: cargo install cargo-tarpaulin
-
       - name: Run coverage
         working-directory: ./backend
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
         run: |
           cargo tarpaulin \
             --all \
