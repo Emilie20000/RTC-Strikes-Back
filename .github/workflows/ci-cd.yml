@@ -48,13 +48,12 @@ jobs:
 
       - name: Build frontend Docker image
         run: |
-          docker build \
+          docker build ./frontend \
             --build-arg CI=true \
             --build-arg NEXT_PUBLIC_GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }} \
             --build-arg NEXT_PUBLIC_API_BASE_URL=${{ secrets.API_BASE_URL }} \
             --target builder \
-            -t frontend-ci \
-            ./frontend
+            -t frontend-ci
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
