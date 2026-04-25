@@ -268,5 +268,5 @@ async fn test_auth_me_and_logout() {
             .body(Body::empty())
             .unwrap()
     ).await.unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
 }
