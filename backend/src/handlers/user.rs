@@ -79,33 +79,36 @@ pub async fn update_user_profile(
     Json(payload): Json<UpdateUserPayload>,
 ) -> Result<Json<crate::models::user::PublicUser>, (StatusCode, Json<serde_json::Value>)> {
 
-    // 1. Validation langue
     if let Some(langue) = &payload.langue {
         if langue != "fr" && langue != "en" {
             return Err((
                 StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "error": "Invalid langue. Allowed values: fr, en"
-                })),
+                Json(json!({ "error": "Invalid langue. Allowed values: fr, en" })),
             ));
         }
     }
 
-    // 2. Check username uniqueness (si modifié)
+    let mut tx = state.pool.begin().await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": format!("Database error: {}", e) })),
+        )
+    })?;
+
     if let Some(username) = &payload.username {
-        let exists: Option<(i32,)> = sqlx::query_as(
-            "SELECT 1 FROM users WHERE username = $1 AND id != $2"
+        let exists = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM users WHERE username = $1 AND id != $2"
         )
             .bind(username)
             .bind(auth_user.user_id)
-            .fetch_optional(&state.pool)
+            .fetch_one(&mut *tx)
             .await
             .map_err(|e| (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": e.to_string() })),
+                Json(json!({ "error": format!("DB error: {}", e) })),
             ))?;
 
-        if exists.is_some() {
+        if exists > 0 {
             return Err((
                 StatusCode::CONFLICT,
                 Json(json!({ "error": "Username already taken" })),
@@ -113,7 +116,7 @@ pub async fn update_user_profile(
         }
     }
 
-    // 3. UPDATE SAFE (NO SQL DYNAMIQUE)
+    // 🔥 SAFE UPDATE (no dynamic SQL hell)
     let updated_user = sqlx::query_as::<_, crate::models::user::User>(
         r#"
         UPDATE users
@@ -130,71 +133,19 @@ pub async fn update_user_profile(
         .bind(&payload.avatar_url)
         .bind(&payload.langue)
         .bind(auth_user.user_id)
-        .fetch_one(&state.pool)
+        .fetch_one(&mut *tx)
         .await
-        .map_err(|e| (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": format!("Failed to update user: {}", e) })),
-        ))?;
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": format!("Failed to update user: {}", e) })),
+            )
+        })?;
 
-    // 4. Server broadcasts
-    let server_ids: Vec<(uuid::Uuid,)> = sqlx::query_as(
-        "SELECT server_id FROM server_members WHERE user_id = $1"
-    )
-        .bind(&auth_user.user_id)
-        .fetch_all(&state.pool)
-        .await
-        .unwrap_or_default();
-
-    for (server_id,) in server_ids {
-        let _ = crate::socket::broadcast_user_updated(
-            &state.io,
-            server_id,
-            updated_user.clone().into(),
-        ).await;
-
-        if let Some(mut voice_state) = state.voice_users.get_mut(&auth_user.user_id.to_string()) {
-            if let Some(username) = &payload.username {
-                voice_state.username = username.clone();
-            }
-            if let Some(avatar_url) = &payload.avatar_url {
-                voice_state.avatar_url = Some(avatar_url.clone());
-            }
-
-            let _ = state.io
-                .to(server_id.to_string())
-                .emit("voice_state_update", &*voice_state)
-                .await;
-        }
-    }
-
-    // 5. DM broadcasts
-    let dm_recipient_ids: Vec<(uuid::Uuid,)> = sqlx::query_as(
-        r#"
-        SELECT DISTINCT cs2.user_id
-        FROM channel_subscribers cs1
-        JOIN channels c ON cs1.channel_id = c.id
-        JOIN channel_subscribers cs2 ON c.id = cs2.channel_id
-        WHERE c.kind = 'DM'
-        AND cs1.user_id = $1
-        AND cs2.user_id != $1
-        "#
-    )
-        .bind(&auth_user.user_id)
-        .fetch_all(&state.pool)
-        .await
-        .unwrap_or_default();
-
-    for (recipient_id,) in dm_recipient_ids {
-        let room = format!("user:{}", recipient_id);
-
-        let payload = json!({
-            "user": crate::models::user::PublicUser::from(updated_user.clone()),
-            "serverId": null
-        });
-
-        let _ = state.io.to(room).emit("user_updated", &payload).await;
-    }
+    tx.commit().await.map_err(|e| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(json!({ "error": format!("Commit failed: {}", e) })),
+    ))?;
 
     Ok(Json(updated_user.into()))
 }
