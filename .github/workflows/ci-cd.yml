@@ -192,11 +192,9 @@ jobs:
       #
       # DATABASE
       #
-      - name: Install Supabase CLI
-        run: npm install -g supabase
 
       - name: Apply DB migrations
-        run: supabase db push
+        run: npx supabase db push
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_TOKEN }}
 
