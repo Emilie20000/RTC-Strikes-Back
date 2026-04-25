@@ -179,7 +179,11 @@ pub async fn update_user_profile(
             if let Some(avatar_url) = &payload.avatar_url {
                 voice_state.avatar_url = Some(avatar_url.clone());
             }
-            let _ = state.io.to(server_id.to_string()).emit("voice_state_update", &*voice_state).await;
+
+            let _ = state.io
+                .to(server_id.to_string())
+                .emit("voice_state_update", &*voice_state)
+                .await;
         }
     }
 
