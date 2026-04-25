@@ -170,7 +170,7 @@ pub async fn update_user_profile(
 
     //broadcast d'update
     for (server_id,) in server_ids {
-        let _ = crate::socket::broadcast_user_updated(&state.io, server_id, updated_user.clone().into()).await;
+        crate::socket::broadcast_user_updated(&state.io, server_id, updated_user.clone().into()).await;
 
         if let Some(mut voice_state) = state.voice_users.get_mut(&auth_user.user_id.to_string()) {
             if let Some(username) = &payload.username {
