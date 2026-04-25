@@ -531,11 +531,12 @@ async fn test_user_handlers() {
         .unwrap();
     let channel: Value = serde_json::from_slice(&axum::body::to_bytes(response.into_body(), 10000).await.unwrap()).unwrap();
     let channel_id = channel["id"].as_str().unwrap();
+    let channel_id_uuid = Uuid::parse_str(channel["id"].as_str().unwrap()).unwrap();
 
     // 2. Insert message via SQL (since we don't have a POST /messages REST endpoint)
     let user_id_uuid = Uuid::parse_str(user_id).unwrap();
     let msg_id: i32 = sqlx::query_scalar("INSERT INTO messages (channel_id, author, author_id, content, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id")
-        .bind(channel_id)
+        .bind(channel_id_uuid)
         .bind(&username)
         .bind(user_id_uuid)
         .bind("Hello world")
