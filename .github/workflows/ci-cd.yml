@@ -48,6 +48,7 @@ jobs:
 
       - name: Build frontend Docker image
         run: |
+          set -e
           docker build ./frontend \
             --build-arg CI=true \
             --build-arg NEXT_PUBLIC_GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }} \
