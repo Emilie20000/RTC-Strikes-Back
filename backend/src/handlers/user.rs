@@ -27,58 +27,15 @@ pub struct UserStatusChangedPayload {
 }
 
 // pour gerer les status
-pub async fn update_user_status(
-    State(state): State<Arc<AppState>>,
-    Extension(auth_user): Extension<AuthUser>,
-    Json(payload): Json<UpdateStatusPayload>,
-) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
-    sqlx::query(
-        "UPDATE users SET status = $1, updated_at = NOW() WHERE id = $2"
-    )
-    .bind(&payload.status)
-    .bind(&auth_user.user_id)
-    .execute(&state.pool)
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": format!("Failed to update status: {}", e)})),
-        )
-    })?;
-
-    let server_ids: Vec<(uuid::Uuid,)> = sqlx::query_as(
-        "SELECT server_id FROM server_members WHERE user_id = $1"
-    )
-    .bind(&auth_user.user_id)
-    .fetch_all(&state.pool)
-    .await
-    .map_err(|e| {
-        eprintln!("Failed to fetch user servers: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to fetch user servers"})),
-        )
-    })?;
-
-    // Broadcast to each server
-    for (server_id,) in server_ids {
-        crate::socket::broadcast_user_status_changed(
-            &state.io,
-            server_id,
-            auth_user.user_id,
-            payload.status.clone(),
-        ).await;
-    }
-
-    Ok(StatusCode::NO_CONTENT)
-}
-
 pub async fn update_user_profile(
     State(state): State<Arc<AppState>>,
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<UpdateUserPayload>,
 ) -> Result<Json<crate::models::user::PublicUser>, (StatusCode, Json<serde_json::Value>)> {
 
+    // ----------------------------
+    // 1. Validation langue
+    // ----------------------------
     if let Some(langue) = &payload.langue {
         if langue != "fr" && langue != "en" {
             return Err((
@@ -88,6 +45,9 @@ pub async fn update_user_profile(
         }
     }
 
+    // ----------------------------
+    // 2. Transaction
+    // ----------------------------
     let mut tx = state.pool.begin().await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -95,20 +55,23 @@ pub async fn update_user_profile(
         )
     })?;
 
+    // ----------------------------
+    // 3. Username uniqueness check
+    // ----------------------------
     if let Some(username) = &payload.username {
-        let exists = sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(*) FROM users WHERE username = $1 AND id != $2"
+        let exists: Option<i64> = sqlx::query_scalar(
+            "SELECT 1 FROM users WHERE username = $1 AND id != $2"
         )
             .bind(username)
             .bind(auth_user.user_id)
-            .fetch_one(&mut *tx)
+            .fetch_optional(&mut *tx)
             .await
             .map_err(|e| (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({ "error": format!("DB error: {}", e) })),
             ))?;
 
-        if exists > 0 {
+        if exists.is_some() {
             return Err((
                 StatusCode::CONFLICT,
                 Json(json!({ "error": "Username already taken" })),
@@ -116,17 +79,28 @@ pub async fn update_user_profile(
         }
     }
 
-    // 🔥 SAFE UPDATE (no dynamic SQL hell)
+    // ----------------------------
+    // 4. SAFE UPDATE (no dynamic SQL)
+    // ----------------------------
     let updated_user = sqlx::query_as::<_, crate::models::user::User>(
         r#"
         UPDATE users
         SET
-            username = COALESCE($1, username),
+            username   = COALESCE($1, username),
             avatar_url = COALESCE($2, avatar_url),
-            langue = COALESCE($3, langue),
+            langue     = COALESCE($3, langue),
             updated_at = NOW()
         WHERE id = $4
-        RETURNING *
+        RETURNING
+            id,
+            username,
+            email,
+            password_hash,
+            avatar_url,
+            langue,
+            status,
+            created_at,
+            updated_at
         "#
     )
         .bind(&payload.username)
@@ -136,16 +110,23 @@ pub async fn update_user_profile(
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| {
+            eprintln!("🔥 update_user_profile SQL error: {:?}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({ "error": format!("Failed to update user: {}", e) })),
             )
         })?;
 
+    // ----------------------------
+    // 5. Commit
+    // ----------------------------
     tx.commit().await.map_err(|e| (
         StatusCode::INTERNAL_SERVER_ERROR,
         Json(json!({ "error": format!("Commit failed: {}", e) })),
     ))?;
 
+    // ----------------------------
+    // 6. Response
+    // ----------------------------
     Ok(Json(updated_user.into()))
 }
