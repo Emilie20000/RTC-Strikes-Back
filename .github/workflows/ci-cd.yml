@@ -73,8 +73,8 @@ jobs:
       - name: Run migrations
         working-directory: ./backend
         env:
-         DATABASE_URL: postgres://postgres:postgres@localhost:5432/snouwzrtc
-        run: sqlx migrate run
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/snouwzrtc
+        run: sqlx migrate run --source ./migrations
 
       - name: Run backend tests
         working-directory: ./backend
