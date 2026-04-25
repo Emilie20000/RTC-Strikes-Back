@@ -190,15 +190,6 @@ jobs:
           docker push $IMAGE_BACKEND:latest
 
       #
-      # DATABASE
-      #
-
-      - name: Apply DB migrations
-        run: npx supabase db push
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_TOKEN }}
-
-      #
       # DEPLOY
       #
       - name: Deploy backend (Render)
